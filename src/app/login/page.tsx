@@ -1,27 +1,52 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import Link from 'next/link'
+import { useAuth } from "../../components/authProvider";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
+  const LOGIN_URL = "/api/login/";
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setMessage(null)
-    // Mock login flow
-    await new Promise((r) => setTimeout(r, 800))
-    setLoading(false)
-    if (email && password) {
-      setMessage('Login successful (mock). Redirecting...')
-      // In a real app you'd call your API and redirect on success
-    } else {
-      setMessage('Please enter email and password')
+  const auth = useAuth();
+
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>("");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    const formData = new FormData(event.currentTarget);
+    const dataObject = Object.fromEntries(formData);
+    const jsonData = JSON.stringify(dataObject);
+
+    const requestOptions: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: jsonData,
+    };
+
+    try {
+      const response = await fetch(LOGIN_URL, requestOptions);
+
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch {}
+
+      if (response.ok) {
+        auth.login(data?.username);
+      } else {
+        setMessage(data?.error || "Login failed.");
+      }
+    } catch (error) {
+      setMessage("Network error.");
     }
+
+    setLoading(false);
   }
 
   return (

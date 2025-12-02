@@ -20,7 +20,7 @@ const sampleProfiles = [
     name: 'Priya',
     age: 26,
     location: 'Delhi, India',
-    image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3'
+    image: 'https://shoutoutla.s3.us-west-1.amazonaws.com/wp-content/uploads/2021/05/c-PersonalAvniBarman__IMG5900_1616723337432.jpg'
   },
   {
     name: 'Amit',
@@ -57,9 +57,10 @@ export default function Home() {
           </div>
 
           <div className="img-collage grid grid-cols-2 gap-3 pulse">
-            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=5" alt="wedding" className="h-44 col-span-2" />
-            <img src="https://images.unsplash.com/photo-1545996124-0d7be5c0d6d5?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=6" alt="portrait" />
-            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=7" alt="portrait2" />
+            <img src="https://i.pinimg.com/1200x/42/26/91/422691e09e79e96b7075ef306a9c2d07.jpg" alt="portrait4"/>
+            <img src="https://i.pinimg.com/1200x/5b/ff/eb/5bffeb824946fb9eee89e22cbbdab46b.jpg" alt="portrait3" />
+            <img src="https://i.pinimg.com/1200x/69/82/29/69822936198d9451e50eab281ca524a1.jpg" alt="portrait" />
+            <img src="https://i.pinimg.com/736x/a5/4c/14/a54c14db0cdadc4fe97ec3e6d26a020b.jpg" alt="portrait2" />
           </div>
         </section>
 
