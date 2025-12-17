@@ -23,7 +23,12 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "@/lib/*": ["src/lib/*"],
+      "@/components/*": ["src/components/*"],
+      "@/config/*": ["src/config/*"]
+    }
   },
   "include": [
     "next-env.d.ts",
