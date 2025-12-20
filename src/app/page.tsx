@@ -50,8 +50,6 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap gap-4">
               <Link href="#profiles" className="btn bg-brand-500 text-white">Explore Profiles</Link>
               <Link href="#features" className="btn border border-gray-200">Learn More</Link>
-              <Link href="/login" className="btn border border-gray-200">Login</Link>
-              <button onClick={handleCLick} className="btn border border-gray-200">Test Django API</button>
             </div>
             <div className="mt-6 text-sm text-gray-500">Join thousands of happy families. Your privacy is our priority.</div>
           </div>

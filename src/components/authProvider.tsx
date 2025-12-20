@@ -11,7 +11,7 @@ import React, {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const LOGIN_REDIRECT_URL = "/";
-const LOGOUT_REDIRECT_URL = "/login";
+const LOGOUT_REDIRECT_URL = "/";
 const LOGIN_REQUIRED_URL = "/login";
 const LOCAL_STORAGE_KEY = "is-logged-in";
 const LOCAL_USERNAME_KEY = "username";

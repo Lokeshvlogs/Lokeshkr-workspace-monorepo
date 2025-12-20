@@ -9,8 +9,9 @@ export default function LoginPage() {
 
   const auth = useAuth();
 
-  const [email, setEmail] = useState<string>("");
+  const [username, setUserName] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
 
@@ -58,12 +59,30 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="input mt-1" placeholder="you@example.com" />
+              <label className="block text-sm font-medium text-gray-700">Username or Email</label>
+              <input name="identifier" value={username} onChange={(e) => setUserName(e.target.value)} type="text" className="input mt-1" placeholder="username or you@example.com" autoComplete="username" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="input mt-1" placeholder="••••••••" />
+              <div className="relative">
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type={showPassword ? "text" : "password"}
+                  className="input mt-1 pr-20"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  name="password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800"
+                  aria-pressed={showPassword}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
