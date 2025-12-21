@@ -43,8 +43,8 @@ export default function Home() {
   return (
     <div className="hero-bg min-h-screen">
       <div className="container mx-auto px-6 py-16">
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-          <div className="max-w-xl">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div id="TagLine" className="max-w-xl">
             <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight">Vivah4U — Where Traditions Meet Spark</h1>
             <p className="mt-6 text-lg text-gray-600">Find curated, verified profiles with family-friendly matchmaking tools and a modern, secure experience. Beautifully designed for meaningful connections.</p>
             <div className="mt-8 flex flex-wrap gap-4">
@@ -53,8 +53,7 @@ export default function Home() {
             </div>
             <div className="mt-6 text-sm text-gray-500">Join thousands of happy families. Your privacy is our priority.</div>
           </div>
-
-          <div className="img-collage grid grid-cols-2 gap-3 pulse">
+          <div className="img-collage grid grid-cols-2 gap-1 pulse">
             <img src="https://i.pinimg.com/1200x/42/26/91/422691e09e79e96b7075ef306a9c2d07.jpg" alt="portrait4"/>
             <img src="https://i.pinimg.com/1200x/5b/ff/eb/5bffeb824946fb9eee89e22cbbdab46b.jpg" alt="portrait3" />
             <img src="https://i.pinimg.com/1200x/69/82/29/69822936198d9451e50eab281ca524a1.jpg" alt="portrait" />
@@ -89,7 +88,12 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="mt-24 text-center text-sm text-gray-500">© {new Date().getFullYear()} Vivah4U — Built with ❤️</footer>
+        <footer className="mt-24 text-center text-sm text-gray-500">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+            <div>© {new Date().getFullYear()} Vivah4U — Built with ❤️</div>
+            <Link href="/contact" className="btn bg-brand-500 text-white px-4 py-2 rounded-md">Contact Us</Link>
+          </div>
+        </footer>
       </div>
     </div>
   )

@@ -21,7 +21,6 @@ export default function Navbar() {
         <nav className="hidden md:flex gap-4 items-center">
           <Link href="#features" className="text-gray-700 hover:text-gray-900">Features</Link>
           <Link href="#" className="text-gray-700 hover:text-gray-900">Success Stories</Link>
-          <Link href="#" className="text-gray-700 hover:text-gray-900">Contact</Link>
           {!auth.isAuthenticated ? (
             <Link href="/login" className="bg-brand-500 text-white px-4 py-2 rounded-md">Login</Link>
           ) : (
