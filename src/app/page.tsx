@@ -1,7 +1,10 @@
 
 "use client"
+import { useState } from 'react'
 import Link from 'next/link'
 import ProfileCard from '../components/profile/ProfileCard'
+import { useAuth } from '../components/authProvider';
+import { REPLCommand } from 'repl';
 
 const sampleProfiles = [
   {
@@ -31,27 +34,81 @@ const sampleProfiles = [
 ]
 
 export default function Home() {
-    async function getHelloFromDjango() {
-        const res = await fetch('http://127.0.0.1:8001/api/auth_api/hello');
-        const data = await res.json();
-        console.log(data);
+    const REGISTER_URL = "/api/register/";
+    const auth = useAuth();
+
+    const [regMessage, setRegMessage] = useState<string>("");
+    const [regLoading, setRegLoading] = useState<boolean>(false);
+
+    async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
+      event.preventDefault();
+      setRegMessage("");
+      setRegLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const dataObject = Object.fromEntries(formData);
+    const jsonData = JSON.stringify(dataObject);
+
+    const requestOptions: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: jsonData,
+    };
+
+    try {
+      const response = await fetch(REGISTER_URL, requestOptions);
+
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch {}
+
+      if (response.ok) {
+        auth.loginRequiredRedirect();
+      } else {
+        setRegMessage(data?.error || "Registration failed.");
+      }
+    } catch (error) {
+      setRegMessage("Network error.");
     }
-    async function handleCLick() {
-        await getHelloFromDjango();
+
+    setRegLoading(false);
     }
 
   return (
     <div className="hero-bg min-h-screen">
       <div className="container mx-auto px-6 py-16">
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <section id="Home-Top" className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           <div id="TagLine" className="max-w-xl">
-            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight">Vivah4U — Where Traditions Meet Spark</h1>
-            <p className="mt-6 text-lg text-gray-600">Find curated, verified profiles with family-friendly matchmaking tools and a modern, secure experience. Beautifully designed for meaningful connections.</p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link href="#profiles" className="btn bg-brand-500 text-white">Explore Profiles</Link>
-              <Link href="#features" className="btn border border-gray-200">Learn More</Link>
+            <div className="pb-6">
+              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight">Vivah4U — Where Traditions Meet</h1>
+              <p className="mt-4 text-lg text-gray-600">Find curated, verified profiles with family-friendly matchmaking tools and a modern, secure experience. Beautifully designed for meaningful connections.</p>
+              <div className="mt-6 flex flex-wrap gap-4">
+                <Link href="#profiles" className="btn bg-brand-500 text-white">Explore Profiles</Link>
+                <Link href="#features" className="btn border border-gray-200">Learn More</Link>
+              </div>
+              <div className="mt-4 text-sm text-gray-500">Join thousands of happy families. Your privacy is our priority.</div>
             </div>
-            <div className="mt-6 text-sm text-gray-500">Join thousands of happy families. Your privacy is our priority.</div>
+
+            <div className="flex items-center my-6" aria-hidden>
+              <div className="h-px bg-gray-200 flex-1"></div>
+            </div>
+
+            <div className="pt-6">
+              <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 border-gray-100 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{boxShadow: '0 20px 40px rgba(236,72,153,0.14), 0 6px 12px rgba(236,72,153,0.08)'}}>
+                <div className="grid grid-cols-1 gap-3">
+                  <input name="username" placeholder="Username" className="input" />
+                  <input name="email" placeholder="Email-Id" type="email" className="input" />
+                  <input name="phone" placeholder="Phone no." type="tel" className="input" />
+                  <input name="password" placeholder="Password" type="password" className="input" />
+                  <input name="password_confirm" placeholder="Repeat password" type="password" className="input" />
+                  <div className="flex items-center justify-center">
+                    <button type="submit" className="btn bg-brand-500 text-white mx-auto" disabled={regLoading}>{regLoading ? 'Registering...' : 'Register'}</button>
+                  </div>
+                  {regMessage && <div className="text-sm text-red-600">{regMessage}</div>}
+                </div>
+              </form>
+            </div>
           </div>
           <div className="img-collage grid grid-cols-2 gap-1 pulse">
             <img src="https://i.pinimg.com/1200x/42/26/91/422691e09e79e96b7075ef306a9c2d07.jpg" alt="portrait4"/>

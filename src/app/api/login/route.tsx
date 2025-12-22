@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
     console.log("Sending login request to Django API start...")
     const requestData = await request.json()
 
-    const identifier = requestData.identifier || requestData.username || requestData.email || ""
-    const password = requestData.password || ""
+    const identifier = requestData.identifier || requestData.username || requestData.email
+    const password = requestData.password
 
     const payload: any = { password }
     if (identifier.includes("@")) {
