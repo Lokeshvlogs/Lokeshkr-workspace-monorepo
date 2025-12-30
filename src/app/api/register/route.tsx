@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 const DJANGO_API_REGISTER_URL = `${DJANGO_API_ENDPOINT}/auth_api/register`
 
+//USER Registration api route
 export async function POST(request: NextRequest) {
     console.log("POST Register request to Django API ...")
     const requestData = await request.json()

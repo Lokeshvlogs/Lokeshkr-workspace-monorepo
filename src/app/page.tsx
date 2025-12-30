@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import ProfileCard from '../components/profile/ProfileCard'
+import RegisterSlider from "@/components/register/RegisterSlider";
 import { useAuth } from '../components/authProvider';
 import { REPLCommand } from 'repl';
 
@@ -101,7 +102,6 @@ export default function Home() {
                   <input name="email" placeholder="Email-Id" type="email" className="input" />
                   <input name="phone" placeholder="Phone no." type="tel" className="input" />
                   <input name="password" placeholder="Password" type="password" className="input" />
-                  <input name="password_confirm" placeholder="Repeat password" type="password" className="input" />
                   <div className="flex items-center justify-center">
                     <button type="submit" className="btn bg-brand-500 text-white mx-auto" disabled={regLoading}>{regLoading ? 'Registering...' : 'Register'}</button>
                   </div>
@@ -116,7 +116,9 @@ export default function Home() {
             <img src="https://i.pinimg.com/1200x/69/82/29/69822936198d9451e50eab281ca524a1.jpg" alt="portrait" />
             <img src="https://i.pinimg.com/736x/a5/4c/14/a54c14db0cdadc4fe97ec3e6d26a020b.jpg" alt="portrait2" />
           </div>
+          
         </section>
+
 
         <section id="profiles" className="mt-16">
           <h2 className="text-2xl font-bold">Featured Profiles</h2>

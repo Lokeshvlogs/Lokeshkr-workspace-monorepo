@@ -13,6 +13,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 const LOGIN_REDIRECT_URL = "/";
 const LOGOUT_REDIRECT_URL = "/";
 const LOGIN_REQUIRED_URL = "/login";
+const PROFILE_REQUIRED_URL = "/profile/register";
 const LOCAL_STORAGE_KEY = "is-logged-in";
 const LOCAL_USERNAME_KEY = "username";
 
@@ -36,6 +37,7 @@ interface AuthProviderProps {
 /* ---------- Provider ---------- */
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
 
@@ -74,9 +76,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       !invalidNextUrl.includes(nextUrl);
 
     if (nextUrlValid) {
+      console.log("Redirecting to nextUrl:", nextUrl);
       router.replace(nextUrl);
     } else {
-      router.replace(LOGIN_REDIRECT_URL);
+      console.log("Redirecting to LOGIN_REDIRECT_URL");
+
+    const profileCompleted = localStorage.getItem("profile-completed");
+    const profile = profileCompleted === "1" || profileCompleted === "true" ? true : false;
+
+      if (profile) {
+        console.log("Profile completed, redirecting to LOGIN_REDIRECT_URL");
+        router.replace(LOGIN_REDIRECT_URL);
+      } else {
+        console
+        router.replace(PROFILE_REQUIRED_URL);
+      }
     }
   };
 
