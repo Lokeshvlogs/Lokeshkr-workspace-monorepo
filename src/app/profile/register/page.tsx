@@ -24,23 +24,23 @@ export default function ProfileRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-2xl p-6" style={{ width: 760 }}>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-pink-100 to-white flex items-center justify-center p-6">
+      <div className="bg-white rounded-xl shadow-2xl p-6 border border-pink-100" style={{ width: 760 }}>
         <HorizontalFormSlider
           onSubmit={submit}
           steps={[
             // Step 1 - Name, DOB, Gender
             <div className="flex flex-col gap-4 p-4">
-              <h2 className="text-xl font-semibold">Basic Details</h2>
+              <h2 className="text-xl font-semibold text-pink-700">Basic Details</h2>
               <div className="grid grid-cols-2 gap-4">
                 <input
-                  className="p-3 border rounded-md"
+                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-pink-400"
                   placeholder="First Name"
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                 />
                 <input
-                  className="p-3 border rounded-md"
+                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-pink-400"
                   placeholder="Surname"
                   value={form.surname}
                   onChange={(e) => setForm({ ...form, surname: e.target.value })}
@@ -49,23 +49,24 @@ export default function ProfileRegisterPage() {
 
               <div className="grid grid-cols-2 gap-4 items-end">
                 <div className="flex flex-col">
-                  <label className="mb-2 font-medium">Date of Birth</label>
+                  <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
                   <input
                     type="date"
-                    className="p-3 border rounded-md"
+                    className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
                     value={form.dob}
                     onChange={(e) => setForm({ ...form, dob: e.target.value })}
                   />
                 </div>
 
                 <div className="flex flex-col">
-                  <label className="mb-2 font-medium">Gender</label>
+                  <label className="mb-2 font-medium text-pink-700">Gender</label>
                   <div className="flex gap-4 items-center">
                     <label className="flex items-center gap-2">
                       <input
                         type="radio"
                         name="gender"
                         value="male"
+                        className="accent-pink-500"
                         checked={form.gender === 'male'}
                         onChange={(e) => setForm({ ...form, gender: e.target.value })}
                       />
@@ -76,6 +77,7 @@ export default function ProfileRegisterPage() {
                         type="radio"
                         name="gender"
                         value="female"
+                        className="accent-pink-500"
                         checked={form.gender === 'female'}
                         onChange={(e) => setForm({ ...form, gender: e.target.value })}
                       />
@@ -88,7 +90,7 @@ export default function ProfileRegisterPage() {
 
             // Step 2 - Religion and Community
             <div className="flex flex-col gap-4 p-4">
-              <h2 className="text-xl font-semibold">Background</h2>
+              <h2 className="text-xl font-semibold text-pink-700">Background</h2>
               <div className="grid grid-cols-1 gap-4">
                 <DropdownInput
                   label="Religion"
@@ -125,10 +127,10 @@ export default function ProfileRegisterPage() {
 
             // Step 3 - Profession & Salary
             <div className="flex flex-col gap-4 p-4">
-              <h2 className="text-xl font-semibold">Career & Package</h2>
+              <h2 className="text-xl font-semibold text-pink-700">Career & Package</h2>
               <div className="grid grid-cols-1 gap-4">
                 <input
-                  className="p-3 border rounded-md"
+                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Profession"
                   value={form.profession}
                   onChange={(e) => setForm({ ...form, profession: e.target.value })}
@@ -136,14 +138,14 @@ export default function ProfileRegisterPage() {
 
                 <div className="grid grid-cols-3 gap-3 items-center">
                   <input
-                    className="p-3 border rounded-md col-span-2"
+                    className="p-3 border border-pink-200 rounded-md col-span-2 focus:outline-none focus:ring-2 focus:ring-pink-300"
                     placeholder="Salary amount"
                     value={form.salaryAmount}
                     onChange={(e) => setForm({ ...form, salaryAmount: e.target.value })}
                   />
 
                   <select
-                    className="p-3 border rounded-md"
+                    className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
                     value={form.salaryFrequency}
                     onChange={(e) => setForm({ ...form, salaryFrequency: e.target.value })}
                   >

@@ -29,14 +29,14 @@ const DropdownInput: React.FC<DropdownProps> = ({ options, label, initialValue =
 
   return (
     <div className="flex flex-col">
-      <label htmlFor="dropdown" className="mb-2 font-medium">
+      <label htmlFor="dropdown" className="mb-2 font-medium text-pink-700">
         {label}
       </label>
       <select
         id="dropdown"
         value={selectedValue}
         onChange={handleChange}
-        className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="p-2 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 bg-white"
       >
         {/* Add a default disabled option */}
         <option value="" disabled>
@@ -50,9 +50,7 @@ const DropdownInput: React.FC<DropdownProps> = ({ options, label, initialValue =
         ))}
       </select>
       {selectedValue && selectedValue !== initialValue && (
-        <p className="mt-2 text-sm text-green-600">
-          You selected: {selectedValue}
-        </p>
+        <p className="mt-2 text-sm text-pink-600">You selected: {selectedValue}</p>
       )}
     </div>
   );
