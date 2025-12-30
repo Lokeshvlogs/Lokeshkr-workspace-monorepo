@@ -50,8 +50,11 @@ export default function ProfileRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-pink-100 to-white flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-2xl p-6 border border-pink-100" style={{ width: 760 }}>
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div
+        className="bg-white rounded-xl p-6 border border-pink-100"
+        style={{ width: 760, boxShadow: '0 20px 40px rgba(219,39,119,0.12)' }}
+      >
         <HorizontalFormSlider
           onSubmit={submit}
           canProceed={canProceed}
@@ -62,13 +65,13 @@ export default function ProfileRegisterPage() {
               <h2 className="text-xl font-semibold text-pink-700">Basic Details</h2>
               <div className="grid grid-cols-2 gap-4">
                 <input
-                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-pink-400"
+                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
                   placeholder="First Name"
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                 />
                 <input
-                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-pink-400"
+                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
                   placeholder="Surname"
                   value={form.surname}
                   onChange={(e) => setForm({ ...form, surname: e.target.value })}
