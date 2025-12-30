@@ -23,11 +23,39 @@ export default function ProfileRegisterPage() {
     console.log(form);
   }
 
+  const canProceed = (step: number): boolean => {
+    if (step === 0) {
+      return (
+        form.firstName.trim() !== "" &&
+        form.surname.trim() !== "" &&
+        form.dob !== "" &&
+        form.gender !== ""
+      );
+    }
+
+    if (step === 1) {
+      return form.religion !== "" && form.community !== "";
+    }
+
+    if (step === 2) {
+      return form.profession.trim() !== "" && form.salaryAmount.trim() !== "";
+    }
+
+    return true;
+  };
+
+  const canSubmit = (step: number): boolean => {
+    // allow submit only when last step fields are valid
+    return step === 2 ? canProceed(step) : false;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-pink-100 to-white flex items-center justify-center p-6">
       <div className="bg-white rounded-xl shadow-2xl p-6 border border-pink-100" style={{ width: 760 }}>
         <HorizontalFormSlider
           onSubmit={submit}
+          canProceed={canProceed}
+          canSubmit={canSubmit}
           steps={[
             // Step 1 - Name, DOB, Gender
             <div className="flex flex-col gap-4 p-4">

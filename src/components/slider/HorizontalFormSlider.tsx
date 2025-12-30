@@ -8,6 +8,10 @@ interface HorizontalFormSliderProps {
   onSubmit: () => Promise<void> | void;
   width?: number;              // optional customization
   height?: number;             // optional customization
+  /** called with current step -> should return whether Next is enabled */
+  canProceed?: (step: number) => boolean;
+  /** called with current step -> should return whether Submit is enabled */
+  canSubmit?: (step: number) => boolean;
 }
 
 export default function HorizontalFormSlider({
@@ -15,6 +19,8 @@ export default function HorizontalFormSlider({
   onSubmit,
   width = 700,
   height = 800,
+  canProceed,
+  canSubmit,
 }: HorizontalFormSliderProps): JSX.Element {
   const [step, setStep] = useState<number>(0);
   const totalSteps = steps.length;
@@ -51,6 +57,8 @@ export default function HorizontalFormSlider({
         onNext={next}
         onBack={back}
         onSubmit={onSubmit}
+        nextEnabled={canProceed ? canProceed(step) : true}
+        submitEnabled={canSubmit ? canSubmit(step) : (step === totalSteps - 1)}
       />
     </div>
   );
