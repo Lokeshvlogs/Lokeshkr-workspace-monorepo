@@ -62,6 +62,7 @@ export default function ProfileRegisterPage() {
     community: "",
     profession: "",
     salaryAmount: "",
+    salaryAmountType: "",
     salaryFrequency: "per_annum",
   });
 
@@ -203,14 +204,22 @@ export default function ProfileRegisterPage() {
                   onChange={(e) => setForm({ ...form, profession: e.target.value })}
                 />
 
-                <div className="grid grid-cols-3 gap-3 items-center">
+                <div className="grid grid-cols-4 gap-3 items-center">
                   <input
                     className="p-3 border border-pink-200 rounded-md col-span-2 focus:outline-none focus:ring-2 focus:ring-pink-300"
                     placeholder="Salary amount"
                     value={form.salaryAmount}
                     onChange={(e) => setForm({ ...form, salaryAmount: e.target.value })}
                   />
-
+                  <select
+                    className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
+                    value={form.salaryAmountType}
+                    onChange={(e) => setForm({ ...form, salaryAmountType: e.target.value })}
+                  >
+                    <option value="per_annum">Thousands</option>
+                    <option value="per_month">Lakhs</option>
+                    <option value="per_month">Crores</option>
+                  </select>
                   <select
                     className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
                     value={form.salaryFrequency}
