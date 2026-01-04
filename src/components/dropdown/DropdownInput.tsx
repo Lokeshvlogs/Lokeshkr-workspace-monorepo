@@ -16,7 +16,7 @@ interface DropdownProps {
   onChange?: (value: string) => void;
 }
 
-const DropdownInput: React.FC<DropdownProps> = ({ options, label, initialValue = '' }) => {
+const DropdownInput: React.FC<DropdownProps> = ({ options, label, initialValue = '', onChange }) => {
   // Use useState to manage the selected value
   const [selectedValue, setSelectedValue] = useState<string>(initialValue);
 

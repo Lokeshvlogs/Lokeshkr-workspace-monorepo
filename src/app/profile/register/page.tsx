@@ -7,6 +7,52 @@ import DropdownInput from "@/components/dropdown/DropdownInput";
 
 export default function ProfileRegisterPage() {
 
+  const [selectedReligion, setSelectedReligion] = useState('');
+  const [selectedCommunity, setSelectedCommunity] = useState( [{ value: 'other', label: 'Other' }] );
+  const communitiesByReligion: { [key: string]: { value: string; label: string }[] } = {
+    hindu: [
+      { value: 'brahmin', label: 'Brahmin' }, 
+      { value: 'kshatriya', label: 'Kshatriya' },
+      { value: 'vaishya', label: 'Vaishya' },
+      { value: 'dalit', label: 'Dalit' },
+      { value: 'nair', label: 'Nair' },
+      { value: 'iyer', label: 'Iyer' },
+      { value: 'maratha', label: 'Maratha' },
+      { value: 'reddy', label: 'Reddy' },
+      { value: 'other', label: 'Other' },
+    ],
+    muslim: [
+      { value: 'shia', label: 'Shia' },
+      { value: 'sunni', label: 'Sunni' },
+      { value: 'other', label: 'Other' },
+    ],
+    christian: [
+      { value: 'catholic', label: 'Catholic' },
+      { value: 'protestant', label: 'Protestant' },
+      { value: 'orthodox', label: 'Orthodox' },
+      { value: 'other', label: 'Other' },
+    ],
+    sikh: [
+      { value: 'jatt', label: 'Jatt' },
+      { value: 'other', label: 'Other' },
+    ],
+    jain: [
+      { value: 'digambara', label: 'Digambara' },
+      { value: 'svetambara', label: 'Svetambara' },
+      { value: 'other', label: 'Other' },
+    ],
+    others: [
+      { value: 'other', label: 'Other' },
+    ],
+  };
+
+  const handleReligionChange = (religion: string) => {  
+    setSelectedReligion(religion);
+    const selectedData = communitiesByReligion[religion];
+    setSelectedCommunity(selectedData || [{ value: 'other', label: 'Other' }]);
+    setForm({ ...form, religion: religion});
+  };
+  
   const [form, setForm] = useState({
     firstName: "",
     surname: "",
@@ -134,22 +180,12 @@ export default function ProfileRegisterPage() {
                     { value: 'other', label: 'Other' },
                   ]}
                   initialValue={form.religion}
-                  onChange={(v) => setForm({ ...form, religion: v })}
+                  onChange={(v) => handleReligionChange(v)}
                 />
 
                 <DropdownInput
                   label="Community"
-                  options={[
-                    { value: 'brahmin', label: 'Brahmin' },
-                    { value: 'kshatriya', label: 'Kshatriya' },
-                    { value: 'vaishya', label: 'Vaishya' },
-                    { value: 'dalit', label: 'Dalit' },
-                    { value: 'nair', label: 'Nair' },
-                    { value: 'iyer', label: 'Iyer' },
-                    { value: 'maratha', label: 'Maratha' },
-                    { value: 'reddy', label: 'Reddy' },
-                    { value: 'other', label: 'Other' },
-                  ]}
+                  options={selectedCommunity}
                   initialValue={form.community}
                   onChange={(v) => setForm({ ...form, community: v })}
                 />
