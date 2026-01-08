@@ -12,6 +12,8 @@ interface HorizontalFormSliderProps {
   canProceed?: (step: number) => boolean;
   /** called with current step -> should return whether Submit is enabled */
   canSubmit?: (step: number) => boolean;
+  step?: number;
+  setStep?: (step: number) => void;
 }
 
 export default function HorizontalFormSlider({
@@ -21,8 +23,12 @@ export default function HorizontalFormSlider({
   height = 800,
   canProceed,
   canSubmit,
+  step: controlledStep,
+  setStep: controlledSetStep,
 }: HorizontalFormSliderProps): JSX.Element {
-  const [step, setStep] = useState<number>(0);
+  const [internalStep, internalSetStep] = useState<number>(0);
+  const step = controlledStep !== undefined ? controlledStep : internalStep;
+  const setStep = controlledSetStep || internalSetStep;
   const totalSteps = steps.length;
 
   function next(): void {

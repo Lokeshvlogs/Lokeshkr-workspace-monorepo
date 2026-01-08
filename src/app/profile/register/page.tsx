@@ -6,6 +6,7 @@ import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
 import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackground";
+import { professionOptions } from "@/utils/professionOptions";
 
 
 export default function ProfileRegisterPage() {
@@ -44,6 +45,20 @@ export default function ProfileRegisterPage() {
   const [dayStyle, setDayStyle] = useState<CSSProperties | null>(null);
   const [monthStyle, setMonthStyle] = useState<CSSProperties | null>(null);
   const [yearStyle, setYearStyle] = useState<CSSProperties | null>(null);
+  const [step, setStep] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('profileRegisterStep');
+      setStep(saved ? Number(saved) : 0);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && step !== undefined) {
+      window.localStorage.setItem('profileRegisterStep', String(step));
+    }
+  }, [step]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -152,268 +167,286 @@ export default function ProfileRegisterPage() {
         className="bg-white rounded-xl p-6 border border-pink-100"
         style={{ width: 760, boxShadow: '0 20px 40px rgba(219,39,119,0.12)' }}
       >
-        <HorizontalFormSlider
-          onSubmit={submit}
-          canProceed={canProceed}
-          canSubmit={canSubmit}
-          steps={[
-            // Step 1 - Name, DOB, Gender
-            <div className="flex flex-col gap-4 p-4">
-              <h2 className="text-xl font-semibold text-pink-700">Basic Details</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
-                  placeholder="First Name"
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                />
-                <input
-                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
-                  placeholder="Surname"
-                  value={form.surname}
-                  onChange={(e) => setForm({ ...form, surname: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 items-end">
-                <div className="flex flex-col col-span-2">
-                  <div className="flex justify-between items-start">
-                    <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
-                    <label className="mb-2 font-medium text-pink-700">Time of Birth</label>
-                  </div>
-                  <div ref={dateContainerRef} className="flex gap-2 items-center relative">
-                    {/* Day picker button */}
-                    <div className="relative">
-                      <button
-                        ref={dayBtnRef}
-                        type="button"
-                        className="p-3 border border-pink-200 rounded-md bg-white text-left w-20"
-                        onClick={() => {
-                          if (openPicker === 'day') return setOpenPicker(null);
-                          const r = dayBtnRef.current?.getBoundingClientRect();
-                          if (r) setDayStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 192 });
-                          setOpenPicker('day');
-                        }}
-                      >
-                        {selectedDay ? String(Number(selectedDay)) : 'Day'}
-                      </button>
-
-                      {openPicker === 'day' && dayStyle && createPortal(
-                        <div ref={dayPopupRef} style={dayStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-4 gap-2">
-                          {days.map((day) => (
-                            <button
-                              key={day}
-                              className="p-2 text-sm border rounded-md hover:bg-pink-400 hover:text-white"
-                              onClick={() => {
-                                setSelectedDay(day);
-                                setOpenPicker(null);
-                                const date = selectedYear && selectedMonth && day ? `${selectedYear}-${selectedMonth}-${day}` : '';
-                                const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
-                                setForm({ ...form, dob: combined });
-                              }}
-                            >
-                              {Number(day)}
-                            </button>
-                          ))}
-                        </div>,
-                        document.body
-                      )}
-                    </div>
-
-                    {/* Month picker button */}
-                    <div className="relative">
-                      <button
-                        ref={monthBtnRef}
-                        type="button"
-                        className="p-3 border border-pink-200 rounded-md bg-white text-left w-20"
-                        onClick={() => {
-                          if (openPicker === 'month') return setOpenPicker(null);
-                          const r = monthBtnRef.current?.getBoundingClientRect();
-                          if (r) setMonthStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 160 });
-                          setOpenPicker('month');
-                        }}
-                      >
-                        {selectedMonth ? months.find(m => m.value === selectedMonth)?.label : 'Month'}
-                      </button>
-
-                      {openPicker === 'month' && monthStyle && createPortal(
-                        <div ref={monthPopupRef} style={monthStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto grid grid-cols-3 gap-2">
-                          {months.map((mo) => (
-                            <button
-                              key={mo.value}
-                              className="p-2 text-sm border rounded-md hover:bg-pink-400 hover:text-white"
-                              onClick={() => {
-                                setSelectedMonth(mo.value);
-                                setOpenPicker(null);
-                                const date = selectedYear && mo.value && selectedDay ? `${selectedYear}-${mo.value}-${selectedDay}` : '';
-                                const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
-                                setForm({ ...form, dob: combined });
-                              }}
-                            >
-                              {mo.label}
-                            </button>
-                          ))}
-                        </div>,
-                        document.body
-                      )}
-                    </div>
-
-                    {/* Year picker button */}
-                    <div className="relative">
-                      <button
-                        ref={yearBtnRef}
-                        type="button"
-                        className="p-3 border border-pink-200 rounded-md bg-white text-left w-28"
-                        onClick={() => {
-                          if (openPicker === 'year') return setOpenPicker(null);
-                          const r = yearBtnRef.current?.getBoundingClientRect();
-                          if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 144 });
-                          setOpenPicker('year');
-                        }}
-                      >
-                        {selectedYear || 'Year'}
-                      </button>
-
-                      {openPicker === 'year' && yearStyle && createPortal(
-                        <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2">
-                          {years.map((y) => (
-                            <button
-                              key={y}
-                              className="p-2 text-sm border rounded-md hover:bg-pink-400 hover:text-white text-left"
-                              onClick={() => {
-                                setSelectedYear(y);
-                                setOpenPicker(null);
-                                const date = y && selectedMonth && selectedDay ? `${y}-${selectedMonth}-${selectedDay}` : '';
-                                const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
-                                setForm({ ...form, dob: combined });
-                              }}
-                            >
-                              {y}
-                            </button>
-                          ))}
-                        </div>,
-                        document.body
-                      )}
-                    </div>
-
-                    {/* Time inline with date pickers */}
-                    <div className="ml-10 flex items-center" style={{ height: '3.25rem' }}>
-                      <TimePicker
-                        value={selectedTime}
-                        onChange={(t) => {
-                          setSelectedTime(t);
-                          const date = selectedYear && selectedMonth && selectedDay ? `${selectedYear}-${selectedMonth}-${selectedDay}` : '';
-                          const combined = date ? `${date}T${t}` : (t ? `${new Date().toISOString().slice(0,10)}T${t}` : '');
-                          setForm({ ...form, dob: combined });
-                        }}
-                        inputClassName="p-3 w-28 h-13"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col mt-2">
-                <label className="mb-2 font-medium text-pink-700">Gender</label>
-                <div className="flex gap-4 items-center">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="male"
-                      className="accent-pink-500"
-                      checked={form.gender === 'male'}
-                      onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                    />
-                    Male
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="female"
-                      className="accent-pink-500"
-                      checked={form.gender === 'female'}
-                      onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                    />
-                    Female
-                  </label>
-                </div>
-              </div>
-            </div>,
-
-            // Step 2 - Religion and Community
-            <div className="flex flex-col gap-4 p-4">
-              <h2 className="text-xl font-semibold text-pink-700">Social Background</h2>
-              <div className="grid grid-cols-1 gap-4">
-                <ScrollableDropdown
-                  label="Religion"
-                  options={[
-                    { value: 'hindu', label: 'Hindu' },
-                    { value: 'muslim', label: 'Muslim' },
-                    { value: 'sikh', label: 'Sikh' },
-                    { value: 'christian', label: 'Christian' },
-                    { value: 'jain', label: 'Jain' },
-                    { value: 'other', label: 'Other' },
-                  ]}
-                  initialValue={form.religion}
-                  onChange={(v) => handleReligionChange(v)}
-                />
-                <ScrollableDropdown
-                  label="Caste / Community"
-                  options={selectedCommunity}
-                  initialValue={form.community}
-                  onChange={(v) => setForm({ ...form, community: v })}
-                />
-                <ScrollableDropdown
-                  label="Mother Tongue"
-                  options={motherTongueOptions}
-                  initialValue={form.mothertongue}
-                  onChange={(v) => setForm({ ...form, mothertongue: v })}
-                />
-              </div>
-            </div>,
-
-            // Step 3 - Profession & Salary
-            <div className="flex flex-col gap-4 p-4">
-              <h2 className="text-xl font-semibold text-pink-700">Career & Package</h2>
-              <div className="grid grid-cols-1 gap-4">
-                <input
-                  className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
-                  placeholder="Profession"
-                  value={form.profession}
-                  onChange={(e) => setForm({ ...form, profession: e.target.value })}
-                />
-
-                <div className="grid grid-cols-4 gap-3 items-center">
+        {step !== undefined && (
+          <HorizontalFormSlider
+            onSubmit={submit}
+            canProceed={canProceed}
+            canSubmit={canSubmit}
+            steps={[
+              // Step 1 - Name, DOB, Gender
+              <div className="flex flex-col gap-4 p-4">
+                <h2 className="text-xl font-semibold text-pink-700">Basic Details</h2>
+                <div className="grid grid-cols-2 gap-4">
                   <input
-                    className="p-3 border border-pink-200 rounded-md col-span-2 focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    placeholder="Salary amount"
-                    value={form.salaryAmount}
-                    onChange={(e) => setForm({ ...form, salaryAmount: e.target.value })}
+                    className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+                    placeholder="First Name"
+                    value={form.firstName}
+                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                   />
-                  <select
-                    className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value={form.salaryAmountType}
-                    onChange={(e) => setForm({ ...form, salaryAmountType: e.target.value })}
-                  >
-                    <option value="per_annum">Thousands</option>
-                    <option value="per_month">Lakhs</option>
-                    <option value="per_month">Crores</option>
-                  </select>
-                  <select
-                    className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
-                    value={form.salaryFrequency}
-                    onChange={(e) => setForm({ ...form, salaryFrequency: e.target.value })}
-                  >
-                    <option value="per_annum">Per Annum</option>
-                    <option value="per_month">Per Month</option>
-                  </select>
+                  <input
+                    className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+                    placeholder="Surname"
+                    value={form.surname}
+                    onChange={(e) => setForm({ ...form, surname: e.target.value })}
+                  />
                 </div>
-              </div>
-            </div>,
-          ]}
-        />
+
+                <div className="grid grid-cols-3 gap-4 items-end">
+                  <div className="flex flex-col col-span-2">
+                    <div className="flex justify-between items-start">
+                      <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
+                      <label className="mb-2 font-medium text-pink-700">Time of Birth</label>
+                    </div>
+                    <div ref={dateContainerRef} className="flex gap-2 items-center relative">
+                      {/* Day picker button */}
+                      <div className="relative">
+                        <button
+                          ref={dayBtnRef}
+                          type="button"
+                          className="p-3 border border-pink-200 rounded-md bg-white text-left w-20"
+                          onClick={() => {
+                            if (openPicker === 'day') return setOpenPicker(null);
+                            const r = dayBtnRef.current?.getBoundingClientRect();
+                            if (r) setDayStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 192 });
+                            setOpenPicker('day');
+                          }}
+                        >
+                          {selectedDay ? String(Number(selectedDay)) : 'Day'}
+                        </button>
+
+                        {openPicker === 'day' && dayStyle && createPortal(
+                          <div ref={dayPopupRef} style={dayStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-4 gap-2">
+                            {days.map((day) => (
+                              <button
+                                key={day}
+                                className="p-2 text-sm border rounded-md hover:bg-pink-400 hover:text-white"
+                                onClick={() => {
+                                  setSelectedDay(day);
+                                  setOpenPicker(null);
+                                  const date = selectedYear && selectedMonth && day ? `${selectedYear}-${selectedMonth}-${day}` : '';
+                                  const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
+                                  setForm({ ...form, dob: combined });
+                                }}
+                              >
+                                {Number(day)}
+                              </button>
+                            ))}
+                          </div>,
+                          document.body
+                        )}
+                      </div>
+
+                      {/* Month picker button */}
+                      <div className="relative">
+                        <button
+                          ref={monthBtnRef}
+                          type="button"
+                          className="p-3 border border-pink-200 rounded-md bg-white text-left w-20"
+                          onClick={() => {
+                            if (openPicker === 'month') return setOpenPicker(null);
+                            const r = monthBtnRef.current?.getBoundingClientRect();
+                            if (r) setMonthStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 160 });
+                            setOpenPicker('month');
+                          }}
+                        >
+                          {selectedMonth ? months.find(m => m.value === selectedMonth)?.label : 'Month'}
+                        </button>
+
+                        {openPicker === 'month' && monthStyle && createPortal(
+                          <div ref={monthPopupRef} style={monthStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto grid grid-cols-3 gap-2">
+                            {months.map((mo) => (
+                              <button
+                                key={mo.value}
+                                className="p-2 text-sm border rounded-md hover:bg-pink-400 hover:text-white"
+                                onClick={() => {
+                                  setSelectedMonth(mo.value);
+                                  setOpenPicker(null);
+                                  const date = selectedYear && mo.value && selectedDay ? `${selectedYear}-${mo.value}-${selectedDay}` : '';
+                                  const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
+                                  setForm({ ...form, dob: combined });
+                                }}
+                              >
+                                {mo.label}
+                              </button>
+                            ))}
+                          </div>,
+                          document.body
+                        )}
+                      </div>
+
+                      {/* Year picker button */}
+                      <div className="relative">
+                        <button
+                          ref={yearBtnRef}
+                          type="button"
+                          className="p-3 border border-pink-200 rounded-md bg-white text-left w-28"
+                          onClick={() => {
+                            if (openPicker === 'year') return setOpenPicker(null);
+                            const r = yearBtnRef.current?.getBoundingClientRect();
+                            if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 144 });
+                            setOpenPicker('year');
+                          }}
+                        >
+                          {selectedYear || 'Year'}
+                        </button>
+
+                        {openPicker === 'year' && yearStyle && createPortal(
+                          <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2">
+                            {years.map((y) => (
+                              <button
+                                key={y}
+                                className="p-2 text-sm border rounded-md hover:bg-pink-400 hover:text-white text-left"
+                                onClick={() => {
+                                  setSelectedYear(y);
+                                  setOpenPicker(null);
+                                  const date = y && selectedMonth && selectedDay ? `${y}-${selectedMonth}-${selectedDay}` : '';
+                                  const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
+                                  setForm({ ...form, dob: combined });
+                                }}
+                              >
+                                {y}
+                              </button>
+                            ))}
+                          </div>,
+                          document.body
+                        )}
+                      </div>
+
+                      {/* Time inline with date pickers */}
+                      <div className="ml-10 flex items-center" style={{ height: '3.25rem' }}>
+                        <TimePicker
+                          value={selectedTime}
+                          onChange={(t) => {
+                            setSelectedTime(t);
+                            const date = selectedYear && selectedMonth && selectedDay ? `${selectedYear}-${selectedMonth}-${selectedDay}` : '';
+                            const combined = date ? `${date}T${t}` : (t ? `${new Date().toISOString().slice(0,10)}T${t}` : '');
+                            setForm({ ...form, dob: combined });
+                          }}
+                          inputClassName="p-3 w-28 h-13"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col mt-2">
+                  <label className="mb-2 font-medium text-pink-700">Gender</label>
+                  <div className="flex gap-4 items-center">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="male"
+                        className="accent-pink-500"
+                        checked={form.gender === 'male'}
+                        onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                      />
+                      Male
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="female"
+                        className="accent-pink-500"
+                        checked={form.gender === 'female'}
+                        onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                      />
+                      Female
+                    </label>
+                  </div>
+                </div>
+              </div>,
+
+              // Step 2 - Religion and Community
+              <div className="flex flex-col gap-4 p-4">
+                <h2 className="text-xl font-semibold text-pink-700">Social Background</h2>
+                <div className="grid grid-cols-1 gap-4">
+                  <ScrollableDropdown
+                    label="Religion"
+                    options={[
+                      { value: 'hindu', label: 'Hindu' },
+                      { value: 'muslim', label: 'Muslim' },
+                      { value: 'sikh', label: 'Sikh' },
+                      { value: 'christian', label: 'Christian' },
+                      { value: 'jain', label: 'Jain' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                    initialValue={form.religion}
+                    onChange={(v) => handleReligionChange(v)}
+                  />
+                  <ScrollableDropdown
+                    label="Caste / Community"
+                    options={selectedCommunity}
+                    initialValue={form.community}
+                    onChange={(v) => setForm({ ...form, community: v })}
+                  />
+                  <ScrollableDropdown
+                    label="Mother Tongue"
+                    options={motherTongueOptions}
+                    initialValue={form.mothertongue}
+                    onChange={(v) => setForm({ ...form, mothertongue: v })}
+                  />
+                </div>
+              </div>,
+
+              // Step 3 - Profession & Salary
+              <div className="flex flex-col gap-4 p-4">
+                <h2 className="text-xl font-semibold text-pink-700">Career & Package</h2>
+                <div className="grid grid-cols-1 gap-4">
+                  <ScrollableDropdown
+                    label="Profession"
+                    options={professionOptions}
+                    initialValue={form.profession}
+                    onChange={(v) => setForm({ ...form, profession: v })}
+                  />
+
+                  <div className="grid grid-cols-4 gap-3 items-center">
+                    <div className="col-span-4">
+                      <label className="mb-2 font-medium text-pink-700 block">Salary Amount</label>
+                    </div>
+                    <select
+                      className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-28"
+                      value={form.salaryCurrency || 'INR'}
+                      onChange={(e) => setForm({ ...form, salaryCurrency: e.target.value })}
+                    >
+                      <option value="INR">INR (₹)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                      <option value="AUD">AUD (A$)</option>
+                      <option value="CAD">CAD (C$)</option>
+                    </select>
+                    <ScrollableDropdown
+                      label="Salary Amount"
+                      options={[
+                        { value: '1-5', label: '1-5' },
+                        { value: '5-10', label: '5-10' },
+                        { value: '10-15', label: '10-15' },
+                        { value: '15-20', label: '15-20' },
+                        { value: '20-30', label: '20-30' },
+                        { value: '30-50', label: '30-50' },
+                        { value: '50+', label: '50+' },
+                      ]}
+                      initialValue={form.salaryAmount}
+                      onChange={(v) => setForm({ ...form, salaryAmount: v })}
+                    />
+                    <select
+                      className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-20 ml-8"
+                      value={form.salaryFrequency}
+                      onChange={(e) => setForm({ ...form, salaryFrequency: e.target.value })}
+                    >
+                      <option value="per_annum">Per Annum</option>
+                      <option value="per_month">Per Month</option>
+                    </select>
+                  </div>
+                </div>
+              </div>,
+            ]}
+            step={step}
+            setStep={setStep}
+          />
+        )}
       </div>
     </div>
   );
