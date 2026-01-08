@@ -176,8 +176,11 @@ export default function ProfileRegisterPage() {
 
               <div className="grid grid-cols-3 gap-4 items-end">
                 <div className="flex flex-col col-span-2">
-                  <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
-                  <div ref={dateContainerRef} className="flex gap-2 items-center relative">
+                  <div className="flex justify-between items-start">
+                    <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
+                    <label className="mb-2 font-medium text-pink-700">Time of Birth</label>
+                  </div>
+                  <div ref={dateContainerRef} className="flex gap-2 items-start relative">
                     {/* Day picker button */}
                     <div className="relative">
                       <button
@@ -210,7 +213,6 @@ export default function ProfileRegisterPage() {
                             >
                               {Number(day)}
                             </button>
-                          ))}
                           ))}
                         </div>,
                         document.body
@@ -294,11 +296,10 @@ export default function ProfileRegisterPage() {
                     </div>
 
                     {/* Time inline with date pickers */}
-                    <div className="flex-1">
-                      <label className="sr-only">Time of Birth</label>
+                    <div className="flex-1 mt-0">
                       <input
                         type="time"
-                        className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-full"
+                        className="p-3 ml-12 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-full mt-0"
                         value={selectedTime}
                         onChange={(e) => {
                           const t = e.target.value;
