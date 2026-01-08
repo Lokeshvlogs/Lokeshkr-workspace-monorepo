@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
-import DropdownInput from "@/components/dropdown/DropdownInput";
+import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackground";
 
@@ -346,7 +346,7 @@ export default function ProfileRegisterPage() {
             <div className="flex flex-col gap-4 p-4">
               <h2 className="text-xl font-semibold text-pink-700">Social Background</h2>
               <div className="grid grid-cols-1 gap-4">
-                <DropdownInput
+                <ScrollableDropdown
                   label="Religion"
                   options={[
                     { value: 'hindu', label: 'Hindu' },
@@ -359,17 +359,15 @@ export default function ProfileRegisterPage() {
                   initialValue={form.religion}
                   onChange={(v) => handleReligionChange(v)}
                 />
-                
-                <DropdownInput
+                <ScrollableDropdown
                   label="Caste / Community"
                   options={selectedCommunity}
                   initialValue={form.community}
                   onChange={(v) => setForm({ ...form, community: v })}
                 />
-
-                <DropdownInput
+                <ScrollableDropdown
                   label="Mother Tongue"
-                  options= {motherTongueOptions}
+                  options={motherTongueOptions}
                   initialValue={form.mothertongue}
                   onChange={(v) => setForm({ ...form, mothertongue: v })}
                 />
