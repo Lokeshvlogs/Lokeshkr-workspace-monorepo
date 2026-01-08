@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
 import DropdownInput from "@/components/dropdown/DropdownInput";
+import TimePicker from "@/components/timepicker/TimePicker";
 import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackground";
 
 
@@ -180,7 +181,7 @@ export default function ProfileRegisterPage() {
                     <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
                     <label className="mb-2 font-medium text-pink-700">Time of Birth</label>
                   </div>
-                  <div ref={dateContainerRef} className="flex gap-2 items-start relative">
+                  <div ref={dateContainerRef} className="flex gap-2 items-center relative">
                     {/* Day picker button */}
                     <div className="relative">
                       <button
@@ -296,18 +297,16 @@ export default function ProfileRegisterPage() {
                     </div>
 
                     {/* Time inline with date pickers */}
-                    <div className="flex-1 mt-0">
-                      <input
-                        type="time"
-                        className="p-3 ml-12 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-full mt-0"
+                    <div className="ml-10 flex items-center" style={{ height: '3.25rem' }}>
+                      <TimePicker
                         value={selectedTime}
-                        onChange={(e) => {
-                          const t = e.target.value;
+                        onChange={(t) => {
                           setSelectedTime(t);
                           const date = selectedYear && selectedMonth && selectedDay ? `${selectedYear}-${selectedMonth}-${selectedDay}` : '';
                           const combined = date ? `${date}T${t}` : (t ? `${new Date().toISOString().slice(0,10)}T${t}` : '');
                           setForm({ ...form, dob: combined });
                         }}
+                        inputClassName="p-3 w-28 h-13"
                       />
                     </div>
                   </div>
