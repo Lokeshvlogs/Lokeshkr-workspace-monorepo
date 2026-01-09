@@ -66,6 +66,50 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
     onChange(`${hour}:${m}`);
   }
 
+  // Close popups on page-level scroll/wheel/touchmove, but ignore events
+  // originating from inside the popup. Also reposition on resize.
+  useEffect(() => {
+    if (!openHour && !openMinute) return;
+
+    const updatePosition = () => {
+      if (openHour && hourRef.current) {
+        const r = hourRef.current.getBoundingClientRect();
+        setHourStyle({ position: "fixed", top: r.bottom + 8, left: r.left, minWidth: 80 });
+      }
+      if (openMinute && minuteRef.current) {
+        const r = minuteRef.current.getBoundingClientRect();
+        setMinuteStyle({ position: "fixed", top: r.bottom + 8, left: r.left, minWidth: 80 });
+      }
+    };
+
+    const onScrollClose = (e?: Event) => {
+      try {
+        const target = e && (e.target as Node | null);
+        if (openHour && hourPopupRef.current && target && hourPopupRef.current.contains(target)) return;
+        if (openMinute && minutePopupRef.current && target && minutePopupRef.current.contains(target)) return;
+      } catch (err) {
+        // ignore errors and proceed to close
+      }
+      setOpenHour(false);
+      setOpenMinute(false);
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', onScrollClose, true);
+    document.addEventListener('scroll', onScrollClose, true);
+    document.addEventListener('wheel', onScrollClose as EventListener, { passive: true, capture: true } as any);
+    document.addEventListener('touchmove', onScrollClose as EventListener, { passive: true, capture: true } as any);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', onScrollClose, true);
+      document.removeEventListener('scroll', onScrollClose, true);
+      document.removeEventListener('wheel', onScrollClose as EventListener, true as any);
+      document.removeEventListener('touchmove', onScrollClose as EventListener, true as any);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openHour, openMinute]);
+
   return (
     <div className={"relative w-full " + (inputClassName || "")}>
       <div className="flex items-center border border-pink-200 rounded-md bg-white w-full px-2 py-1 focus-within:ring-2 focus-within:ring-pink-300">
