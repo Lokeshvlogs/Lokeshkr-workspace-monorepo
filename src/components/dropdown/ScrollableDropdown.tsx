@@ -60,10 +60,10 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
     : options;
 
   // Calculate popup position for portal
-  // Recalculate popup position while open (on scroll/resize)
+  // When open: position initially and on resize. Close popup on any page scroll.
   useEffect(() => {
     if (!open) return;
-    const update = () => {
+    const updatePosition = () => {
       if (btnRef.current) {
         const rect = btnRef.current.getBoundingClientRect();
         setStyle({
@@ -75,12 +75,33 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
         });
       }
     };
-    update(); // initial
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+
+    const onScrollClose = (e?: Event) => {
+      // If the scroll/wheel/touch event originated from inside the popup, ignore it.
+      try {
+        const target = e && (e.target as Node | null);
+        if (popupRef.current && target && popupRef.current.contains(target)) return;
+      } catch (err) {
+        // ignore DOM access errors and proceed to close
+      }
+      setOpen(false);
+    };
+
+    updatePosition(); // initial
+    // Close on various user scroll interactions. Some containers dispatch scroll
+    // on their own element (not window) and 'scroll' doesn't bubble, so also
+    // listen for wheel/touchmove which do bubble.
+    window.addEventListener('scroll', onScrollClose, true);
+    document.addEventListener('scroll', onScrollClose, true);
+    document.addEventListener('wheel', onScrollClose as EventListener, { passive: true, capture: true } as any);
+    document.addEventListener('touchmove', onScrollClose as EventListener, { passive: true, capture: true } as any);
+    window.addEventListener('resize', updatePosition);
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', onScrollClose, true);
+      document.removeEventListener('scroll', onScrollClose, true);
+      document.removeEventListener('wheel', onScrollClose as EventListener, true as any);
+      document.removeEventListener('touchmove', onScrollClose as EventListener, true as any);
+      window.removeEventListener('resize', updatePosition);
     };
   }, [open]);
 
