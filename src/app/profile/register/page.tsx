@@ -392,7 +392,7 @@ export default function ProfileRegisterPage() {
 
               // Step 3 - Profession & Salary
               <div className="flex flex-col gap-4 p-4">
-                <h2 className="text-xl font-semibold text-pink-700">Career & Package</h2>
+                <h2 className="text-xl font-semibold text-pink-700">Professional Career</h2>
                 <div className="grid grid-cols-1 gap-4">
                   <ScrollableDropdown
                     label="Profession"
@@ -403,7 +403,7 @@ export default function ProfileRegisterPage() {
 
                   <div className="grid grid-cols-4 gap-3 items-center">
                     <div className="col-span-4">
-                      <label className="mb-2 font-medium text-pink-700 block">Salary Amount</label>
+                      <label className="mt-2 font-medium text-pink-700 block">Salary/Package</label>
                     </div>
                     <select
                       className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-28"

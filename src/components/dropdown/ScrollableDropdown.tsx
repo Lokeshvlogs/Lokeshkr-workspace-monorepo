@@ -58,14 +58,14 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
 
   return (
     <div className="flex flex-col relative">
-      <label className="mb-2 font-medium text-pink-700">{label}</label>
       <button
         ref={btnRef}
         type="button"
-        className="p-2 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300"
+        className={`p-2 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 ${selectedValue ? 'text-black' : 'text-gray-400'}`}
         onClick={() => { setOpen(true); setSearch(''); }}
+        aria-label={label}
       >
-        {options.find(o => o.value === selectedValue)?.label || 'Select an option'}
+        {options.find(o => o.value === selectedValue)?.label || label}
       </button>
       {open && (
         <div
