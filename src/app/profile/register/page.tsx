@@ -417,7 +417,8 @@ export default function ProfileRegisterPage() {
                         ]}
                         initialValue={form.salaryCurrency || 'INR'}
                         onChange={(v) => setForm({ ...form, salaryCurrency: v })}
-                        className="w-28"
+                        className="w-24"
+                        optionButtonClassName="py-1 text-xs"
                       />
                     <ScrollableDropdown
                       label="Salary Amount"
@@ -443,7 +444,8 @@ export default function ProfileRegisterPage() {
                         ]}
                         initialValue={form.salaryFrequency}
                         onChange={(v) => setForm({ ...form, salaryFrequency: v })}
-                        className="w-24 ml-2"
+                        className="w-25 ml-2"
+                        optionButtonClassName="py-1 text-xs"
                       />
                   </div>
                 </div>

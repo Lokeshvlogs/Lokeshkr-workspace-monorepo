@@ -12,9 +12,10 @@ interface ScrollableDropdownProps {
   initialValue?: string;
   onChange?: (value: string) => void;
   className?: string;
+  optionButtonClassName?: string;
 }
 
-const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label, initialValue = '', onChange, className = '' }) => {
+const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label, initialValue = '', onChange, className = '', optionButtonClassName = '' }) => {
   const [selectedValue, setSelectedValue] = useState<string>(initialValue);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -114,7 +115,7 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
           {filteredOptions.map(option => (
             <button
               key={option.value}
-              className={`block w-full text-left p-2 rounded-md border mb-1 last:mb-0 ${selectedValue === option.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-black border-gray-200 hover:bg-pink-100'}`}
+              className={`block w-full text-left p-2 rounded-md border mb-1 last:mb-0 ${selectedValue === option.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-black border-gray-200 hover:bg-pink-100'} ${optionButtonClassName}`}
               onClick={() => handleSelect(option.value)}
             >
               {option.label}
