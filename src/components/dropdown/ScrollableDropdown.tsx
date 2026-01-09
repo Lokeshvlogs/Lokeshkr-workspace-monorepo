@@ -133,15 +133,19 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
           {filteredOptions.length === 0 && (
             <div className="text-gray-400 p-2">No options found</div>
           )}
-          {filteredOptions.map(option => (
-            <button
-              key={option.value}
-              className={`block w-full text-left p-2 rounded-md border mb-1 last:mb-0 ${selectedValue === option.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-black border-gray-200 hover:bg-pink-100'} ${optionButtonClassName}`}
-              onClick={() => handleSelect(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
+
+          <div className="mt-2 divide-y divide-pink-50">
+            {filteredOptions.map(option => (
+              <div key={option.value}>
+                <button
+                  className={`block w-full text-left p-2 first:rounded-t-md last:rounded-b-md ${selectedValue === option.value ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'} ${optionButtonClassName}`}
+                  onClick={() => handleSelect(option.value)}
+                >
+                  {option.label}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>,
         document.body
       )}
