@@ -401,44 +401,50 @@ export default function ProfileRegisterPage() {
                     onChange={(v) => setForm({ ...form, profession: v })}
                   />
 
-                  <div className="grid grid-cols-4 gap-3 items-center">
-                    <div className="col-span-4">
+                  <div className="grid grid-cols-5 gap-3 items-center">
+                    <div className="col-span-5">
                       <label className="mt-2 font-medium text-pink-700 block">Salary/Package</label>
                     </div>
-                    <select
-                      className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-28"
-                      value={form.salaryCurrency || 'INR'}
-                      onChange={(e) => setForm({ ...form, salaryCurrency: e.target.value })}
-                    >
-                      <option value="INR">INR (₹)</option>
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
-                      <option value="AUD">AUD (A$)</option>
-                      <option value="CAD">CAD (C$)</option>
-                    </select>
+                      <ScrollableDropdown
+                        label="Currency"
+                        options={[
+                          { value: 'INR', label: 'INR (₹)' },
+                          { value: 'USD', label: 'USD ($)' },
+                          { value: 'EUR', label: 'EUR (€)' },
+                          { value: 'GBP', label: 'GBP (£)' },
+                          { value: 'AUD', label: 'AUD (A$)' },
+                          { value: 'CAD', label: 'CAD (C$)' },
+                        ]}
+                        initialValue={form.salaryCurrency || 'INR'}
+                        onChange={(v) => setForm({ ...form, salaryCurrency: v })}
+                        className="w-28"
+                      />
                     <ScrollableDropdown
                       label="Salary Amount"
+                      className="col-span-2 height-60"
                       options={[
-                        { value: '1-5', label: '1-5' },
-                        { value: '5-10', label: '5-10' },
-                        { value: '10-15', label: '10-15' },
-                        { value: '15-20', label: '15-20' },
-                        { value: '20-30', label: '20-30' },
-                        { value: '30-50', label: '30-50' },
-                        { value: '50+', label: '50+' },
+                        { value: '0-1', label: '0-1 lacs' },
+                        { value: '1-5', label: '1-5 lacs' },
+                        { value: '5-10', label: '5-10 lacs' },
+                        { value: '10-15', label: '10-15 lacs' },
+                        { value: '15-20', label: '15-20 lacs' },
+                        { value: '20-30', label: '20-30 lacs' },
+                        { value: '30-50', label: '30-50 lacs' },
+                        { value: '50+', label: '50 > lacs' },
                       ]}
                       initialValue={form.salaryAmount}
                       onChange={(v) => setForm({ ...form, salaryAmount: v })}
                     />
-                    <select
-                      className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 w-20 ml-8"
-                      value={form.salaryFrequency}
-                      onChange={(e) => setForm({ ...form, salaryFrequency: e.target.value })}
-                    >
-                      <option value="per_annum">Per Annum</option>
-                      <option value="per_month">Per Month</option>
-                    </select>
+                      <ScrollableDropdown
+                        label="Frequency"
+                        options={[
+                          { value: 'per_annum', label: 'Per Annum' },
+                          { value: 'per_month', label: 'Per Month' },
+                        ]}
+                        initialValue={form.salaryFrequency}
+                        onChange={(v) => setForm({ ...form, salaryFrequency: v })}
+                        className="w-24 ml-2"
+                      />
                   </div>
                 </div>
               </div>,

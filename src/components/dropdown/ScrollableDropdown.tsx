@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 
 interface DropdownOption {
   value: string;
@@ -10,9 +11,10 @@ interface ScrollableDropdownProps {
   label: string;
   initialValue?: string;
   onChange?: (value: string) => void;
+  className?: string;
 }
 
-const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label, initialValue = '', onChange }) => {
+const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label, initialValue = '', onChange, className = '' }) => {
   const [selectedValue, setSelectedValue] = useState<string>(initialValue);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -56,8 +58,33 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
     ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
     : options;
 
+  // Calculate popup position for portal
+  // Recalculate popup position while open (on scroll/resize)
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (btnRef.current) {
+        const rect = btnRef.current.getBoundingClientRect();
+        setStyle({
+          position: 'fixed',
+          top: rect.bottom + 8,
+          left: rect.left,
+          width: rect.width,
+          zIndex: 9999,
+        });
+      }
+    };
+    update(); // initial
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
   return (
-    <div className="flex flex-col relative">
+    <div className={`flex flex-col relative ${className}`}>
       <button
         ref={btnRef}
         type="button"
@@ -67,10 +94,11 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
       >
         {options.find(o => o.value === selectedValue)?.label || label}
       </button>
-      {open && (
+      {open && style && createPortal(
         <div
           ref={popupRef}
-          className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-60 overflow-y-auto absolute left-0 top-full w-full"
+          style={style}
+          className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-60 overflow-y-auto"
         >
           <input
             type="text"
@@ -92,7 +120,8 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
               {option.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
