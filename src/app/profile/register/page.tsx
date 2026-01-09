@@ -161,6 +161,25 @@ export default function ProfileRegisterPage() {
     return step === 2 ? canProceed(step) : false;
   };
 
+  // Add this effect to sync picker states when step changes to 0
+  useEffect(() => {
+    if (step === 0 && form.dob) {
+      // Parse date and time from form.dob
+      const [date, time] = form.dob.split('T');
+      if (date) {
+        const [year, month, day] = date.split('-');
+        setSelectedYear(year || "");
+        setSelectedMonth(month || "");
+        setSelectedDay(day || "");
+      }
+      setSelectedTime(time || "");
+    }
+    if (step === 0 && form.gender) {
+      // Gender radio is already controlled by form.gender
+      // No extra sync needed
+    }
+  }, [step]);
+
   return (
     <div className="min-h-screen bg-white flex items-start justify-center py-40">
       <div
