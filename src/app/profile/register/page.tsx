@@ -147,7 +147,7 @@ export default function ProfileRegisterPage() {
   // Recalculate popup positions while a picker is open (on scroll/resize)
   useEffect(() => {
     if (!openPicker) return;
-    const update = () => {
+    const updatePosition = () => {
       if (openPicker === 'day' && dayBtnRef.current) {
         const r = dayBtnRef.current.getBoundingClientRect();
         setDayStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 192 });
@@ -162,13 +162,35 @@ export default function ProfileRegisterPage() {
       }
     };
 
-    // initial
-    update();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+    const onScrollClose = (e?: Event) => {
+      try {
+        const target = e && (e.target as Node | null);
+        if (dateContainerRef.current && target && dateContainerRef.current.contains(target)) return;
+        if (dayPopupRef.current && target && dayPopupRef.current.contains(target)) return;
+        if (monthPopupRef.current && target && monthPopupRef.current.contains(target)) return;
+        if (yearPopupRef.current && target && yearPopupRef.current.contains(target)) return;
+      } catch (err) {
+        // ignore errors and continue to close
+      }
+      setOpenPicker(null);
+    };
+
+    // initial position
+    updatePosition();
+    // Close on various page-level scrolling events; ignore scrolls from inside popup
+    window.addEventListener('scroll', onScrollClose, true);
+    document.addEventListener('scroll', onScrollClose, true);
+    document.addEventListener('wheel', onScrollClose as EventListener, { passive: true, capture: true } as any);
+    document.addEventListener('touchmove', onScrollClose as EventListener, { passive: true, capture: true } as any);
+    // Reposition on resize
+    window.addEventListener('resize', updatePosition);
+
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', onScrollClose, true);
+      document.removeEventListener('scroll', onScrollClose, true);
+      document.removeEventListener('wheel', onScrollClose as EventListener, true as any);
+      document.removeEventListener('touchmove', onScrollClose as EventListener, true as any);
+      window.removeEventListener('resize', updatePosition);
     };
   }, [openPicker]);
 
