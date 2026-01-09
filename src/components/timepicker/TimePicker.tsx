@@ -125,12 +125,12 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
           {openHour && hourStyle && createPortal(
             <div ref={hourPopupRef} style={hourStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-48 overflow-y-auto w-16 flex flex-col gap-1">
               {hours.map(h => (
-                <button
-                  key={h}
-                  className={`p-2 text-sm rounded-md border transition-colors w-full text-center ${h === hour ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-black border-gray-200 hover:bg-pink-100'}`}
-                  onClick={() => handleHourSelect(h)}
-                >{h}</button>
-              ))}
+                  <button
+                    key={h}
+                    className={`p-2 text-sm rounded-md transition-colors w-full text-center ${h === hour ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
+                    onClick={() => handleHourSelect(h)}
+                  >{h}</button>
+                ))}
             </div>,
             document.body
           )}
@@ -150,7 +150,7 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
               {minutes.map(m => (
                 <button
                   key={m}
-                  className={`p-2 text-sm rounded-md border transition-colors w-full text-center ${m === minute ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-black border-gray-200 hover:bg-pink-100'}`}
+                  className={`p-2 text-sm rounded-md transition-colors w-full text-center ${m === minute ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
                   onClick={() => handleMinuteSelect(m)}
                 >{m}</button>
               ))}
