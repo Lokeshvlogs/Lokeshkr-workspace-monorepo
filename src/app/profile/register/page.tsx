@@ -61,6 +61,37 @@ export default function ProfileRegisterPage() {
     }
   }, [step]);
 
+  const stepIcons = [
+    // Basic Details - user
+    (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" />
+      </svg>
+    ),
+    // Social Background - users/group
+    (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20a4 4 0 00-8 0" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 8a4 4 0 110-8 4 4 0 010 8zM21 12a4 4 0 10-8 0 4 4 0 008 0z" />
+      </svg>
+    ),
+    // Professional Career - briefcase
+    (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a4 4 0 018 0v2" />
+      </svg>
+    ),
+    // Profile Photo - camera
+    (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h3l2-3h6l2 3h3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+        <circle cx="12" cy="13" r="3" />
+      </svg>
+    ),
+  ];
+
 
 
 
@@ -270,7 +301,9 @@ export default function ProfileRegisterPage() {
                     <div className={`flex items-center justify-center rounded-full border-2 w-8 h-8 text-sm font-bold transition-colors duration-200 
                       ${step === s ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-pink-300 text-pink-500'}`}
                     >
-                      {s + 1}
+                      <span title={["Basic Details","Social Background","Professional Career","Profile Photo"][s]} aria-label={["Basic Details","Social Background","Professional Career","Profile Photo"][s]} className="flex items-center justify-center">
+                        {stepIcons[s]}
+                      </span>
                     </div>
                     {idx < 3 && (
                       <div className="flex-1 h-1 bg-pink-200 mx-1" />
