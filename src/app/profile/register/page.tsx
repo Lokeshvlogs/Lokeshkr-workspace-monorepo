@@ -77,7 +77,6 @@ export default function ProfileRegisterPage() {
     mothertongue: "",
     profession: "",
     salaryAmount: "",
-    salaryAmountType: "",
     salaryFrequency: "per_annum",
     salaryCurrency: "INR",
     photo: "",
