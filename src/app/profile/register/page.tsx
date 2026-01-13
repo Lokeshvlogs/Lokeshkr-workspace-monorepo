@@ -237,6 +237,54 @@ export default function ProfileRegisterPage() {
     console.log(form);
   }
 
+  // Called when user clicks Continue; saves current step data to server
+  const handleSaveStep = async (currentStep: number) => {
+    try {
+      console.log('Saving step', currentStep, form);
+
+      const doPost = async (payload: any) => {
+        const datatopost = JSON.stringify(payload);
+        console.log('dataToPost', payload);
+        const resp = await fetch('/api/profile/save-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: datatopost,
+        });
+        const body = await resp.text().catch(() => '');
+        let json: any = {};
+        try { json = body ? JSON.parse(body) : {}; } catch (e) { json = { raw: body }; }
+        return { resp, json };
+      };
+
+      const payload = {step: currentStep, firstName: form.firstName, surname: form.surname, dob: form.dob, gender: form.gender, religion: form.religion, community: form.community, profession: form.profession, salaryAmount: form.salaryAmount, salaryFrequency: form.salaryFrequency, salaryCurrency: form.salaryCurrency, photo: form.photo};
+      const first = await doPost(payload);
+      if (first.resp.ok) return;
+
+      console.error('Save-step failed', first.resp.status, first.json);
+      // For other errors, throw detailed message
+      throw new Error(JSON.stringify(first.json));
+    } catch (err) {
+      console.error('Error saving step:', err);
+      // Bubble up error so slider won't advance; caller can show UI if needed
+      throw err;
+    }
+  };
+
+  // Jump to a specific step when top icon is clicked.
+  // If jumping forward, attempt to save current step first.
+  const handleJumpToStep = async (targetStep: number) => {
+    if (typeof step !== 'number') return;
+    if (targetStep === step) return;
+    try {
+      //if (targetStep > step) {
+      //  await handleSaveStep(step);
+      //}
+      handleStepChange(targetStep);
+    } catch (err) {
+      console.error('Failed to jump to step', targetStep, err);
+    }
+  };
+
   const canProceed = (step: number): boolean => {
     if (step === 0) {
       return (
@@ -298,13 +346,18 @@ export default function ProfileRegisterPage() {
               <div className="flex items-center w-full max-w-xl">
                 {[0, 1, 2, 3].map((s, idx) => (
                   <React.Fragment key={s}>
-                    <div className={`flex items-center justify-center rounded-full border-2 w-8 h-8 text-sm font-bold transition-colors duration-200 
-                      ${step === s ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-pink-300 text-pink-500'}`}
+                    <button
+                      type="button"
+                      onClick={() => handleJumpToStep(s)}
+                      aria-label={["Basic Details","Social Background","Professional Career","Profile Photo"][s]}
+                      aria-current={step === s ? 'step' : undefined}
+                      className={`flex items-center justify-center rounded-full border-2 w-8 h-8 text-sm font-bold transition-colors duration-200 
+                      ${step === s ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-pink-300 text-pink-500'} focus:outline-none`}
                     >
-                      <span title={["Basic Details","Social Background","Professional Career","Profile Photo"][s]} aria-label={["Basic Details","Social Background","Professional Career","Profile Photo"][s]} className="flex items-center justify-center">
+                      <span className="flex items-center justify-center">
                         {stepIcons[s]}
                       </span>
-                    </div>
+                    </button>
                     {idx < 3 && (
                       <div className="flex-1 h-1 bg-pink-200 mx-1" />
                     )}
@@ -315,6 +368,7 @@ export default function ProfileRegisterPage() {
 
             <HorizontalFormSlider
               onSubmit={submit}
+              onNext={handleSaveStep}
               canProceed={canProceed}
               canSubmit={canSubmit}
               steps={[

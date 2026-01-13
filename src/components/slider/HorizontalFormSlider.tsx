@@ -14,6 +14,8 @@ interface HorizontalFormSliderProps {
   canSubmit?: (step: number) => boolean;
   step?: number;
   setStep?: (step: number) => void;
+  /** optional callback invoked before moving to next step - can be async */
+  onNext?: (step: number) => Promise<void> | void;
 }
 
 export default function HorizontalFormSlider({
@@ -25,14 +27,23 @@ export default function HorizontalFormSlider({
   canSubmit,
   step: controlledStep,
   setStep: controlledSetStep,
+  onNext,
 }: HorizontalFormSliderProps): JSX.Element {
   const [internalStep, internalSetStep] = useState<number>(0);
   const step = controlledStep !== undefined ? controlledStep : internalStep;
   const setStep = controlledSetStep || internalSetStep;
   const totalSteps = steps.length;
 
-  function next(): void {
-    if (step < totalSteps - 1) setStep((s) => s + 1);
+  async function next(): Promise<void> {
+    try {
+      if (onNext) {
+        await onNext(step);
+      }
+      if (step < totalSteps - 1) setStep((s) => s + 1);
+    } catch (err) {
+      console.error('Failed to run onNext handler:', err);
+      // swallow error so the UI can decide what to do - do not advance
+    }
   }
 
   function back(): void {
