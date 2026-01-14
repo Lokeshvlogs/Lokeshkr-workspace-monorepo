@@ -55,7 +55,10 @@ export default function ProfileRegisterPage() {
     { value: '10-15', label: '10-15 lacs' },
     { value: '15-25', label: '15-25 lacs' },
     { value: '25-50', label: '25-50 lacs' },
-    { value: '50+', label: '50+ lacs' },
+    { value: '50-100', label: '50-100 lacs' },
+    { value: '100-200', label: '1-2 crores' },
+    { value: '200-500', label: '2-5 crores' },
+    { value: '500+', label: '5+ crores' },
   ];
   // countryOptions are provided by src/utils/placesByCountry
   const dateContainerRef = useRef<HTMLDivElement | null>(null);
@@ -140,7 +143,7 @@ export default function ProfileRegisterPage() {
     currentResidence: "",
     hometown: "",
     maritalStatus: "",
-    isManglik: false,
+    manglikLevel: 0,
     livesWithFamily: false,
     familyIncome: "",
     country: "",
@@ -740,9 +743,24 @@ export default function ProfileRegisterPage() {
 
                       <div>
                         <label className="mb-1 font-medium text-pink-700">Manglik</label>
-                        <div className="flex items-center">
-                          <input type="checkbox" checked={!!form.isManglik} onChange={(e) => setForm({ ...form, isManglik: e.target.checked })} />
-                          <span className="ml-2 text-sm">I'm Manglik</span>
+                        <div className="px-2 py-2 bg-white border border-pink-100 rounded-md">
+                          <input
+                            type="range"
+                            min={0}
+                            max={3}
+                            step={1}
+                            value={form.manglikLevel}
+                            onChange={(e) => setForm({ ...form, manglikLevel: Number(e.target.value) })}
+                            aria-label="Manglik status"
+                            className="w-full accent-pink-500"
+                          />
+                          <div className="flex justify-between text-xs text-gray-600 mt-2 px-1">
+                            <span>Don't know</span>
+                            <span>Non</span>
+                            <span>Partial</span>
+                            <span>Manglik</span>
+                          </div>
+                          <div className="mt-2 text-sm text-pink-700">Selected: {["I don't know",'Non-Manglik','Partial Manglik','Manglik'][form.manglikLevel]}</div>
                         </div>
                       </div>
 
