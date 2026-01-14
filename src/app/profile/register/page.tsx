@@ -50,12 +50,12 @@ export default function ProfileRegisterPage() {
     { value: 'heavy', label: 'Heavy' },
   ];
   const familyIncomeOptions = [
-    { value: '0-5', label: '0-5' },
-    { value: '5-10', label: '5-10' },
-    { value: '10-15', label: '10-15' },
-    { value: '15-25', label: '15-25' },
-    { value: '25-50', label: '25-50' },
-    { value: '50+', label: '50+' },
+    { value: '0-5', label: '0-5 lacs' },
+    { value: '5-10', label: '5-10 lacs' },
+    { value: '10-15', label: '10-15 lacs' },
+    { value: '15-25', label: '15-25 lacs' },
+    { value: '25-50', label: '25-50 lacs' },
+    { value: '50+', label: '50+ lacs' },
   ];
   // countryOptions are provided by src/utils/placesByCountry
   const dateContainerRef = useRef<HTMLDivElement | null>(null);
@@ -141,6 +141,7 @@ export default function ProfileRegisterPage() {
     hometown: "",
     maritalStatus: "",
     isManglik: false,
+    livesWithFamily: false,
     familyIncome: "",
     country: "",
   });
@@ -703,35 +704,25 @@ export default function ProfileRegisterPage() {
                       </div>
                       <div>
                         <label className="mb-1 font-medium text-pink-700">Place of Birth</label>
-                        <input
-                          className="p-2 border border-pink-200 rounded-md w-full"
-                          placeholder="Place of Birth"
-                          value={form.placeOfBirth}
-                          onChange={(e) => setForm({ ...form, placeOfBirth: e.target.value })}
+                        <ScrollableDropdown
+                          label="Place of Birth"
+                          options={cityOptionsExtended}
+                          initialValue={form.placeOfBirth}
+                          onChange={(v) => setForm({ ...form, placeOfBirth: v })}
                         />
                       </div>
                       <div>
                         <label className="mb-1 font-medium text-pink-700">Home Town</label>
-                        <input
-                          className="p-2 border border-pink-200 rounded-md w-full"
-                          placeholder="Home Town"
-                          value={form.hometown}
-                          onChange={(e) => setForm({ ...form, hometown: e.target.value })}
+                        <ScrollableDropdown
+                          label="Home Town"
+                          options={cityOptionsExtended}
+                          initialValue={form.hometown}
+                          onChange={(v) => setForm({ ...form, hometown: v })}
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3 items-end mt-3">
-                      <div>
-                        <label className="mb-1 font-medium text-pink-700">Country</label>
-                        <ScrollableDropdown
-                          label="Country"
-                          options={countryOptions}
-                          initialValue={form.country}
-                          onChange={(v) => setForm({ ...form, country: v })}
-                        />
-                      </div>
-
                       <div>
                         <label className="mb-1 font-medium text-pink-700">Family Income</label>
                         <div className="flex items-center gap-2">
@@ -752,6 +743,14 @@ export default function ProfileRegisterPage() {
                         <div className="flex items-center">
                           <input type="checkbox" checked={!!form.isManglik} onChange={(e) => setForm({ ...form, isManglik: e.target.checked })} />
                           <span className="ml-2 text-sm">I'm Manglik</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Lives With Family</label>
+                        <div className="flex items-center">
+                          <input type="checkbox" checked={!!form.livesWithFamily} onChange={(e) => setForm({ ...form, livesWithFamily: e.target.checked })} />
+                          <span className="ml-2 text-sm">Lives with family</span>
                         </div>
                       </div>
                     </div>
