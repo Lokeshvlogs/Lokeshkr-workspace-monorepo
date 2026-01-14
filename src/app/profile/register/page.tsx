@@ -7,6 +7,7 @@ import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackground";
+import placesByCountry, { countryOptions } from '@/utils/placesByCountry';
 import { professionOptions } from "@/utils/professionOptions";
 
 
@@ -36,6 +37,27 @@ export default function ProfileRegisterPage() {
     { value: '12', label: 'Dec' },
   ];
   const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const feetOptions = Array.from({ length: 5 }, (_, i) => {
+    const ft = String(4 + i); // 4,5,6,7,8 -> keep reasonable range
+    return { value: ft, label: `${ft} ft` };
+  });
+  const inchOptions = Array.from({ length: 12 }, (_, i) => ({ value: String(i), label: `${i} in` }));
+  const physiqueOptions = [
+    { value: 'slim', label: 'Slim' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'athletic', label: 'Athletic' },
+    { value: 'chubby', label: 'Chubby' },
+    { value: 'heavy', label: 'Heavy' },
+  ];
+  const familyIncomeOptions = [
+    { value: '0-5', label: '0-5' },
+    { value: '5-10', label: '5-10' },
+    { value: '10-15', label: '10-15' },
+    { value: '15-25', label: '15-25' },
+    { value: '25-50', label: '25-50' },
+    { value: '50+', label: '50+' },
+  ];
+  // countryOptions are provided by src/utils/placesByCountry
   const dateContainerRef = useRef<HTMLDivElement | null>(null);
   const dayBtnRef = useRef<HTMLButtonElement | null>(null);
   const monthBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -111,7 +133,51 @@ export default function ProfileRegisterPage() {
     salaryFrequency: "per_annum",
     salaryCurrency: "INR",
     photo: "",
+    heightFeet: "",
+    heightInches: "",
+    bodyPhysique: "",
+    placeOfBirth: "",
+    currentResidence: "",
+    hometown: "",
+    maritalStatus: "",
+    isManglik: false,
+    familyIncome: "",
+    country: "",
   });
+
+  // compute city options: if a country is selected, use its cities; otherwise aggregate cities from all countries
+  const cityOptions = (() => {
+    if (form.country) return (placesByCountry[form.country] || []).flatMap((s) => s.cities);
+    const map = new Map<string, { value: string; label: string }>();
+    Object.values(placesByCountry).forEach((states) => {
+      states.forEach((st) => {
+        st.cities.forEach((c) => {
+          if (!map.has(c.value)) map.set(c.value, c);
+        });
+      });
+    });
+    return Array.from(map.values());
+  })();
+
+  // build extended options with "City, State, Country" labels so search matches across parts
+  const cityOptionsExtended = (() => {
+    const opts: { value: string; label: string }[] = [];
+    const countryEntries = Object.entries(placesByCountry) as [string, any[]][];
+    countryEntries.forEach(([countryKey, states]) => {
+      const countryLabel = (countryOptions.find(c => c.value === countryKey) || { label: '' }).label;
+      states.forEach((st: any) => {
+        const stateLabel = st.label;
+        st.cities.forEach((c: any) => {
+          const label = `${c.label}, ${stateLabel}${countryLabel ? `, ${countryLabel}` : ''}`;
+          // use label as value so selection stores readable string
+          opts.push({ value: label, label });
+        });
+      });
+    });
+    // dedupe by label
+    const seen = new Set<string>();
+    return opts.filter(o => (seen.has(o.label) ? false : seen.add(o.label)));
+  })();
 
   // Restore form data from localStorage on initial render (merge with default)
   useEffect(() => {
@@ -349,7 +415,7 @@ export default function ProfileRegisterPage() {
                     <button
                       type="button"
                       onClick={() => handleJumpToStep(s)}
-                      aria-label={["Basic Details","Social Background","Professional Career","Profile Photo"][s]}
+                      aria-label={["Basic Details","Socio Personal Background","Educational and Professional Background","Profile Photo"][s]}
                       aria-current={step === s ? 'step' : undefined}
                       className={`flex items-center justify-center rounded-full border-2 w-8 h-8 text-sm font-bold transition-colors duration-200 
                       ${step === s ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-pink-300 text-pink-500'} focus:outline-none`}
@@ -555,6 +621,44 @@ export default function ProfileRegisterPage() {
                       </label>
                     </div>
                   </div>
+                  <div className="flex flex-col mt-4">
+                    <label className="mb-2 font-medium text-pink-700">Height</label>
+                    <div className="flex gap-2 items-center">
+                      <div className="w-28">
+                        <ScrollableDropdown
+                          label="Feet"
+                          options={feetOptions}
+                          initialValue={form.heightFeet}
+                          onChange={(v) => setForm({ ...form, heightFeet: v })}
+                        />
+                      </div>
+                      <div className="w-28">
+                        <ScrollableDropdown
+                          label="Inches"
+                          options={inchOptions}
+                          initialValue={form.heightInches}
+                          onChange={(v) => setForm({ ...form, heightInches: v })}
+                        />
+                      </div>
+                      <div className="ml-4 text-sm text-gray-500">{form.heightFeet || '-'} {form.heightInches ? `${form.heightInches}"` : ''}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col mt-4">
+                    <label className="mb-2 font-medium text-pink-700">Body Physique</label>
+                    <div className="flex gap-2 items-center">
+                      {physiqueOptions.map((p) => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => setForm({ ...form, bodyPhysique: p.value })}
+                          className={`px-3 py-1 rounded-md border ${form.bodyPhysique === p.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-gray-700 border-pink-100'}`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>,
 
                 // Step 2 - Religion and Community
@@ -586,6 +690,93 @@ export default function ProfileRegisterPage() {
                       initialValue={form.mothertongue}
                       onChange={(v) => setForm({ ...form, mothertongue: v })}
                     />
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Current Place</label>
+                        <ScrollableDropdown
+                          label="Current Residence"
+                          options={cityOptionsExtended}
+                          initialValue={form.currentResidence}
+                          onChange={(v) => setForm({ ...form, currentResidence: v })}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Place of Birth</label>
+                        <input
+                          className="p-2 border border-pink-200 rounded-md w-full"
+                          placeholder="Place of Birth"
+                          value={form.placeOfBirth}
+                          onChange={(e) => setForm({ ...form, placeOfBirth: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Home Town</label>
+                        <input
+                          className="p-2 border border-pink-200 rounded-md w-full"
+                          placeholder="Home Town"
+                          value={form.hometown}
+                          onChange={(e) => setForm({ ...form, hometown: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 items-end mt-3">
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Country</label>
+                        <ScrollableDropdown
+                          label="Country"
+                          options={countryOptions}
+                          initialValue={form.country}
+                          onChange={(v) => setForm({ ...form, country: v })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Family Income</label>
+                        <div className="flex items-center gap-2">
+                          <div className="w-full">
+                            <ScrollableDropdown
+                              label="Family Income"
+                              options={familyIncomeOptions}
+                              initialValue={form.familyIncome}
+                              onChange={(v) => setForm({ ...form, familyIncome: v })}
+                            />
+                          </div>
+                          <div className="text-sm text-gray-500">per annum</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Manglik</label>
+                        <div className="flex items-center">
+                          <input type="checkbox" checked={!!form.isManglik} onChange={(e) => setForm({ ...form, isManglik: e.target.checked })} />
+                          <span className="ml-2 text-sm">I'm Manglik</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="mb-1 font-medium text-pink-700">Marital Status</label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {[
+                          { value: 'never_married', label: 'Never Married' },
+                          { value: 'married', label: 'Married' },
+                          { value: 'divorced', label: 'Divorced' },
+                          { value: 'annulled', label: 'Annulled' },
+                          { value: 'awaiting_divorce', label: 'Awaiting Divorce' },
+                        ].map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, maritalStatus: m.value })}
+                            className={`px-3 py-1 rounded-md border ${form.maritalStatus === m.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-gray-700 border-pink-100'}`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>,
 
