@@ -756,14 +756,7 @@ export default function ProfileRegisterPage() {
                       </div>
                     </div>
 
-                    <div className="mb-3">
-                      <div className="flex items-center mt-2">
-                        <input type="checkbox" checked={!!form.livesWithFamily} onChange={(e) => setForm({ ...form, livesWithFamily: e.target.checked })} />
-                        <span className="ml-2 text-sm">Lives with family</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3 items-end mt-3">
+                    <div className="grid grid-cols-2 gap-3 items-end mt-3">
                       <div>
                         <label className="mb-1 font-medium text-pink-700">Family Income</label>
                         <div className="flex items-center gap-2">
@@ -779,27 +772,33 @@ export default function ProfileRegisterPage() {
                         </div>
                       </div>
 
-                      <div>
-                        <label className="mb-1 font-medium text-pink-700">Manglik</label>
-                        <div className="px-2 py-2 bg-white border border-pink-100 rounded-md">
-                          <input
-                            type="range"
-                            min={0}
-                            max={3}
-                            step={1}
-                            value={form.manglikLevel}
-                            onChange={(e) => setForm({ ...form, manglikLevel: Number(e.target.value) })}
-                            aria-label="Manglik status"
-                            className="w-full accent-pink-500"
-                          />
-                          <div className="flex justify-between text-xs text-gray-600 mt-2 px-1">
-                            <span>Don't know</span>
-                            <span>Non</span>
-                            <span>Partial</span>
-                            <span>Manglik</span>
-                          </div>
-                          <div className="mt-2 text-sm text-pink-700">Selected: {["I don't know",'Non-Manglik','Partial Manglik','Manglik'][form.manglikLevel]}</div>
+                      <div className="flex items-center">
+                        <label className="mb-1 font-medium text-pink-700 mr-3">Lives With Family</label>
+                        <input type="checkbox" checked={!!form.livesWithFamily} onChange={(e) => setForm({ ...form, livesWithFamily: e.target.checked })} /> 
+                      </div>
+                    </div>
+
+                    <div className="mt-3 mr-20">
+                      <label className="mb-1 font-medium text-lg text-pink-700">Manglik</label>
+                      <div className="px-6 py-2 bg-white border border-pink-100 rounded-md mt-2 ml-6 shadow-md">
+                        <input
+                          type="range"
+                          min={0}
+                          max={4}
+                          step={1}
+                          value={form.manglikLevel}
+                          onChange={(e) => setForm({ ...form, manglikLevel: Number(e.target.value) })}
+                          aria-label="Manglik status"
+                          className="block mx-1 w-full max-w-[480px] accent-pink-500"
+                        />
+                        <div className="flex justify-between text-xs text-gray-600 mt-2 px-1">
+                          <span>Don't know</span>
+                          <span>No</span>
+                          <span>Anshika Manglik</span>
+                          <span>Chandra Manglik</span>
+                          <span>Full/Pure Manglik</span>
                         </div>
+                        <div className="mt-2 text-sm text-pink-700">Selected: {["I don't know",'Non-Manglik','Partial Manglik','Manglik'][form.manglikLevel]}</div>
                       </div>
                     </div>
 
