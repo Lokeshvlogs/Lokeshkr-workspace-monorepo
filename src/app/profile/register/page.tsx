@@ -142,9 +142,12 @@ export default function ProfileRegisterPage() {
     placeOfBirth: "",
     currentResidence: "",
     hometown: "",
+    hometownCity: "",
+    placeOfBirthCity: "",
     maritalStatus: "",
     manglikLevel: 0,
     livesWithFamily: false,
+    placeOfBirthCountry: "",
     familyIncome: "",
     country: "",
   });
@@ -626,29 +629,6 @@ export default function ProfileRegisterPage() {
                     </div>
                   </div>
                   <div className="flex flex-col mt-4">
-                    <label className="mb-2 font-medium text-pink-700">Height</label>
-                    <div className="flex gap-2 items-center">
-                      <div className="w-28">
-                        <ScrollableDropdown
-                          label="Feet"
-                          options={feetOptions}
-                          initialValue={form.heightFeet}
-                          onChange={(v) => setForm({ ...form, heightFeet: v })}
-                        />
-                      </div>
-                      <div className="w-28">
-                        <ScrollableDropdown
-                          label="Inches"
-                          options={inchOptions}
-                          initialValue={form.heightInches}
-                          onChange={(v) => setForm({ ...form, heightInches: v })}
-                        />
-                      </div>
-                      <div className="ml-4 text-sm text-gray-500">{form.heightFeet || '-'} {form.heightInches ? `${form.heightInches}"` : ''}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col mt-4">
                     <label className="mb-2 font-medium text-pink-700">Body Physique</label>
                     <div className="flex gap-2 items-center">
                       {physiqueOptions.map((p) => (
@@ -695,33 +675,91 @@ export default function ProfileRegisterPage() {
                       onChange={(v) => setForm({ ...form, mothertongue: v })}
                     />
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                       <div>
-                        <label className="mb-1 font-medium text-pink-700">Current Place</label>
-                        <ScrollableDropdown
-                          label="Current Residence"
-                          options={cityOptionsExtended}
-                          initialValue={form.currentResidence}
-                          onChange={(v) => setForm({ ...form, currentResidence: v })}
-                        />
+                        <label className="mb-3 font-medium text-lg text-pink-700">Currently living in</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <ScrollableDropdown
+                            label="Country"
+                            options={countryOptions}
+                            initialValue={form.country}
+                            onChange={(v) => setForm({ ...form, country: v })}
+                          />
+                          <ScrollableDropdown
+                            label="City"
+                            options={
+                              form.country
+                                ? (placesByCountry[form.country] || []).flatMap((st: any) => {
+                                    const countryLabel = (countryOptions.find(c => c.value === form.country) || { label: '' }).label;
+                                    return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
+                                  })
+                                : cityOptionsExtended
+                            }
+                            initialValue={form.currentResidence}
+                            onChange={(v) => setForm({ ...form, currentResidence: v })}
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="mb-1 font-medium text-pink-700">Place of Birth</label>
-                        <ScrollableDropdown
-                          label="Place of Birth"
-                          options={cityOptionsExtended}
-                          initialValue={form.placeOfBirth}
-                          onChange={(v) => setForm({ ...form, placeOfBirth: v })}
-                        />
+
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="mb-3 font-medium text-lg text-pink-700">Place of Birth</label>
+                          <div className="grid grid-cols-2 gap-3">
+                          <ScrollableDropdown
+                            label="Country"
+                            options={countryOptions}
+                            initialValue={form.placeOfBirthCountry}
+                            onChange={(v) => setForm({ ...form, placeOfBirthCountry: v })}
+                          />
+                          <ScrollableDropdown
+                            label="City"
+                            options={
+                              form.placeOfBirthCountry
+                                ? (placesByCountry[form.placeOfBirthCountry] || []).flatMap((st: any) => {
+                                    const countryLabel = (countryOptions.find(c => c.value === form.placeOfBirthCountry) || { label: '' }).label;
+                                    return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
+                                  })
+                                : cityOptionsExtended
+                            }
+                            initialValue={form.placeOfBirthCity}
+                            onChange={(v) => setForm({ ...form, placeOfBirthCity: v })}
+                          />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label className="mb-1 font-medium text-pink-700">Home Town</label>
-                        <ScrollableDropdown
-                          label="Home Town"
-                          options={cityOptionsExtended}
-                          initialValue={form.hometown}
-                          onChange={(v) => setForm({ ...form, hometown: v })}
-                        />
+
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="mb-3 font-medium text-lg text-pink-700">Family living in</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <ScrollableDropdown
+                              label="Country"
+                              options={countryOptions}
+                              initialValue={form.hometown}
+                              onChange={(v) => setForm({ ...form, hometown: v })}
+                            />
+                            <ScrollableDropdown
+                              label="City"
+                              options={
+                                form.country
+                                  ? (placesByCountry[form.country] || []).flatMap((st: any) => {
+                                      const countryLabel = (countryOptions.find(c => c.value === form.country) || { label: '' }).label;
+                                      return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
+                                    })
+                                  : cityOptionsExtended
+                              }
+                              initialValue={form.hometownCity}
+                              onChange={(v) => setForm({ ...form, hometownCity: v })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="flex items-center mt-2">
+                        <input type="checkbox" checked={!!form.livesWithFamily} onChange={(e) => setForm({ ...form, livesWithFamily: e.target.checked })} />
+                        <span className="ml-2 text-sm">Lives with family</span>
                       </div>
                     </div>
 
@@ -761,14 +799,6 @@ export default function ProfileRegisterPage() {
                             <span>Manglik</span>
                           </div>
                           <div className="mt-2 text-sm text-pink-700">Selected: {["I don't know",'Non-Manglik','Partial Manglik','Manglik'][form.manglikLevel]}</div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="mb-1 font-medium text-pink-700">Lives With Family</label>
-                        <div className="flex items-center">
-                          <input type="checkbox" checked={!!form.livesWithFamily} onChange={(e) => setForm({ ...form, livesWithFamily: e.target.checked })} />
-                          <span className="ml-2 text-sm">Lives with family</span>
                         </div>
                       </div>
                     </div>
