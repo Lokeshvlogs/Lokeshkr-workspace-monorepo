@@ -39,7 +39,7 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
   function handleHourOpen() {
     if (hourRef.current) {
       const r = hourRef.current.getBoundingClientRect();
-      setHourStyle({ position: "fixed", top: r.bottom + 8, left: r.left, minWidth: 80 });
+      setHourStyle({ position: "fixed", top: r.bottom + 8, left: r.left - 10, minWidth: 70 });
     }
     setOpenHour(true);
     setOpenMinute(false);
@@ -48,7 +48,7 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
   function handleMinuteOpen() {
     if (minuteRef.current) {
       const r = minuteRef.current.getBoundingClientRect();
-      setMinuteStyle({ position: "fixed", top: r.bottom + 8, left: r.left, minWidth: 80 });
+      setMinuteStyle({ position: "fixed", top: r.bottom + 8, left: r.left - 10, minWidth: 70 });
     }
     setOpenMinute(true);
     setOpenHour(false);
@@ -74,11 +74,11 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
     const updatePosition = () => {
       if (openHour && hourRef.current) {
         const r = hourRef.current.getBoundingClientRect();
-        setHourStyle({ position: "fixed", top: r.bottom + 8, left: r.left, minWidth: 80 });
+        setHourStyle({ position: "fixed", top: r.bottom + 8, left: r.left - 10, minWidth: 70 });
       }
       if (openMinute && minuteRef.current) {
         const r = minuteRef.current.getBoundingClientRect();
-        setMinuteStyle({ position: "fixed", top: r.bottom + 8, left: r.left, minWidth: 80 });
+        setMinuteStyle({ position: "fixed", top: r.bottom + 8, left: r.left - 10, minWidth: 70 });
       }
     };
 
@@ -123,7 +123,7 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
             {hour}
           </button>
           {openHour && hourStyle && createPortal(
-            <div ref={hourPopupRef} style={hourStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-48 overflow-y-auto w-16 flex flex-col gap-1">
+            <div ref={hourPopupRef} style={hourStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-48 overflow-y-auto w-16 flex flex-col gap-1 hide-scrollbar">
               {hours.map(h => (
                   <button
                     key={h}
@@ -146,7 +146,7 @@ export default function TimePicker({ value, onChange, inputClassName }: TimePick
             {minute}
           </button>
           {openMinute && minuteStyle && createPortal(
-            <div ref={minutePopupRef} style={minuteStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-48 overflow-y-auto w-16 flex flex-col gap-1">
+            <div ref={minutePopupRef} style={minuteStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-48 overflow-y-auto w-16 flex flex-col gap-1 hide-scrollbar">
               {minutes.map(m => (
                 <button
                   key={m}

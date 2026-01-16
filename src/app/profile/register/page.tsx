@@ -401,18 +401,18 @@ export default function ProfileRegisterPage() {
                               onFocus={() => {
                                 if (openPicker === 'day') return setOpenPicker(null);
                                 const r = dayBtnRef.current?.getBoundingClientRect();
-                                if (r) setDayStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 192 });
+                                if (r) setDayStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 200 });
                                 setOpenPicker('day');
                               }}
                               onChange={handleDayInputChange}
                               className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
                             />
                             {openPicker === 'day' && dayStyle && createPortal(
-                              <div ref={dayPopupRef} style={dayStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-4 gap-2">
+                              <div ref={dayPopupRef} style={dayStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-5 gap-2 hide-scrollbar">
                                 {days.map((day) => (
                                   <button
                                     key={day}
-                                    className={`p-2 text-sm rounded-md ${selectedDay === day ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
+                                    className={`p-1 text-sm text-center text-lg rounded-md ${selectedDay === day ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
                                     onClick={() => {
                                       setSelectedDay(day);
                                       setOpenPicker(null);
@@ -478,14 +478,14 @@ export default function ProfileRegisterPage() {
                               onFocus={() => {
                                 if (openPicker === 'year') return setOpenPicker(null);
                                 const r = yearBtnRef.current?.getBoundingClientRect();
-                                if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 144 });
+                                if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 80 });
                                 setOpenPicker('year');
                               }}
                               onChange={handleYearInputChange}
                               className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
                             />
                             {openPicker === 'year' && yearStyle && createPortal(
-                              <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2">
+                              <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2 hide-scrollbar">
                                 {(yearInputText ? years.filter(y => y.startsWith(yearInputText)) : years).map((y) => (
                                   <button
                                     key={y}

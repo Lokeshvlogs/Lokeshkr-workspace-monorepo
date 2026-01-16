@@ -68,9 +68,9 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
         const rect = btnRef.current.getBoundingClientRect();
         setStyle({
           position: 'fixed',
-          top: rect.bottom + 8,
+          top: rect.bottom + 2,
           left: rect.left,
-          width: rect.width,
+          width: rect.width + 5,
           zIndex: 9999,
         });
       }
@@ -120,7 +120,7 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
         <div
           ref={popupRef}
           style={style}
-          className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-60 overflow-y-auto"
+          className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-60 overflow-y-auto hide-scrollbar"
         >
           <input
             type="text"
