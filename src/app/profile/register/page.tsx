@@ -299,7 +299,6 @@ export default function ProfileRegisterPage() {
                       />
                     </div>
                   </div>
-
                   <div className="flex flex-col gap-4 p-4">
                     <div className="grid grid-cols-3 gap-4 items-end">
                       <div className="flex flex-col col-span-2">
@@ -440,10 +439,10 @@ export default function ProfileRegisterPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-4 p-4">
+                  <div className="flex gap-4 pl-4">
                     <div>
                       <label className="mb-2 font-medium text-pink-700">Gender</label>
-                      <div className="flex gap-4 items-center">
+                      <div className="flex gap-4 items-center mt-4">
                         <label className="flex items-center gap-2">
                           <input
                             type="radio"
@@ -468,9 +467,29 @@ export default function ProfileRegisterPage() {
                         </label>
                       </div>
                     </div>
+                    
+                    <div className="flex flex-col ml-10">
+                      <label className="mb-2 font-medium text-pink-700">Height</label>
+                      <div className="flex gap-2 items-center ml-2">
+                        <ScrollableDropdown
+                          label="Feet"
+                          options={feetOptions}
+                          initialValue={form.heightFeet}
+                          onChange={(v) => setForm({ ...form, heightFeet: v })}
+                          className="w-20"
+                        />
+                        <ScrollableDropdown
+                          label="Inches"
+                          options={inchOptions}
+                          initialValue={form.heightInches}
+                          onChange={(v) => setForm({ ...form, heightInches: v })}
+                          className="w-20"
+                        />
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="flex flex-col gap-4 p-4">
+                  <div className="border-t border-pink-100 my-2" />
+                  <div className="flex flex-col pl-4">
                     <label className="mb-2 font-medium text-pink-700">Body Physique</label>
                     <div className="flex gap-2 items-center">
                       {physiqueOptions.map((p) => (
