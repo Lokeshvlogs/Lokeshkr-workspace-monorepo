@@ -478,7 +478,7 @@ export default function ProfileRegisterPage() {
                                 setOpenPicker('year');
                               }}
                               onChange={handleYearInputChange}
-                              className="p-3 border border-pink-200 rounded-md bg-white text-left w-28"
+                              className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
                             />
                             {openPicker === 'year' && yearStyle && createPortal(
                               <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2">
