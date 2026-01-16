@@ -54,6 +54,36 @@ export const countryOptions = [
   { value: 'slovenia', label: 'Slovenia' },
   { value: 'sweden', label: 'Sweden' },
   { value: 'ukraine', label: 'Ukraine' },
+  
+  { value: 'russia', label: 'Russia' },
+  { value: 'turkey', label: 'Turkey' },
+  { value: 'egypt', label: 'Egypt' },
+{ value: 'morocco', label: 'Morocco' },
+{ value: 'tunisia', label: 'Tunisia' },
+{ value: 'algeria', label: 'Algeria' },
+{ value: 'ghana', label: 'Ghana' },
+{ value: 'ethiopia', label: 'Ethiopia'},
+{ value: 'tanzania', label: 'Tanzania' },
+{ value: 'jordan', label: 'Jordan' },
+{ value: 'lebanon', label: 'Lebanon' },
+{ value: 'sri_lanka', label: 'Sri Lanka' },
+{ value: 'bangladesh', label: 'Bangladesh' },
+{ value: 'nepal', label: 'Nepal'},
+{ value: 'bhutan', label: 'Bhutan' },
+{ value: 'maldives', label: 'Maldives' },
+{ value: 'pakistan', label: 'Pakistan'},
+{ value: 'afghanistan', label: 'Afghanistan'},
+{ value: 'iran', label: 'Iran' },
+{ value: 'iraq', label: 'Iraq' },
+{ value: 'israel', label: 'Israel' },
+{ value: 'japan', label: 'Japan' },
+{ value: 'south_korea', label: 'South Korea' },
+{ value: 'north_korea', label: 'North Korea' },
+{  value: 'vietnam', label: 'Vietnam' },
+{ value: 'cambodia', label: 'Cambodia' },
+{ value: 'laos', label: 'Laos' },
+{ value: 'mongolia', label: 'Mongolia' },
+{ value: 'taiwan', label: 'Taiwan'}
 ];
 
 // Structure: { [countryValue]: Array<{ value: stateValue, label: stateLabel, cities: Array<{value,label}> }> }
@@ -239,6 +269,47 @@ export const placesByCountry: Record<string, { value: string; label: string; cit
       { value: 'jammu', label: 'Jammu' },
       { value: 'anantnag', label: 'Anantnag' },
       { value: 'baramulla', label: 'Baramulla' },
+    ] },
+    { value: 'madhya_pradesh', label: 'Madhya Pradesh', cities: [
+      { value: 'indore', label: 'Indore' },
+      { value: 'bhopal', label: 'Bhopal' },
+      { value: 'gwalior', label: 'Gwalior' },
+      { value: 'ujjain', label: 'Ujjain' },
+      { value: 'jabalpur', label: 'Jabalpur' },
+    ] },
+    { value: 'sikkim', label: 'Sikkim', cities: [
+      { value: 'gangtok', label: 'Gangtok' },
+    ] },
+    { value: 'manipur', label: 'Manipur', cities: [
+      { value: 'imphal', label: 'Imphal' },
+    ] },
+    { value: 'meghalaya', label: 'Meghalaya', cities: [
+      { value: 'shillong', label: 'Shillong' },
+    ] },
+    { value: 'mizoram', label: 'Mizoram', cities: [
+      { value: 'aizawl', label: 'Aizawl' },
+    ] },
+    { value: 'nagaland', label: 'Nagaland', cities: [
+      { value: 'kohima', label: 'Kohima' },
+      { value: 'dimapur', label: 'Dimapur' },
+    ] },
+    { value: 'tripura', label: 'Tripura', cities: [
+      { value: 'agartala', label: 'Agartala' },
+    ] },
+    { value: 'arunachal_pradesh', label: 'Arunachal Pradesh', cities: [
+      { value: 'itanagar', label: 'Itanagar' },
+    ] },
+    { value: 'puducherry', label: 'Puducherry', cities: [
+      { value: 'puducherry_city', label: 'Puducherry' },
+    ] },
+    { value: 'andaman_nicobar', label: 'Andaman & Nicobar Islands', cities: [
+      { value: 'port_blair', label: 'Port Blair' },
+    ] },
+    { value: 'ladakh', label: 'Ladakh', cities: [
+      { value: 'leh', label: 'Leh' },
+    ] },
+    { value: 'lakshadweep', label: 'Lakshadweep', cities: [
+      { value: 'kavaratti', label: 'Kavaratti' },
     ] },
   ],
 
@@ -480,6 +551,142 @@ export const placesByCountry: Record<string, { value: string; label: string; cit
   ukraine: [
     { value: 'kyiv', label: 'Kyiv', cities: [{ value: 'kyiv', label: 'Kyiv' }] },
     { value: 'lviv', label: 'Lviv', cities: [{ value: 'lviv', label: 'Lviv' }] },
+  ],
+  russia: [
+    { value: 'moscow_region', label: 'Moscow', cities: [{ value: 'moscow', label: 'Moscow' }] },
+    { value: 'sankt_petersburg', label: 'Saint Petersburg', cities: [{ value: 'saint_petersburg', label: 'Saint Petersburg' }] },
+  ],
+
+  turkey: [
+    { value: 'istanbul', label: 'Istanbul', cities: [{ value: 'istanbul', label: 'Istanbul' }] },
+    { value: 'ankara', label: 'Ankara', cities: [{ value: 'ankara', label: 'Ankara' }] },
+    { value: 'izmir', label: 'Izmir', cities: [{ value: 'izmir', label: 'Izmir' }] },
+  ],
+
+  egypt: [
+    { value: 'cairo', label: 'Cairo', cities: [{ value: 'cairo', label: 'Cairo' }] },
+    { value: 'alexandria', label: 'Alexandria', cities: [{ value: 'alexandria', label: 'Alexandria' }] },
+  ],
+
+  morocco: [
+    { value: 'casablanca', label: 'Casablanca', cities: [{ value: 'casablanca', label: 'Casablanca' }] },
+    { value: 'rabat', label: 'Rabat', cities: [{ value: 'rabat', label: 'Rabat' }] },
+  ],
+
+  tunisia: [
+    { value: 'tunis', label: 'Tunis', cities: [{ value: 'tunis', label: 'Tunis' }] },
+  ],
+
+  algeria: [
+    { value: 'algiers', label: 'Algiers', cities: [{ value: 'algiers', label: 'Algiers' }] },
+    { value: 'oran', label: 'Oran', cities: [{ value: 'oran', label: 'Oran' }] },
+  ],
+
+  ghana: [
+    { value: 'accra', label: 'Accra', cities: [{ value: 'accra', label: 'Accra' }] },
+    { value: 'kumasi', label: 'Kumasi', cities: [{ value: 'kumasi', label: 'Kumasi' }] },
+  ],
+
+  ethiopia: [
+    { value: 'addis_ababa', label: 'Addis Ababa', cities: [{ value: 'addis_ababa', label: 'Addis Ababa' }] },
+  ],
+
+  tanzania: [
+    { value: 'dar_es_salaam', label: 'Dar es Salaam', cities: [{ value: 'dar_es_salaam', label: 'Dar es Salaam' }] },
+  ],
+
+  jordan: [
+    { value: 'amman', label: 'Amman', cities: [{ value: 'amman', label: 'Amman' }] },
+  ],
+
+  lebanon: [
+    { value: 'beirut', label: 'Beirut', cities: [{ value: 'beirut', label: 'Beirut' }] },
+  ],
+
+  sri_lanka: [
+    { value: 'colombo', label: 'Colombo', cities: [{ value: 'colombo', label: 'Colombo' }] },
+    { value: 'kandy', label: 'Kandy', cities: [{ value: 'kandy', label: 'Kandy' }] },
+  ],
+
+  bangladesh: [
+    { value: 'dhaka', label: 'Dhaka', cities: [{ value: 'dhaka', label: 'Dhaka' }] },
+    { value: 'chittagong', label: 'Chittagong', cities: [{ value: 'chittagong', label: 'Chittagong' }] },
+  ],
+
+  nepal: [
+    { value: 'kathmandu', label: 'Kathmandu', cities: [{ value: 'kathmandu', label: 'Kathmandu' }] },
+    { value: 'pokhara', label: 'Pokhara', cities: [{ value: 'pokhara', label: 'Pokhara' }] },
+  ],
+
+  bhutan: [
+    { value: 'thimphu', label: 'Thimphu', cities: [{ value: 'thimphu', label: 'Thimphu' }] },
+  ],
+
+  maldives: [
+    { value: 'male', label: 'Malé', cities: [{ value: 'male', label: 'Malé' }] },
+  ],
+
+  pakistan: [
+    { value: 'karachi', label: 'Karachi', cities: [{ value: 'karachi', label: 'Karachi' }] },
+    { value: 'lahore', label: 'Lahore', cities: [{ value: 'lahore', label: 'Lahore' }] },
+    { value: 'islamabad', label: 'Islamabad', cities: [{ value: 'islamabad', label: 'Islamabad' }] },
+  ],
+
+  afghanistan: [
+    { value: 'kabul', label: 'Kabul', cities: [{ value: 'kabul', label: 'Kabul' }] },
+  ],
+
+  iran: [
+    { value: 'tehran', label: 'Tehran', cities: [{ value: 'tehran', label: 'Tehran' }] },
+    { value: 'mashhad', label: 'Mashhad', cities: [{ value: 'mashhad', label: 'Mashhad' }] },
+  ],
+
+  iraq: [
+    { value: 'baghdad', label: 'Baghdad', cities: [{ value: 'baghdad', label: 'Baghdad' }] },
+    { value: 'basra', label: 'Basra', cities: [{ value: 'basra', label: 'Basra' }] },
+  ],
+
+  israel: [
+    { value: 'tel_aviv', label: 'Tel Aviv', cities: [{ value: 'tel_aviv', label: 'Tel Aviv' }] },
+    { value: 'jerusalem', label: 'Jerusalem', cities: [{ value: 'jerusalem', label: 'Jerusalem' }] },
+  ],
+
+  japan: [
+    { value: 'tokyo', label: 'Tokyo', cities: [{ value: 'tokyo', label: 'Tokyo' }] },
+    { value: 'osaka', label: 'Osaka', cities: [{ value: 'osaka', label: 'Osaka' }] },
+    { value: 'kyoto', label: 'Kyoto', cities: [{ value: 'kyoto', label: 'Kyoto' }] },
+  ],
+
+  south_korea: [
+    { value: 'seoul', label: 'Seoul', cities: [{ value: 'seoul', label: 'Seoul' }] },
+    { value: 'busan', label: 'Busan', cities: [{ value: 'busan', label: 'Busan' }] },
+  ],
+
+  north_korea: [
+    { value: 'pyongyang', label: 'Pyongyang', cities: [{ value: 'pyongyang', label: 'Pyongyang' }] },
+  ],
+
+  vietnam: [
+    { value: 'hanoi', label: 'Hanoi', cities: [{ value: 'hanoi', label: 'Hanoi' }] },
+    { value: 'ho_chi_minh', label: 'Ho Chi Minh City', cities: [{ value: 'ho_chi_minh', label: 'Ho Chi Minh City' }] },
+  ],
+
+  cambodia: [
+    { value: 'phnom_penh', label: 'Phnom Penh', cities: [{ value: 'phnom_penh', label: 'Phnom Penh' }] },
+    { value: 'siem_reap', label: 'Siem Reap', cities: [{ value: 'siem_reap', label: 'Siem Reap' }] },
+  ],
+
+  laos: [
+    { value: 'vientiane', label: 'Vientiane', cities: [{ value: 'vientiane', label: 'Vientiane' }] },
+  ],
+
+  mongolia: [
+    { value: 'ulan_bator', label: 'Ulaanbaatar', cities: [{ value: 'ulan_bator', label: 'Ulaanbaatar' }] },
+  ],
+
+  taiwan: [
+    { value: 'taipei', label: 'Taipei', cities: [{ value: 'taipei', label: 'Taipei' }] },
+    { value: 'kaohsiung', label: 'Kaohsiung', cities: [{ value: 'kaohsiung', label: 'Kaohsiung' }] },
   ],
 };
 
