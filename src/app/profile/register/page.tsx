@@ -488,7 +488,7 @@ export default function ProfileRegisterPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-t border-pink-100 my-2" />
+                  <div className="border-t border-pink-100 my-4 mx-5" />
                   <div className="flex flex-col pl-4">
                     <label className="mb-2 font-medium text-pink-700">Body Physique</label>
                     <div className="flex gap-2 items-center">
@@ -580,7 +580,7 @@ export default function ProfileRegisterPage() {
                       initialValue={form.mothertongue}
                       onChange={(v) => setForm({ ...form, mothertongue: v })}
                     />
-                    <div className="border-t border-pink-100 my-2" />
+                    <div className="border-t border-pink-100 my-4 mx-5" />
                     <div className="grid grid-cols-1 gap-3">
                       <div>
                         <label className="mb-3 font-medium text-lg text-pink-700">Currently living in</label>
@@ -710,7 +710,7 @@ export default function ProfileRegisterPage() {
                     />
                   </div>
 
-                  <div className="border-t border-pink-100 my-4" />
+                  <div className="border-t border-pink-100 my-4 mx-5" />
                   <h2 className="text-xl font-semibold text-pink-700">Professional Career</h2>
                   <div className="grid grid-cols-1 gap-4">
                     <ScrollableDropdown
