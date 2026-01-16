@@ -181,6 +181,10 @@ export default function ProfileRegisterPage() {
   function handleYearInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/[^0-9]/g, '');
     setYearInputText(raw);
+    // open the year popup while typing and position it
+    const r = yearBtnRef.current?.getBoundingClientRect();
+    if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 144 });
+    setOpenPicker('year');
     if (raw === '') { setSelectedYear(''); return; }
     if (years.includes(raw)) setSelectedYear(raw); else setSelectedYear('');
   }
@@ -482,7 +486,7 @@ export default function ProfileRegisterPage() {
                             />
                             {openPicker === 'year' && yearStyle && createPortal(
                               <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2">
-                                {years.map((y) => (
+                                {(yearInputText ? years.filter(y => y.startsWith(yearInputText)) : years).map((y) => (
                                   <button
                                     key={y}
                                     className={`p-2 text-sm rounded-md ${selectedYear === y ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'} text-left`}
