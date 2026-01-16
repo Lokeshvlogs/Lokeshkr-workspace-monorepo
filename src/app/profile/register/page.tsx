@@ -328,7 +328,7 @@ export default function ProfileRegisterPage() {
                                 {days.map((day) => (
                                   <button
                                     key={day}
-                                    className="p-2 text-sm rounded-md hover:bg-pink-400 hover:text-white"
+                                    className={`p-2 text-sm rounded-md ${selectedDay === day ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
                                     onClick={() => {
                                       setSelectedDay(day);
                                       setOpenPicker(null);
@@ -366,7 +366,7 @@ export default function ProfileRegisterPage() {
                                 {months.map((mo) => (
                                   <button
                                     key={mo.value}
-                                    className="p-2 text-sm rounded-md hover:bg-pink-400 hover:text-white"
+                                    className={`p-2 text-sm rounded-md ${selectedMonth === mo.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
                                     onClick={() => {
                                       setSelectedMonth(mo.value);
                                       setOpenPicker(null);
@@ -404,7 +404,7 @@ export default function ProfileRegisterPage() {
                                 {years.map((y) => (
                                   <button
                                     key={y}
-                                    className="p-2 text-sm rounded-md hover:bg-pink-400 hover:text-white text-left"
+                                    className={`p-2 text-sm rounded-md ${selectedYear === y ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'} text-left`}
                                     onClick={() => {
                                       setSelectedYear(y);
                                       setOpenPicker(null);
