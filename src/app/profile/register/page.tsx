@@ -19,6 +19,9 @@ export default function ProfileRegisterPage() {
   const [selectedDay, setSelectedDay] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
+  const [dayInputText, setDayInputText] = useState<string>('');
+  const [monthInputText, setMonthInputText] = useState<string>('');
+  const [yearInputText, setYearInputText] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [openPicker, setOpenPicker] = useState<null | 'day' | 'month' | 'year'>(null);
   const currentYear = new Date().getFullYear();
@@ -118,9 +121,9 @@ export default function ProfileRegisterPage() {
     country: "",
   });
   const dateContainerRef = useRef<HTMLDivElement | null>(null);
-  const dayBtnRef = useRef<HTMLButtonElement | null>(null);
-  const monthBtnRef = useRef<HTMLButtonElement | null>(null);
-  const yearBtnRef = useRef<HTMLButtonElement | null>(null);
+  const dayBtnRef = useRef<HTMLInputElement | null>(null);
+  const monthBtnRef = useRef<HTMLInputElement | null>(null);
+  const yearBtnRef = useRef<HTMLInputElement | null>(null);
   const dayPopupRef = useRef<HTMLDivElement | null>(null);
   const monthPopupRef = useRef<HTMLDivElement | null>(null);
   const yearPopupRef = useRef<HTMLDivElement | null>(null);
@@ -128,6 +131,59 @@ export default function ProfileRegisterPage() {
   const [monthStyle, setMonthStyle] = useState<CSSProperties | null>(null);
   const [yearStyle, setYearStyle] = useState<CSSProperties | null>(null);
   const [step, setStep] = useState<number | undefined>(undefined);
+
+  // Keep form.dob in sync when selected date/time parts change
+  useEffect(() => {
+    const date = selectedYear && selectedMonth && selectedDay ? `${selectedYear}-${selectedMonth}-${selectedDay}` : '';
+    const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
+    setForm(prev => ({ ...prev, dob: combined }));
+  }, [selectedDay, selectedMonth, selectedYear, selectedTime]);
+
+  // Sync display text inputs when selected values change (so typing or button selects reflect)
+  useEffect(() => {
+    setDayInputText(selectedDay ? String(Number(selectedDay)) : '');
+  }, [selectedDay]);
+  useEffect(() => {
+    const mo = months.find(m => m.value === selectedMonth);
+    setMonthInputText(mo ? mo.label : '');
+  }, [selectedMonth]);
+  useEffect(() => {
+    setYearInputText(selectedYear || '');
+  }, [selectedYear]);
+
+  function handleDayInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/[^0-9]/g, '');
+    setDayInputText(raw);
+    if (raw === '') { setSelectedDay(''); return; }
+    const n = Number(raw);
+    if (!Number.isNaN(n) && n >= 1 && n <= 31) {
+      const pad = String(n).padStart(2, '0');
+      setSelectedDay(pad);
+    } else {
+      setSelectedDay('');
+    }
+  }
+
+  function handleMonthInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.trim();
+    setMonthInputText(raw);
+    if (raw === '') { setSelectedMonth(''); return; }
+    const numeric = Number(raw);
+    if (!Number.isNaN(numeric) && numeric >= 1 && numeric <= 12) {
+      setSelectedMonth(String(numeric).padStart(2, '0'));
+      return;
+    }
+    // try matching month label
+    const match = months.find(m => m.label.toLowerCase().startsWith(raw.toLowerCase()));
+    if (match) setSelectedMonth(match.value); else setSelectedMonth('');
+  }
+
+  function handleYearInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/[^0-9]/g, '');
+    setYearInputText(raw);
+    if (raw === '') { setSelectedYear(''); return; }
+    if (years.includes(raw)) setSelectedYear(raw); else setSelectedYear('');
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -242,6 +298,29 @@ export default function ProfileRegisterPage() {
       document.removeEventListener('keydown', onKey);
     };
   }, []);
+
+  // Close day/month/year popups on page scroll, except when scrolling inside their own popup or input
+  useEffect(() => {
+    function onScroll(e: Event) {
+      if (!openPicker) return;
+      const target = (e.target as Node) || null;
+      const isInsideDay = dayPopupRef.current && target && (dayPopupRef.current === target || dayPopupRef.current.contains(target));
+      const isInsideDayInput = dayBtnRef.current && target && (dayBtnRef.current === target || dayBtnRef.current.contains(target));
+      const isInsideMonth = monthPopupRef.current && target && (monthPopupRef.current === target || monthPopupRef.current.contains(target));
+      const isInsideMonthInput = monthBtnRef.current && target && (monthBtnRef.current === target || monthBtnRef.current.contains(target));
+
+      if (openPicker === 'day' && (isInsideDay || isInsideDayInput)) return;
+      if (openPicker === 'month' && (isInsideMonth || isInsideMonthInput)) return;
+      // allow scrolling inside year popup without closing if needed
+      const isInsideYear = yearPopupRef.current && target && (yearPopupRef.current === target || yearPopupRef.current.contains(target));
+      const isInsideYearInput = yearBtnRef.current && target && (yearBtnRef.current === target || yearBtnRef.current.contains(target));
+      if (openPicker === 'year' && (isInsideYear || isInsideYearInput)) return;
+
+      setOpenPicker(null);
+    }
+    document.addEventListener('scroll', onScroll, true);
+    return () => document.removeEventListener('scroll', onScroll, true);
+  }, [openPicker]);
   return (
     <div className="min-h-screen bg-white flex items-start justify-center py-40">
       <div
@@ -309,20 +388,21 @@ export default function ProfileRegisterPage() {
                         <div ref={dateContainerRef} className="flex gap-2 items-center relative">
                           {/* Day picker button */}
                           <div className="relative">
-                            <button
+                            <input
                               ref={dayBtnRef}
-                              type="button"
-                              className="p-3 border border-pink-200 rounded-md bg-white text-left w-20"
-                              onClick={() => {
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Day"
+                              value={dayInputText}
+                              onFocus={() => {
                                 if (openPicker === 'day') return setOpenPicker(null);
                                 const r = dayBtnRef.current?.getBoundingClientRect();
                                 if (r) setDayStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 192 });
                                 setOpenPicker('day');
                               }}
-                            >
-                              {selectedDay ? String(Number(selectedDay)) : 'Day'}
-                            </button>
-
+                              onChange={handleDayInputChange}
+                              className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
+                            />
                             {openPicker === 'day' && dayStyle && createPortal(
                               <div ref={dayPopupRef} style={dayStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-4 gap-2">
                                 {days.map((day) => (
@@ -347,20 +427,20 @@ export default function ProfileRegisterPage() {
 
                           {/* Month picker button */}
                           <div className="relative">
-                            <button
+                            <input
                               ref={monthBtnRef}
-                              type="button"
-                              className="p-3 border border-pink-200 rounded-md bg-white text-left w-20"
-                              onClick={() => {
+                              type="text"
+                              placeholder="Month"
+                              value={monthInputText}
+                              onFocus={() => {
                                 if (openPicker === 'month') return setOpenPicker(null);
                                 const r = monthBtnRef.current?.getBoundingClientRect();
                                 if (r) setMonthStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 160 });
                                 setOpenPicker('month');
                               }}
-                            >
-                              {selectedMonth ? months.find(m => m.value === selectedMonth)?.label : 'Month'}
-                            </button>
-
+                              onChange={handleMonthInputChange}
+                              className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
+                            />
                             {openPicker === 'month' && monthStyle && createPortal(
                               <div ref={monthPopupRef} style={monthStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto grid grid-cols-3 gap-2">
                                 {months.map((mo) => (
@@ -385,20 +465,21 @@ export default function ProfileRegisterPage() {
 
                           {/* Year picker button */}
                           <div className="relative">
-                            <button
+                            <input
                               ref={yearBtnRef}
-                              type="button"
-                              className="p-3 border border-pink-200 rounded-md bg-white text-left w-28"
-                              onClick={() => {
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Year"
+                              value={yearInputText}
+                              onFocus={() => {
                                 if (openPicker === 'year') return setOpenPicker(null);
                                 const r = yearBtnRef.current?.getBoundingClientRect();
                                 if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 144 });
                                 setOpenPicker('year');
                               }}
-                            >
-                              {selectedYear || 'Year'}
-                            </button>
-
+                              onChange={handleYearInputChange}
+                              className="p-3 border border-pink-200 rounded-md bg-white text-left w-28"
+                            />
                             {openPicker === 'year' && yearStyle && createPortal(
                               <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2">
                                 {years.map((y) => (
