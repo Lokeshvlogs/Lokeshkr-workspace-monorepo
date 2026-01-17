@@ -90,35 +90,37 @@ export default function ProfileRegisterPage() {
   })();
   // form state
   const [form, setForm] = useState({
+    //basic details
     firstName: "",
     surname: "",
     dob: "",
     gender: "",
-    religion: "",
-    community: "",
-    mothertongue: "",
-    profession: "",
-    salaryAmount: "",
-    salaryFrequency: "per_annum",
-    salaryCurrency: "INR",
-    photo: "",
     heightFeet: "",
     heightInches: "",
     bodyPhysique: "",
-    placeOfBirth: "",
-    currentResidence: "",
-    hometown: "",
-    hometownCity: "",
-    placeOfBirthCity: "",
     maritalStatus: "",
     manglikLevel: 0,
-    livesWithFamily: false,
+    //social background
+    religion: "",
+    community: "",
+    mothertongue: "",
+    countryCountry: "",
+    currentCity: "",
+    hometown: "",
+    hometownCity: "",
+    placeOfBirth: "",
+    placeOfBirthCity: "",
     placeOfBirthCountry: "",
+    livesWithFamily: false,
     familyIncome: "",
-    education: "",
+    //Education details
+    educationLevel: "",
     fieldOfStudy: "",
     college: "",
-    country: "",
+    profession: "",
+    salaryAmount: "",
+    //profile photo
+    photo: "",
   });
   const dateContainerRef = useRef<HTMLDivElement | null>(null);
   const dayBtnRef = useRef<HTMLInputElement | null>(null);
@@ -673,21 +675,21 @@ export default function ProfileRegisterPage() {
                           <ScrollableDropdown
                             label="Country"
                             options={countryOptions}
-                            initialValue={form.country}
-                            onChange={(v) => setForm({ ...form, country: v })}
+                            initialValue={form.countryCountry}
+                            onChange={(v) => setForm({ ...form, countryCountry: v })}
                           />
                           <ScrollableDropdown
                             label="City"
                             options={
-                              form.country
-                                ? (placesByCountry[form.country] || []).flatMap((st: any) => {
-                                    const countryLabel = (countryOptions.find(c => c.value === form.country) || { label: '' }).label;
+                              form.countryCountry
+                                ? (placesByCountry[form.countryCountry] || []).flatMap((st: any) => {
+                                    const countryLabel = (countryOptions.find(c => c.value === form.countryCountry) || { label: '' }).label;
                                     return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
                                   })
                                 : cityOptionsExtended
                             }
-                            initialValue={form.currentResidence}
-                            onChange={(v) => setForm({ ...form, currentResidence: v })}
+                            initialValue={form.currentCity}
+                            onChange={(v) => setForm({ ...form, currentCity: v })}
                           />
                         </div>
                       </div>
@@ -732,9 +734,9 @@ export default function ProfileRegisterPage() {
                             <ScrollableDropdown
                               label="City"
                               options={
-                                form.country
-                                  ? (placesByCountry[form.country] || []).flatMap((st: any) => {
-                                      const countryLabel = (countryOptions.find(c => c.value === form.country) || { label: '' }).label;
+                                form.countryCountry
+                                  ? (placesByCountry[form.countryCountry] || []).flatMap((st: any) => {
+                                      const countryLabel = (countryOptions.find(c => c.value === form.countryCountry) || { label: '' }).label;
                                       return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
                                     })
                                   : cityOptionsExtended
@@ -776,10 +778,10 @@ export default function ProfileRegisterPage() {
                   <h2 className="text-xl font-semibold text-pink-700">Educational Career</h2>
                   <div className="grid grid-cols-1 gap-4">
                     <ScrollableDropdown
-                      label="Highest Education"
+                      label="Highest Education Level"
                       options={educationOptions}
-                      initialValue={form.education}
-                      onChange={(v) => setForm({ ...form, education: v })}
+                      initialValue={form.educationLevel}
+                      onChange={(v) => setForm({ ...form, educationLevel: v })}
                     />
                     <ScrollableDropdown
                       label="Field of Study"
