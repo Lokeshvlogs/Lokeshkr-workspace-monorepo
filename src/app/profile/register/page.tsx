@@ -45,7 +45,8 @@ export default function ProfileRegisterPage() {
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" /></svg>),
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20a4 4 0 00-8 0" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 8a4 4 0 110-8 4 4 0 010 8zM21 12a4 4 0 10-8 0 4 4 0 008 0z" /></svg>),
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a4 4 0 018 0v2" /></svg>),
-    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h3l2-3h6l2 3h3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><circle cx="12" cy="13" r="3" /></svg>),
+    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z" /></svg>),
+    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h3l2-3h6l2 3h3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><circle cx="12" cy="13" r="3" /></svg>)
   ];
   const feetOptions = Array.from({ length: 5 }, (_, i) => {
     const ft = String(4 + i); // 4,5,6,7,8 -> keep reasonable range
@@ -69,6 +70,55 @@ export default function ProfileRegisterPage() {
     { value: '100-200', label: '1-2 crores' },
     { value: '200-500', label: '2-5 crores' },
     { value: '500+', label: '5+ crores' },
+  ];
+
+  const employedInOptions = [
+    { value: 'government', label: 'Government' },
+    { value: 'private', label: 'Private' },
+    { value: 'public_sector', label: 'Public Sector' },
+    { value: 'self_employed', label: 'Self Employed' },
+    { value: 'business', label: 'Business' },
+    { value: 'student', label: 'Student' },
+    { value: 'not_employed', label: 'Not Employed' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const employedAsOptions = [
+    { value: 'owner', label: 'Owner / Proprietor' },
+    { value: 'partner', label: 'Partner' },
+    { value: 'senior_management', label: 'Senior Management' },
+    { value: 'middle_management', label: 'Middle Management' },
+    { value: 'junior', label: 'Junior / Executive' },
+    { value: 'entry_level', label: 'Entry Level' },
+    { value: 'freelancer', label: 'Freelancer / Consultant' },
+    { value: 'student', label: 'Student' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const smokingOptions = [
+    { value: 'non_smoker', label: 'Non-smoker' },
+    { value: 'occasionally', label: 'Occasionally' },
+    { value: 'regularly', label: 'Regularly' },
+    { value: 'trying_to_quit', label: 'Trying to quit' },
+  ];
+
+  const drinkingOptions = [
+    { value: 'non_drinker', label: 'Non-drinker' },
+    { value: 'socially', label: 'Socially' },
+    { value: 'regularly', label: 'Regularly' },
+  ];
+
+  const dietOptions = [
+    { value: 'vegetarian', label: 'Vegetarian' },
+    { value: 'non_vegetarian', label: 'Non-Vegetarian' },
+    { value: 'eggetarian', label: 'Eggetarian' },
+    { value: 'vegan', label: 'Vegan' },
+  ];
+
+  const routineOptions = [
+    { value: 'early_riser', label: 'Early Riser' },
+    { value: 'night_owl', label: 'Night Owl' },
+    { value: 'flexible', label: 'Flexible' },
   ];
 
   // When no country is selected, provide an aggregated city list with "City, State, Country" labels
@@ -100,25 +150,33 @@ export default function ProfileRegisterPage() {
     bodyPhysique: "",
     maritalStatus: "",
     manglikLevel: 0,
+
     //social background
     religion: "",
     community: "",
     mothertongue: "",
-    countryCountry: "",
+    currentCountry: "",
     currentCity: "",
-    hometown: "",
-    hometownCity: "",
-    placeOfBirth: "",
     placeOfBirthCity: "",
     placeOfBirthCountry: "",
-    livesWithFamily: false,
     familyIncome: "",
+    livesWithFamily: false,
+    
     //Education details
     educationLevel: "",
     fieldOfStudy: "",
-    college: "",
+    collegeUniversity: "",
     profession: "",
+    employedIn: "",
+    employedAs: "",
+
+    //lifestyle details
+    smoking: "",
+    drinking: "",
+    diet: "",
+    routine: "",
     salaryAmount: "",
+
     //profile photo
     photo: "",
   });
@@ -213,7 +271,47 @@ export default function ProfileRegisterPage() {
   const handleSaveStep = async (currentStep: number) => {
     try {
       console.log('Saving step', currentStep, form);
+      const stepDataPayload = { currentStep,
+                                "firstName": form.firstName,
+                                "surname": form.surname,
+                                "dob": form.dob,
+                                "gender": form.gender, 
+                                "heightFeet": form.heightFeet,
+                                "heightInches": form.heightInches,
+                                "bodyPhysique": form.bodyPhysique,
+                                "maritalStatus": form.maritalStatus,
+                                "manglikLevel": form.manglikLevel,
+                                "religion": form.religion,
+                                "community": form.community,
+                                "mothertongue": form.mothertongue,
+                                "countryCountry": form.countryCountry,
+                                "currentCity": form.currentCity,
+                                "hometown": form.hometown,
+                                "hometownCity": form.hometownCity,
+                                "placeOfBirth": form.placeOfBirth,
+                                "placeOfBirthCity": form.placeOfBirthCity,
+                                "placeOfBirthCountry": form.placeOfBirthCountry,
+                                "livesWithFamily": form.livesWithFamily,
+                                "familyIncome": form.familyIncome,
+                                "educationLevel": form.educationLevel,
+                                "fieldOfStudy": form.fieldOfStudy,
+                                "college": form.collegeUniversity,
+                                "profession": form.profession,
+                                "employedIn": form.employedIn,
+                                "employedAs": form.employedAs,
+                                "smoking": form.smoking,
+                                "drinking": form.drinking,
+                                "diet": form.diet,
+                                "routine": form.routine,
+                                "salaryAmount": form.salaryAmount,
+                                "photo": form.photo
+                              }; 
       // TODO: integrate with API proxy; for now just noop
+      const response = await fetch('/api/profile/save-step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(stepDataPayload),
+      });
       return;
     } catch (err) {
       console.error('Error saving step:', err);
@@ -248,13 +346,16 @@ export default function ProfileRegisterPage() {
       return form.profession.trim() !== "" && form.salaryAmount.trim() !== "";
     }
     if (s === 3) {
+      return true;
+    }
+    if (s === 4) {
       return form.photo !== "";
     }
     return true;
   };
 
   const canSubmit = (s: number): boolean => {
-    return s === 3 ? canProceed(s) : false;
+    return s === 4 ? canProceed(s) : false;
   };
 
   // Step change logic: just update the step
@@ -337,12 +438,12 @@ export default function ProfileRegisterPage() {
           <>
             <div className="flex flex-col items-center mb-8">
               <div className="flex items-center w-full max-w-xl">
-                {[0, 1, 2, 3].map((s, idx) => (
+                {[0, 1, 2, 3, 4].map((s, idx) => (
                   <React.Fragment key={s}>
                     <button
                       type="button"
                       onClick={() => handleJumpToStep(s)}
-                      aria-label={["Basic Details","Socio Personal Background","Educational and Professional Background","Profile Photo"][s]}
+                      aria-label={["Basic Details","Socio Personal Background","Educational and Professional Background","Lifestyle & Habits","Profile Photo"][s]}
                       aria-current={step === s ? 'step' : undefined}
                       className={`flex items-center justify-center rounded-full border-2 w-8 h-8 text-sm font-bold transition-colors duration-200 
                       ${step === s ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-pink-300 text-pink-500'} focus:outline-none`}
@@ -351,7 +452,7 @@ export default function ProfileRegisterPage() {
                         {stepIcons[s]}
                       </span>
                     </button>
-                    {idx < 3 && (
+                    {idx < 4 && (
                       <div className="flex-1 h-1 bg-pink-200 mx-1" />
                     )}
                   </React.Fragment>
@@ -792,8 +893,8 @@ export default function ProfileRegisterPage() {
                     <ScrollableDropdown
                       label="College / School"
                       options={collegeOptions}
-                      initialValue={form.college}
-                      onChange={(v) => setForm({ ...form, college: v })}
+                      initialValue={form.collegeUniversity}
+                      onChange={(v) => setForm({ ...form, collegeUniversity: v })}
                     />
                   </div>
 
@@ -805,6 +906,20 @@ export default function ProfileRegisterPage() {
                       options={professionOptions}
                       initialValue={form.profession}
                       onChange={(v) => setForm({ ...form, profession: v })}
+                    />
+
+                    <ScrollableDropdown
+                      label="Employed In"
+                      options={employedInOptions}
+                      initialValue={form.employedIn}
+                      onChange={(v) => setForm({ ...form, employedIn: v })}
+                    />
+
+                    <ScrollableDropdown
+                      label="Employed As"
+                      options={employedAsOptions}
+                      initialValue={form.employedAs}
+                      onChange={(v) => setForm({ ...form, employedAs: v })}
                     />
 
                     <div className="grid grid-cols-5 gap-3 items-center">
@@ -822,7 +937,38 @@ export default function ProfileRegisterPage() {
                 </div>
               </div>
             </div>,
-                // Step 4 - Profile Photo
+                // Step 4 - Lifestyle & Habits
+                <div className="flex flex-col gap-4 p-4">
+                  <h2 className="text-xl font-semibold text-pink-700">Lifestyle & Habits</h2>
+                  <div className="grid grid-cols-1 gap-3">
+                    <ScrollableDropdown
+                      label="Smoking"
+                      options={smokingOptions}
+                      initialValue={form.smoking}
+                      onChange={(v) => setForm({ ...form, smoking: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Drinking"
+                      options={drinkingOptions}
+                      initialValue={form.drinking}
+                      onChange={(v) => setForm({ ...form, drinking: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Diet"
+                      options={dietOptions}
+                      initialValue={form.diet}
+                      onChange={(v) => setForm({ ...form, diet: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Daily Routine"
+                      options={routineOptions}
+                      initialValue={form.routine}
+                      onChange={(v) => setForm({ ...form, routine: v })}
+                    />
+                  </div>
+                </div>,
+
+                // Step 5 - Profile Photo
                 <div className="flex flex-col gap-4 p-4 items-center">
                   <h2 className="text-xl font-semibold text-pink-700">Profile Photo</h2>
                   <p className="text-sm text-gray-500">Add a friendly face — helps matches notice you.</p>
