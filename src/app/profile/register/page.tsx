@@ -169,13 +169,16 @@ export default function ProfileRegisterPage() {
     profession: "",
     employedIn: "",
     employedAs: "",
+    salaryAmount: "",
 
     //lifestyle details
     smoking: "",
     drinking: "",
     diet: "",
     routine: "",
-    salaryAmount: "",
+    exercise: 0,
+    religiousness: 1,
+    astrologyBelief: 1,
 
     //profile photo
     photo: "",
@@ -303,6 +306,9 @@ export default function ProfileRegisterPage() {
                                 "drinking": form.drinking,
                                 "diet": form.diet,
                                 "routine": form.routine,
+                                  "exercise": form.exercise,
+                                  "religiousness": form.religiousness,
+                                  "astrologyBelief": form.astrologyBelief,
                                 "salaryAmount": form.salaryAmount,
                                 "photo": form.photo
                               }; 
@@ -965,6 +971,52 @@ export default function ProfileRegisterPage() {
                       initialValue={form.routine}
                       onChange={(v) => setForm({ ...form, routine: v })}
                     />
+                    <div className="grid grid-cols-1 gap-3 mt-2">
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Exercise (0-10)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={0}
+                            max={10}
+                            value={form.exercise}
+                            onChange={(e) => setForm({ ...form, exercise: Number(e.target.value) })}
+                            className="pink-range w-full"
+                          />
+                          <div className="w-12 text-right text-sm text-gray-700">{form.exercise}</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Religiosity (1-10)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={1}
+                            max={10}
+                            value={form.religiousness}
+                            onChange={(e) => setForm({ ...form, religiousness: Number(e.target.value) })}
+                            className="pink-range w-full"
+                          />
+                          <div className="w-12 text-right text-sm text-gray-700">{form.religiousness}</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Astrology Belief (1-10)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={1}
+                            max={10}
+                            value={form.astrologyBelief}
+                            onChange={(e) => setForm({ ...form, astrologyBelief: Number(e.target.value) })}
+                            className="pink-range w-full"
+                          />
+                          <div className="w-12 text-right text-sm text-gray-700">{form.astrologyBelief}</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>,
 

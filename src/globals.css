@@ -66,3 +66,55 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+/* Pink-styled range input used on profile register page */
+.pink-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: #fdebf5;
+  border-radius: 9999px;
+}
+.pink-range:focus {
+  outline: none;
+}
+.pink-range::-webkit-slider-runnable-track {
+  height: 6px;
+  background: #fdebf5;
+  border-radius: 9999px;
+}
+.pink-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #ec4899;
+  box-shadow: 0 0 0 4px rgba(236,72,153,0.15);
+  margin-top: -5px;
+}
+.pink-range::-moz-range-track {
+  height: 6px;
+  background: #fdebf5;
+  border-radius: 9999px;
+}
+.pink-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #ec4899;
+  box-shadow: 0 0 0 4px rgba(236,72,153,0.15);
+  border: none;
+}
+.pink-range::-ms-track {
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+  height: 6px;
+}
+.pink-range::-ms-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #ec4899;
+  border: none;
+}
