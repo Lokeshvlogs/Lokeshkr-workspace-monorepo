@@ -180,6 +180,9 @@ export default function ProfileRegisterPage() {
     religiousness: 1,
     astrologyBelief: 1,
 
+    //If divorced or married before family details
+    hasChildren: "",
+    wantsChildren: "",
     //profile photo
     photo: "",
   });
