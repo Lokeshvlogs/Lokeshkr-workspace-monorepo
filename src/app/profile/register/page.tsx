@@ -838,15 +838,15 @@ export default function ProfileRegisterPage() {
                             <ScrollableDropdown
                               label="Country"
                               options={countryOptions}
-                              initialValue={form.hometown}
-                              onChange={(v) => setForm({ ...form, hometown: v })}
+                              initialValue={form.hometownCountry}
+                              onChange={(v) => setForm({ ...form, hometownCountry: v })}
                             />
                             <ScrollableDropdown
                               label="City"
                               options={
-                                form.countryCountry
-                                  ? (placesByCountry[form.countryCountry] || []).flatMap((st: any) => {
-                                      const countryLabel = (countryOptions.find(c => c.value === form.countryCountry) || { label: '' }).label;
+                                form.hometownCountry
+                                  ? (placesByCountry[form.hometownCountry] || []).flatMap((st: any) => {
+                                      const countryLabel = (countryOptions.find(c => c.value === form.hometownCountry) || { label: '' }).label;
                                       return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
                                     })
                                   : cityOptionsExtended
@@ -991,6 +991,20 @@ export default function ProfileRegisterPage() {
                       </div>
 
                       <div>
+                        <label className="mb-1 font-medium text-pink-700">Do you believe in God? (1-10)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={1}
+                            max={10}
+                            value={form.astrologyBelief}
+                            onChange={(e) => setForm({ ...form, astrologyBelief: Number(e.target.value) })}
+                            className="pink-range w-full"
+                          />
+                          <div className="w-12 text-right text-sm text-gray-700">{form.astrologyBelief}</div>
+                        </div>
+                      </div>
+                      <div>
                         <label className="mb-1 font-medium text-pink-700">Religiosity (1-10)</label>
                         <div className="flex items-center gap-4">
                           <input
@@ -1002,21 +1016,6 @@ export default function ProfileRegisterPage() {
                             className="pink-range w-full"
                           />
                           <div className="w-12 text-right text-sm text-gray-700">{form.religiousness}</div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="mb-1 font-medium text-pink-700">Astrology Belief (1-10)</label>
-                        <div className="flex items-center gap-4">
-                          <input
-                            type="range"
-                            min={1}
-                            max={10}
-                            value={form.astrologyBelief}
-                            onChange={(e) => setForm({ ...form, astrologyBelief: Number(e.target.value) })}
-                            className="pink-range w-full"
-                          />
-                          <div className="w-12 text-right text-sm text-gray-700">{form.astrologyBelief}</div>
                         </div>
                       </div>
                     </div>
