@@ -26,3 +26,29 @@ export const professionOptions = [
   { value: 'marketing_manager', label: 'Marketing Manager' },
   { value: 'other', label: 'Other' },
 ];
+
+
+  const employedInOptions = [
+    { value: 'government', label: 'Government' },
+    { value: 'private', label: 'Private' },
+    { value: 'public_sector', label: 'Public Sector' },
+    { value: 'self_employed', label: 'Self Employed' },
+    { value: 'business', label: 'Business' },
+    { value: 'student', label: 'Student' },
+    { value: 'not_employed', label: 'Not Employed' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const employedAsOptions = [
+    { value: 'owner', label: 'Owner / Proprietor' },
+    { value: 'partner', label: 'Partner' },
+    { value: 'senior_management', label: 'Senior Management' },
+    { value: 'middle_management', label: 'Middle Management' },
+    { value: 'junior', label: 'Junior / Executive' },
+    { value: 'entry_level', label: 'Entry Level' },
+    { value: 'freelancer', label: 'Freelancer / Consultant' },
+    { value: 'student', label: 'Student' },
+    { value: 'other', label: 'Other' },
+  ];
+
+export { employedInOptions, employedAsOptions };

@@ -10,7 +10,10 @@ import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackgr
 import placesByCountry, { countryOptions } from '@/utils/placesByCountry';
 import { professionOptions } from "@/utils/professionOptions";
 import { educationOptions, fieldOfStudyOptions, collegeOptions } from '@/utils/educationOptions';
-
+import familyIncomeOptions from "@/utils/incomeOptions";
+import { employedAsOptions, employedInOptions } from "@/utils/professionOptions";
+import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "@/utils/lifeStyleOptions";
+import {currentYear, years, days, months} from "@/utils/timeDateOptions";
 
 export default function ProfileRegisterPage() {
 
@@ -24,23 +27,7 @@ export default function ProfileRegisterPage() {
   const [yearInputText, setYearInputText] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [openPicker, setOpenPicker] = useState<null | 'day' | 'month' | 'year'>(null);
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 121 }, (_, i) => String(currentYear - i));
-  const months = [
-    { value: '01', label: 'Jan' },
-    { value: '02', label: 'Feb' },
-    { value: '03', label: 'Mar' },
-    { value: '04', label: 'Apr' },
-    { value: '05', label: 'May' },
-    { value: '06', label: 'Jun' },
-    { value: '07', label: 'Jul' },
-    { value: '08', label: 'Aug' },
-    { value: '09', label: 'Sep' },
-    { value: '10', label: 'Oct' },
-    { value: '11', label: 'Nov' },
-    { value: '12', label: 'Dec' },
-  ];
-  const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+
   const stepIcons = [
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" /></svg>),
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20a4 4 0 00-8 0" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 8a4 4 0 110-8 4 4 0 010 8zM21 12a4 4 0 10-8 0 4 4 0 008 0z" /></svg>),
@@ -53,73 +40,6 @@ export default function ProfileRegisterPage() {
     return { value: ft, label: `${ft} ft` };
   });
   const inchOptions = Array.from({ length: 12 }, (_, i) => ({ value: String(i), label: `${i} in` }));
-  const physiqueOptions = [
-    { value: 'slim', label: 'Slim' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'athletic', label: 'Athletic' },
-    { value: 'chubby', label: 'Chubby' },
-    { value: 'heavy', label: 'Heavy' },
-  ];
-  const familyIncomeOptions = [
-    { value: '0-5', label: '0-5 lacs' },
-    { value: '5-10', label: '5-10 lacs' },
-    { value: '10-15', label: '10-15 lacs' },
-    { value: '15-25', label: '15-25 lacs' },
-    { value: '25-50', label: '25-50 lacs' },
-    { value: '50-100', label: '50-100 lacs' },
-    { value: '100-200', label: '1-2 crores' },
-    { value: '200-500', label: '2-5 crores' },
-    { value: '500+', label: '5+ crores' },
-  ];
-
-  const employedInOptions = [
-    { value: 'government', label: 'Government' },
-    { value: 'private', label: 'Private' },
-    { value: 'public_sector', label: 'Public Sector' },
-    { value: 'self_employed', label: 'Self Employed' },
-    { value: 'business', label: 'Business' },
-    { value: 'student', label: 'Student' },
-    { value: 'not_employed', label: 'Not Employed' },
-    { value: 'other', label: 'Other' },
-  ];
-
-  const employedAsOptions = [
-    { value: 'owner', label: 'Owner / Proprietor' },
-    { value: 'partner', label: 'Partner' },
-    { value: 'senior_management', label: 'Senior Management' },
-    { value: 'middle_management', label: 'Middle Management' },
-    { value: 'junior', label: 'Junior / Executive' },
-    { value: 'entry_level', label: 'Entry Level' },
-    { value: 'freelancer', label: 'Freelancer / Consultant' },
-    { value: 'student', label: 'Student' },
-    { value: 'other', label: 'Other' },
-  ];
-
-  const smokingOptions = [
-    { value: 'non_smoker', label: 'Non-smoker' },
-    { value: 'occasionally', label: 'Occasionally' },
-    { value: 'regularly', label: 'Regularly' },
-    { value: 'trying_to_quit', label: 'Trying to quit' },
-  ];
-
-  const drinkingOptions = [
-    { value: 'non_drinker', label: 'Non-drinker' },
-    { value: 'socially', label: 'Socially' },
-    { value: 'regularly', label: 'Regularly' },
-  ];
-
-  const dietOptions = [
-    { value: 'vegetarian', label: 'Vegetarian' },
-    { value: 'non_vegetarian', label: 'Non-Vegetarian' },
-    { value: 'eggetarian', label: 'Eggetarian' },
-    { value: 'vegan', label: 'Vegan' },
-  ];
-
-  const routineOptions = [
-    { value: 'early_riser', label: 'Early Riser' },
-    { value: 'night_owl', label: 'Night Owl' },
-    { value: 'flexible', label: 'Flexible' },
-  ];
 
   // When no country is selected, provide an aggregated city list with "City, State, Country" labels
   const cityOptionsExtended: { value: string; label: string }[] = (() => {
@@ -157,8 +77,10 @@ export default function ProfileRegisterPage() {
     mothertongue: "",
     currentCountry: "",
     currentCity: "",
-    placeOfBirthCity: "",
     placeOfBirthCountry: "",
+    placeOfBirthCity: "",
+    familyLivingInCountry: "",
+    familyLivingInCity: "",
     familyIncome: "",
     livesWithFamily: false,
     
@@ -181,8 +103,8 @@ export default function ProfileRegisterPage() {
     astrologyBelief: 1,
 
     //If divorced or married before family details
-    hasChildren: "",
-    wantsChildren: "",
+    hasChildren: false,
+    wantsChildren: true,
     //profile photo
     photo: "",
   });
@@ -276,8 +198,7 @@ export default function ProfileRegisterPage() {
   // Called when user clicks Continue; saves current step data to server
   const handleSaveStep = async (currentStep: number) => {
     try {
-      console.log('Saving step', currentStep, form);
-      const stepDataPayload = { currentStep,
+      const stepDataPayload = { "step": currentStep,
                                 "firstName": form.firstName,
                                 "surname": form.surname,
                                 "dob": form.dob,
@@ -287,34 +208,39 @@ export default function ProfileRegisterPage() {
                                 "bodyPhysique": form.bodyPhysique,
                                 "maritalStatus": form.maritalStatus,
                                 "manglikLevel": form.manglikLevel,
+
                                 "religion": form.religion,
                                 "community": form.community,
                                 "mothertongue": form.mothertongue,
-                                "countryCountry": form.countryCountry,
+                                "currentCountry": form.currentCountry,
                                 "currentCity": form.currentCity,
-                                "hometown": form.hometown,
-                                "hometownCity": form.hometownCity,
-                                "placeOfBirth": form.placeOfBirth,
-                                "placeOfBirthCity": form.placeOfBirthCity,
                                 "placeOfBirthCountry": form.placeOfBirthCountry,
+                                "placeOfBirthCity": form.placeOfBirthCity,
+                                "familyLivingInCountry": form.familyLivingInCountry,
+                                "familyLivingInCity": form.familyLivingInCity,
                                 "livesWithFamily": form.livesWithFamily,
                                 "familyIncome": form.familyIncome,
+
                                 "educationLevel": form.educationLevel,
                                 "fieldOfStudy": form.fieldOfStudy,
-                                "college": form.collegeUniversity,
+                                "collegeUniversity": form.collegeUniversity,
                                 "profession": form.profession,
                                 "employedIn": form.employedIn,
                                 "employedAs": form.employedAs,
+                                "salaryAmount": form.salaryAmount,
+
+                                "diet": form.diet,
                                 "smoking": form.smoking,
                                 "drinking": form.drinking,
-                                "diet": form.diet,
                                 "routine": form.routine,
-                                  "exercise": form.exercise,
-                                  "religiousness": form.religiousness,
-                                  "astrologyBelief": form.astrologyBelief,
-                                "salaryAmount": form.salaryAmount,
+                                "exercise": form.exercise,
+                                "religiousness": form.religiousness,
+                                "astrologyBelief": form.astrologyBelief,
+                                "hasChildren": form.hasChildren,
+                                "wantsChildren": form.wantsChildren,
                                 "photo": form.photo
-                              }; 
+                              };
+       console.log('Saving step', stepDataPayload); 
       // TODO: integrate with API proxy; for now just noop
       const response = await fetch('/api/profile/save-step', {
         method: 'POST',
@@ -785,15 +711,15 @@ export default function ProfileRegisterPage() {
                           <ScrollableDropdown
                             label="Country"
                             options={countryOptions}
-                            initialValue={form.countryCountry}
-                            onChange={(v) => setForm({ ...form, countryCountry: v })}
+                            initialValue={form.currentCountry}
+                            onChange={(v) => setForm({ ...form, currentCountry: v })}
                           />
                           <ScrollableDropdown
                             label="City"
                             options={
-                              form.countryCountry
-                                ? (placesByCountry[form.countryCountry] || []).flatMap((st: any) => {
-                                    const countryLabel = (countryOptions.find(c => c.value === form.countryCountry) || { label: '' }).label;
+                              form.currentCountry
+                                ? (placesByCountry[form.currentCountry] || []).flatMap((st: any) => {
+                                    const countryLabel = (countryOptions.find(c => c.value === form.currentCountry) || { label: '' }).label;
                                     return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
                                   })
                                 : cityOptionsExtended
@@ -838,21 +764,21 @@ export default function ProfileRegisterPage() {
                             <ScrollableDropdown
                               label="Country"
                               options={countryOptions}
-                              initialValue={form.hometownCountry}
-                              onChange={(v) => setForm({ ...form, hometownCountry: v })}
+                              initialValue={form.familyLivingInCountry}
+                              onChange={(v) => setForm({ ...form, familyLivingInCountry: v })}
                             />
                             <ScrollableDropdown
                               label="City"
                               options={
-                                form.hometownCountry
-                                  ? (placesByCountry[form.hometownCountry] || []).flatMap((st: any) => {
-                                      const countryLabel = (countryOptions.find(c => c.value === form.hometownCountry) || { label: '' }).label;
+                                form.familyLivingInCountry
+                                  ? (placesByCountry[form.familyLivingInCountry] || []).flatMap((st: any) => {
+                                      const countryLabel = (countryOptions.find(c => c.value === form.familyLivingInCountry) || { label: '' }).label;
                                       return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
                                     })
                                   : cityOptionsExtended
                               }
-                              initialValue={form.hometownCity}
-                              onChange={(v) => setForm({ ...form, hometownCity: v })}
+                              initialValue={form.familyLivingInCity}
+                              onChange={(v) => setForm({ ...form, familyLivingInCity: v })}
                             />
                           </div>
                         </div>
