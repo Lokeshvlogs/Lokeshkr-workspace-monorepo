@@ -14,10 +14,11 @@ import familyIncomeOptions from "@/utils/incomeOptions";
 import { employedAsOptions, employedInOptions } from "@/utils/professionOptions";
 import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "@/utils/lifeStyleOptions";
 import {currentYear, years, days, months} from "@/utils/timeDateOptions";
+import { feetOptions, inchOptions } from "@/utils/bodyOptions";
 
 export default function ProfileRegisterPage() {
 
-  const [selectedReligion, setSelectedReligion] = useState('');
+  //const [selectedReligion, setSelectedReligion] = useState('');
   const [selectedCommunity, setSelectedCommunity] = useState<Array<{ value: string; label: string }>>([{ value: 'other', label: 'Other' }]);
   const [selectedDay, setSelectedDay] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
@@ -35,11 +36,6 @@ export default function ProfileRegisterPage() {
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z" /></svg>),
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h3l2-3h6l2 3h3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><circle cx="12" cy="13" r="3" /></svg>)
   ];
-  const feetOptions = Array.from({ length: 5 }, (_, i) => {
-    const ft = String(4 + i); // 4,5,6,7,8 -> keep reasonable range
-    return { value: ft, label: `${ft} ft` };
-  });
-  const inchOptions = Array.from({ length: 12 }, (_, i) => ({ value: String(i), label: `${i} in` }));
 
   // When no country is selected, provide an aggregated city list with "City, State, Country" labels
   const cityOptionsExtended: { value: string; label: string }[] = (() => {
@@ -82,6 +78,7 @@ export default function ProfileRegisterPage() {
     familyLivingInCountry: "",
     familyLivingInCity: "",
     familyIncome: "",
+    familyType: 0,
     livesWithFamily: false,
     
     //Education details
@@ -190,7 +187,7 @@ export default function ProfileRegisterPage() {
 
   function handleReligionChange(v: string) {
     setForm({ ...form, religion: v });
-    setSelectedReligion(v);
+    //setSelectedReligion(v);
     const comms = (communitiesByReligion as any)[v] || [{ value: 'other', label: 'Other' }];
     setSelectedCommunity(comms);
   }
@@ -198,7 +195,10 @@ export default function ProfileRegisterPage() {
   // Called when user clicks Continue; saves current step data to server
   const handleSaveStep = async (currentStep: number) => {
     try {
-      const stepDataPayload = { "step": currentStep,
+      let stepDataPayload;
+      switch (currentStep) {
+        case 0:
+               stepDataPayload = { "step": currentStep,
                                 "firstName": form.firstName,
                                 "surname": form.surname,
                                 "dob": form.dob,
@@ -208,7 +208,10 @@ export default function ProfileRegisterPage() {
                                 "bodyPhysique": form.bodyPhysique,
                                 "maritalStatus": form.maritalStatus,
                                 "manglikLevel": form.manglikLevel,
-
+               };
+                break;
+        case 1:
+                stepDataPayload = { "step": currentStep,
                                 "religion": form.religion,
                                 "community": form.community,
                                 "mothertongue": form.mothertongue,
@@ -220,6 +223,10 @@ export default function ProfileRegisterPage() {
                                 "familyLivingInCity": form.familyLivingInCity,
                                 "livesWithFamily": form.livesWithFamily,
                                 "familyIncome": form.familyIncome,
+                };
+                break;
+        case 2:
+                  stepDataPayload = { "step": currentStep,
 
                                 "educationLevel": form.educationLevel,
                                 "fieldOfStudy": form.fieldOfStudy,
@@ -228,7 +235,10 @@ export default function ProfileRegisterPage() {
                                 "employedIn": form.employedIn,
                                 "employedAs": form.employedAs,
                                 "salaryAmount": form.salaryAmount,
-
+                  };
+                  break;
+        case 3:
+                  stepDataPayload = { "step": currentStep,
                                 "diet": form.diet,
                                 "smoking": form.smoking,
                                 "drinking": form.drinking,
@@ -240,10 +250,16 @@ export default function ProfileRegisterPage() {
                                 "wantsChildren": form.wantsChildren,
                                 "photo": form.photo
                               };
+                  break;
+        default:
+                  console.warn('No data to save for step', currentStep);
+      }
+
        console.log('Saving step', stepDataPayload); 
+
       // TODO: integrate with API proxy; for now just noop
       const response = await fetch('/api/profile/save-step', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(stepDataPayload),
       });
@@ -636,6 +652,7 @@ export default function ProfileRegisterPage() {
                           { value: 'never_married', label: 'Never Married' },
                           { value: 'married', label: 'Married' },
                           { value: 'divorced', label: 'Divorced' },
+                          { value: 'widowed', label: 'Widowed' },
                           { value: 'annulled', label: 'Annulled' },
                           { value: 'awaiting_divorce', label: 'Awaiting Divorce' },
                         ].map((m) => (
@@ -657,8 +674,7 @@ export default function ProfileRegisterPage() {
                           { value: 0, label: "I don't know" },
                           { value: 1, label: 'No' },
                           { value: 2, label: 'Anshik/Partial' },
-                          { value: 3, label: 'Chandra' },
-                          { value: 4, label: 'Pure/Full' }
+                          { value: 3, label: 'Yes' },
                         ].map((m) => (
                           <button
                             key={m.value}
@@ -805,6 +821,26 @@ export default function ProfileRegisterPage() {
                         <label className="mb-1 font-medium text-pink-700 mr-3">Lives With Family</label>
                         <input type="checkbox" checked={!!form.livesWithFamily} onChange={(e) => setForm({ ...form, livesWithFamily: e.target.checked })} /> 
                       </div>
+
+                      <div className="mt-3">
+                      <label className="mb-1 font-medium text-pink-700">Family Type</label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {[
+                          { value: 0, label: "Joint" },
+                          { value: 1, label: 'Nuclear' },
+                          { value: 2, label: 'Extended' },
+                        ].map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, familyType: m.value })}
+                            className={`px-3 py-1 rounded-md border ${form.familyType === m.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-gray-700 border-pink-100'}`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     </div>
                   </div>
                 </div>,
