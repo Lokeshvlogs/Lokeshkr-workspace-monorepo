@@ -101,10 +101,10 @@ export default function Home() {
             <div className="pt-6">
               <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 border-red-100 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{boxShadow: '0 20px 40px rgba(236,72,153,0.14), 0 6px 12px rgba(236,72,153,0.08)'}}>
                 <div className="grid grid-cols-1 gap-3">
-                  <input name="email" placeholder="Email-Id" type="email" className="input" />
+                  <input name="email" placeholder="Email-Id" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
                   <div className="grid grid-cols-2 gap-3">
-                    <input name="first_name" placeholder="First Name" className="input" />
-                    <input name="last_name" placeholder="Last Name" className="input" />
+                    <input name="first_name" placeholder="First Name" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
+                    <input name="last_name" placeholder="Last Name" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
                   </div>
                   <div className="flex gap-3">
                     <ScrollableDropdown
