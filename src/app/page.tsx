@@ -6,6 +6,7 @@ import ProfileCard from '../components/profile/ProfileCard'
 import RegisterSlider from "@/components/register/RegisterSlider";
 import { useAuth } from '../components/authProvider';
 import { REPLCommand } from 'repl';
+import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown';
 
 const sampleProfiles = [
   {
@@ -37,6 +38,8 @@ const sampleProfiles = [
 export default function Home() {
     const REGISTER_URL = "/api/register/";
     const auth = useAuth();
+    const [lookingForVisible, setLookingForVisible] = useState<boolean>(false);
+    const [age, setAge] = useState<number>(25);
 
     const [regMessage, setRegMessage] = useState<string>("");
     const [regLoading, setRegLoading] = useState<boolean>(false);
@@ -96,10 +99,50 @@ export default function Home() {
             </div>
 
             <div className="pt-6">
-              <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 border-gray-100 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{boxShadow: '0 20px 40px rgba(236,72,153,0.14), 0 6px 12px rgba(236,72,153,0.08)'}}>
+              <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 border-red-100 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{boxShadow: '0 20px 40px rgba(236,72,153,0.14), 0 6px 12px rgba(236,72,153,0.08)'}}>
                 <div className="grid grid-cols-1 gap-3">
-                  <input name="username" placeholder="Username" className="input" />
                   <input name="email" placeholder="Email-Id" type="email" className="input" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input name="first_name" placeholder="First Name" className="input" />
+                    <input name="last_name" placeholder="Last Name" className="input" />
+                  </div>
+                  <div className="flex gap-3">
+                    <ScrollableDropdown
+                            label="Profile for"
+                            options={[
+                              { value: 'son', label: 'Son' },
+                              { value: 'daughter', label: 'Daughter' },
+                              { value: 'brother', label: 'Brother' },
+                              { value: 'sister', label: 'Sister' },
+                              { value: 'self', label: 'Self' },
+                            ]}
+                            className='w-36 text-sm'
+                            optionButtonClassName='w-36 text-sm'
+                            
+                            onChange={(value) => setLookingForVisible(value === 'self')}
+                          />
+                    <ScrollableDropdown
+                            label="Age"
+                            options={Array.from({length: 43}, (_,i) => {
+                              const v = (18 + i).toString();
+                              return { value: v, label: v };
+                            })}
+                            className='w-20 text-sm'
+                            onChange={(value) => setAge(Number(value))}
+                          />
+                    <input type="hidden" name="age" value={age} />
+                    {lookingForVisible && (
+                    <ScrollableDropdown
+                            label="Looking for"
+                            options={[
+                              { value: 'bride', label: 'Bride' },
+                              { value: 'groom', label: 'Groom' },
+                            ]}
+                            className='w-40 text-sm'
+                          />
+                          )}
+                    </div>  
+                  
                   <input name="phone" placeholder="Phone no." type="tel" className="input" />
                   <input name="password" placeholder="Password" type="password" className="input" />
                   <div className="flex items-center justify-center">
