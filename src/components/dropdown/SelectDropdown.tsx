@@ -2,20 +2,28 @@
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
-interface Option { value: string; label: string; short?: string; flag?: string }
+interface Option { value: string; 
+          label: string; 
+          short?: string; 
+          icon?: string 
+        }
 
 interface Props {
   name?: string;
   options: Option[];
   initialValue?: string;
   className?: string;
+  align?: 'left' | 'center' | 'right';
+
   onChange?: (value: string) => void;
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ name, options, initialValue = '', className = '', onChange, disabled = false }: Props) {
+export default function SelectDropdown({ name, options, initialValue = '', className = '', onChange, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>(initialValue);
+  const [popupWidth, setPopupWidth] = useState<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const [style, setStyle] = useState<CSSProperties | null>(null);
@@ -38,7 +46,8 @@ export default function SelectDropdown({ name, options, initialValue = '', class
     const updatePosition = () => {
       if (btnRef.current) {
         const rect = btnRef.current.getBoundingClientRect();
-        setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: rect.width + 50, zIndex: 9999 });
+        setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: rect.width + 200, zIndex: 9999 });
+        setPopupWidth(rect.width);
       }
     };
     updatePosition();
@@ -52,6 +61,7 @@ export default function SelectDropdown({ name, options, initialValue = '', class
       }
       setOpen(false);
     };
+    
 
     window.addEventListener('resize', updatePosition);
     // Close on scrolls that originate outside the popup. Some containers dispatch
@@ -69,7 +79,7 @@ export default function SelectDropdown({ name, options, initialValue = '', class
       document.removeEventListener('wheel', onScrollClose as EventListener, true as any);
       document.removeEventListener('touchmove', onScrollClose as EventListener, true as any);
     };
-  }, [open]);
+  }, [open, options]);
 
   function doSelect(v: string) {
     setSelected(v);
@@ -81,10 +91,17 @@ export default function SelectDropdown({ name, options, initialValue = '', class
   const displayShort = selectedOption?.short || '';
   const displayValue = selectedOption?.value || '';
   const displayLabel = displayShort ? `${displayShort} ${displayValue}` : (selectedOption?.label || selected || (initialValue ? initialValue : name) || 'Select');
-  const displayFlag = selectedOption?.flag;
+  const displayFlag = selectedOption?.icon;
+
+    const justify =
+    align === "center"
+      ? "justify-center"
+      : align === "right"
+      ? "justify-end"
+      : "justify-start";
 
   return (
-    <div className={`relative flex flex-col ${className}`}>
+    <div ref={containerRef} className={`relative flex flex-col ${className}`}>
       {name && <input type="hidden" name={name} value={selected} />}
       <button
         type="button"
@@ -109,19 +126,16 @@ export default function SelectDropdown({ name, options, initialValue = '', class
             {options.map(o => {
               const isSelected = selected === o.value;
               return (
-                <div key={o.value}>
-                  <button
-                    type="button"
-                    className={`flex items-center justify-between gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
-                    onClick={() => doSelect(o.value)}
-                    title={o.label}
+                <div
+                  key={o.value}
+                  data-option
+                  className={`flex gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
+                  onClick={() => doSelect(o.value)}
                   >
-                    {o.flag && <img src={o.flag} alt={o.short || o.label} className="w-5 h-4 object-contain" />}
-                    <span className="text-sm">{o.short ? `${o.short} ${o.value}` : o.label}</span>
-                    <div className="ml-4 flex-1 text-right">
-                      <span className={`text-xs ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>{o.label}</span>
-                    </div>
-                  </button>
+                    {o.icon && <img src={o.icon} alt={o.short || o.label} className="w-5 h-4 object-contain" />}
+                    <span className={`text-sm ml-1 align-left ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>{o.short ? `${o.short}` : o.label}</span>
+                    <span className={`text-sm ml-5 align-right ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>{o.label}</span>
+                  
                 </div>
               );
             })}

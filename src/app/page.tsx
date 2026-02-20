@@ -42,6 +42,7 @@ export default function Home() {
     const auth = useAuth();
     const [lookingForVisible, setLookingForVisible] = useState<boolean>(false);
     const [age, setAge] = useState<number>(25);
+    const [countryCodeValue, setCountryCodeValue] = useState<string>("+91");
 
     const [regMessage, setRegMessage] = useState<string>("");
     const [regLoading, setRegLoading] = useState<boolean>(false);
@@ -151,12 +152,14 @@ export default function Home() {
                     </div>  
                   
                   <div className="flex gap-3">
+                    
                     <SelectDropdown
                       name="Country code"
                       initialValue  ="+91"
                       className="w-28 text-sm"
                       options={CountryCodes}
                     />
+                    
                     <input name="phone" placeholder="Phone no." type="tel" className="input flex-1" />
                   </div>
                   <div className="relative">
