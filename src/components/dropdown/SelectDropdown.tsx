@@ -2,24 +2,34 @@
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
-interface Option { value: string; 
-          label: string; 
+interface Option { 
+          // Optional icon URL to display alongside the option
+          icon?: string | null;
+          // Optional short label for the option
           short?: string; 
-          icon?: string 
+          // The main label to display for the option
+          label: string;
+          // The actual value that will be set when this option is selected 
+          value: string; 
         }
 
 interface Props {
   name?: string;
   options: Option[];
   initialValue?: string;
+  //tailwind classes to apply to the container
   className?: string;
+  iconClassName?: string;
+  shortClassName?: string;
+  labelClassName?: string;
+
   align?: 'left' | 'center' | 'right';
 
   onChange?: (value: string) => void;
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ name, options, initialValue = '', className = '', onChange, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ name, options, initialValue = '', className = '', iconClassName = '', shortClassName = '', labelClassName = '', onChange, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>(initialValue);
   const [popupWidth, setPopupWidth] = useState<number>(0);
@@ -34,7 +44,7 @@ export default function SelectDropdown({ name, options, initialValue = '', class
     function onDocClick(e: MouseEvent) {      
       const target = e.target as Node;
       if (btnRef.current && btnRef.current.contains(target)) return;
-      if (popupRef.current && popupRef.current.contains(target)) return;
+      if (popupRef.current && popupRef.current.contains(target)) return;1
       console.log('Document click outside dropdown, closing');
       setOpen(false);
     }
@@ -52,17 +62,17 @@ export default function SelectDropdown({ name, options, initialValue = '', class
       const rect = btnRef.current.getBoundingClientRect();
 
       // Choose the widest between the button and the popup content
-      let desiredWidth = rect.width;
+      let maxPopupWidth = rect.width;
 
       if (popupRef.current) {
         // scrollWidth reflects the widest content inside the popup
         const contentWidth = popupRef.current.scrollWidth;
         // Add small fudge for borders/padding if needed
-        desiredWidth = Math.max(desiredWidth, contentWidth);
+        maxPopupWidth = Math.max(rect.width, contentWidth);
       }
 
-      setPopupWidth(desiredWidth);
-      setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: desiredWidth, zIndex: 9999 });
+      setPopupWidth(maxPopupWidth);
+      setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: maxPopupWidth, zIndex: 9999 });
     };
 
     // Run once after render to ensure popupRef is available, then keep in sync on resize
@@ -154,9 +164,9 @@ export default function SelectDropdown({ name, options, initialValue = '', class
                   className={`flex gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
                   onClick={() => doSelect(o.value)}
                   >
-                    {o.icon && <img src={o.icon} alt={o.short || o.label} className="w-5 h-4 object-contain" />}
-                    <span className={`text-sm ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>{o.short ? `${o.short}` : o.label}</span>
-                    <span className={`text-sm ml-5 whitespace-nowrap text-right ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>{o.label}</span>
+                    {o.icon && <img src={o.icon} alt={o.short || o.label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
+                    {o.short && <span className={`text-sm ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${shortClassName}`}>{o.short}</span>}
+                    {o.label && <span className={`text-sm ml-5  text-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{o.label}</span>}
                   
                 </div>
               );

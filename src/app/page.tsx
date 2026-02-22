@@ -155,11 +155,13 @@ export default function Home() {
                     
                     <SelectDropdown
                       name="Country code"
+                      options={CountryCodes}
                       initialValue  ="+91"
                       className="w-28 text-sm"
-                      options={CountryCodes}
+                      labelClassName='whitespace-nowrap'
+                      onChange={(value) => setCountryCodeValue(value)}
                     />
-                    
+
                     <input name="phone" placeholder="Phone no." type="tel" className="input flex-1" />
                   </div>
                   <div className="relative">
