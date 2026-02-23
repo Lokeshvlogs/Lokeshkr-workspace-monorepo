@@ -7,7 +7,7 @@ import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackground";
-import placesByCountry, { countryOptions } from '@/utils/placesByCountry';
+import {placesByCountry, countryOptions } from '@/utils/OptionsByCountry';
 import { professionOptions } from "@/utils/professionOptions";
 import { educationOptions, fieldOfStudyOptions, collegeOptions } from '@/utils/educationOptions';
 import familyIncomeOptions from "@/utils/incomeOptions";

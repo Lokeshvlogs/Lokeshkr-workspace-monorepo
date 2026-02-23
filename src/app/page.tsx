@@ -7,6 +7,8 @@ import RegisterSlider from "@/components/register/RegisterSlider";
 import { useAuth } from '../components/authProvider';
 import { REPLCommand } from 'repl';
 import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown';
+import SelectDropdown from '@/components/dropdown/SelectDropdown';
+import { CountryCodes } from '@/utils/OptionsByCountry';
 
 const sampleProfiles = [
   {
@@ -40,6 +42,7 @@ export default function Home() {
     const auth = useAuth();
     const [lookingForVisible, setLookingForVisible] = useState<boolean>(false);
     const [age, setAge] = useState<number>(25);
+    const [countryCodeValue, setCountryCodeValue] = useState<string>("+91");
 
     const [regMessage, setRegMessage] = useState<string>("");
     const [regLoading, setRegLoading] = useState<boolean>(false);
@@ -51,7 +54,11 @@ export default function Home() {
       setRegLoading(true);
 
     const formData = new FormData(event.currentTarget);
-    const dataObject = Object.fromEntries(formData);
+    const dataObject: any = Object.fromEntries(formData);
+    if (dataObject.country_code) {
+      dataObject.phone = `${dataObject.country_code}${dataObject.phone || ''}`;
+      delete dataObject.country_code;
+    }
     const jsonData = JSON.stringify(dataObject);
 
     const requestOptions: RequestInit = {
@@ -144,7 +151,19 @@ export default function Home() {
                           )}
                     </div>  
                   
-                  <input name="phone" placeholder="Phone no." type="tel" className="input" />
+                  <div className="flex gap-3">
+                    
+                    <SelectDropdown
+                      name="Country code"
+                      options={CountryCodes}
+                      initialValue  ="+91"
+                      className="w-28 text-sm"
+                      labelClassName='whitespace-nowrap'
+                      onChange={(value) => setCountryCodeValue(value)}
+                    />
+
+                    <input name="phone" placeholder="Phone no." type="tel" className="input flex-1" />
+                  </div>
                   <div className="relative">
                     <input
                       name="password"
@@ -189,7 +208,7 @@ export default function Home() {
         </section>
 
 
-        <section id="profiles" className="mt-16">
+        <section id="profiles" className="mt-16">v
           <h2 className="text-2xl font-bold">Featured Profiles</h2>
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {sampleProfiles.map((p) => (
