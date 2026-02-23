@@ -44,6 +44,29 @@ export default function Home() {
     const [age, setAge] = useState<number>(25);
     const [countryCodeValue, setCountryCodeValue] = useState<string>("+91");
 
+    // controlled email input with sanitization (only allow specific chars, max 2 @)
+    const [regEmail, setRegEmail] = useState<string>("");
+
+  const handleRegEmailChange = (value: string) => {
+    // Allow only valid characters
+    const allowedCharsRegex = /^[a-zA-Z0-9@._+-]*$/;
+    if (!allowedCharsRegex.test(value)) return;
+
+    // Cannot start with special characters
+    if (/^[.@_-]/.test(value)) return;
+
+    // Only one @ allowed
+    if ((value.match(/@/g) || []).length > 1) return;
+
+    // Prevent consecutive dots
+    if (value.includes("..")) return;
+
+    // Cannot end with . - _
+    if (/[._-]$/.test(value)) return;
+
+    setRegEmail(value);
+  };
+
     const [regMessage, setRegMessage] = useState<string>("");
     const [regLoading, setRegLoading] = useState<boolean>(false);
     const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -109,10 +132,22 @@ export default function Home() {
             <div className="pt-6">
               <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 border-red-100 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{boxShadow: '0 20px 40px rgba(236,72,153,0.14), 0 6px 12px rgba(236,72,153,0.08)'}}>
                 <div className="grid grid-cols-1 gap-3">
-                  <input name="email" placeholder="Email-Id" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="Email-Id"
+                    value={regEmail}
+                    onChange={(e) => handleRegEmailChange(e.target.value)}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const text = (e.clipboardData || (window as any).clipboardData).getData('text') || '';
+                      handleRegEmailChange(text);
+                    }}
+                    className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+                  />
                   <div className="grid grid-cols-2 gap-3">
-                    <input name="first_name" placeholder="First Name" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
-                    <input name="last_name" placeholder="Last Name" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
+                    <input name="first_name" placeholder="First Name" className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
+                    <input name="last_name" placeholder="Last Name" className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
                   </div>
                   <div className="flex gap-3">
                     <ScrollableDropdown
@@ -158,18 +193,19 @@ export default function Home() {
                       options={CountryCodes}
                       initialValue  ="+91"
                       className="w-28 text-sm"
+                      buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
                       labelClassName='whitespace-nowrap'
                       onChange={(value) => setCountryCodeValue(value)}
                     />
 
-                    <input name="phone" placeholder="Phone no." type="tel" className="input flex-1" />
+                    <input name="phone" placeholder="Phone no." type="tel" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
                   </div>
                   <div className="relative">
                     <input
                       name="password"
                       placeholder="Password"
                       type={showPassword ? 'text' : 'password'}
-                      className="input pr-10"
+                      className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400 pr-10"
                       aria-label="Password"
                     />
                     <button
