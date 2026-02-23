@@ -19,6 +19,7 @@ interface Props {
   initialValue?: string;
   //tailwind classes to apply to the container
   className?: string;
+  buttonClassName?: string;
   iconClassName?: string;
   shortClassName?: string;
   labelClassName?: string;
@@ -29,7 +30,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ name, options, initialValue = '', className = '', iconClassName = '', shortClassName = '', labelClassName = '', onChange, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ name, options, initialValue = '', className = '', buttonClassName = '', iconClassName = '', shortClassName = '', labelClassName = '', onChange, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>(initialValue);
   const [popupWidth, setPopupWidth] = useState<number>(0);
@@ -138,7 +139,7 @@ export default function SelectDropdown({ name, options, initialValue = '', class
       <button
         type="button"
         ref={btnRef}
-        className={`p-2 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`${buttonClassName ? buttonClassName : 'p-4'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         onClick={() => { if (!disabled) setOpen(v => !v); }}
         aria-haspopup="listbox"
         aria-expanded={open ? "true" : "false"}
