@@ -2,7 +2,7 @@
 'use client'; // This component uses client-side state hooks
 
 import React, { useState } from 'react';
-import { generateAgeOptions } from '@/utils/options/bodyOptions';
+import { generateAgeOptions } from 'src/constants/selectOptions/bodyOptions';
 
 // Define the props interface for type safety
 interface AgeDropdownProps {

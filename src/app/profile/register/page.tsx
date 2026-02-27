@@ -6,15 +6,15 @@ import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
 import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
-import { communitiesByReligion, motherTongueOptions } from "@/utils/options/socialBackground";
+import { communitiesByReligion, motherTongueOptions } from "src/constants/selectOptions/socialBackground";
 import {placesByCountry, countryOptions } from 'src/constants/selectOptions/places';
-import {professionOptions}  from "@/utils/options/professionOptions";
-import { educationOptions, fieldOfStudyOptions, collegeOptions } from '@/utils/options/educationOptions';
-import familyIncomeOptions from "@/utils/options/incomeOptions";
-import { employedAsOptions, employedInOptions } from "@/utils/options/professionOptions";
-import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "@/utils/options/lifeStyleOptions";
-import {currentYear, years, days, months} from "@/utils/options/timeDateOptions";
-import { feetOptions, inchOptions } from "@/utils/options/bodyOptions";
+import {professionOptions}  from "src/constants/selectOptions/professionOptions";
+import { educationOptions, fieldOfStudyOptions, collegeOptions } from 'src/constants/selectOptions/educationOptions';
+import familyIncomeOptions from "src/constants/selectOptions/incomeOptions";
+import { employedAsOptions, employedInOptions } from "src/constants/selectOptions/professionOptions";
+import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "src/constants/selectOptions/lifeStyleOptions";
+import {currentYear, years, days, months} from "src/constants/selectOptions/timeDateOptions";
+import { feetOptions, inchOptions } from "src/constants/selectOptions/bodyOptions";
 
 export default function ProfileRegisterPage() {
 

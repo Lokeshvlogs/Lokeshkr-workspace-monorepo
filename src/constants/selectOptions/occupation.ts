@@ -1,9 +1,7 @@
 // utils/professionOptions.ts
-export interface Item {
-  value: string;
-  label: string;
-}
-export  const professionOptions: Item[] = [
+import {SelectOption} from "src/types/select";
+
+export  const professionOptions: SelectOption[] = [
   { value: 'software_engineer', label: 'Software Engineer' },
   { value: 'doctor', label: 'Doctor' },
   { value: 'teacher', label: 'Teacher' },
@@ -31,7 +29,7 @@ export  const professionOptions: Item[] = [
   { value: 'other', label: 'Other' },
 ];
 
-export const employedInOptions: Item[] = [
+export const employedInOptions: SelectOption[] = [
     { value: 'government', label: 'Government' },
     { value: 'private', label: 'Private' },
     { value: 'public_sector', label: 'Public Sector' },
@@ -42,7 +40,7 @@ export const employedInOptions: Item[] = [
     { value: 'other', label: 'Other' },
   ];
 
-export const employedAsOptions: Item[] = [
+export const employedAsOptions: SelectOption[] = [
     { value: 'owner', label: 'Owner / Proprietor' },
     { value: 'partner', label: 'Partner' },
     { value: 'senior_management', label: 'Senior Management' },
