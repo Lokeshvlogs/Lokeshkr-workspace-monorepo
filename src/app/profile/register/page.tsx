@@ -6,15 +6,15 @@ import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
 import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
-import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackground";
-import {placesByCountry, countryOptions } from '@/utils/OptionsByCountry';
-import { professionOptions } from "@/utils/professionOptions";
-import { educationOptions, fieldOfStudyOptions, collegeOptions } from '@/utils/educationOptions';
-import familyIncomeOptions from "@/utils/incomeOptions";
-import { employedAsOptions, employedInOptions } from "@/utils/professionOptions";
-import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "@/utils/lifeStyleOptions";
-import {currentYear, years, days, months} from "@/utils/timeDateOptions";
-import { feetOptions, inchOptions } from "@/utils/bodyOptions";
+import { communitiesByReligion, motherTongueOptions } from "@/utils/options/socialBackground";
+import {placesByCountry, countryOptions } from 'src/constants/selectOptions/places';
+import {professionOptions}  from "@/utils/options/professionOptions";
+import { educationOptions, fieldOfStudyOptions, collegeOptions } from '@/utils/options/educationOptions';
+import familyIncomeOptions from "@/utils/options/incomeOptions";
+import { employedAsOptions, employedInOptions } from "@/utils/options/professionOptions";
+import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "@/utils/options/lifeStyleOptions";
+import {currentYear, years, days, months} from "@/utils/options/timeDateOptions";
+import { feetOptions, inchOptions } from "@/utils/options/bodyOptions";
 
 export default function ProfileRegisterPage() {
 

@@ -39,5 +39,9 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "jsx": "react-jsx",
+  "moduleResolution": "node",
+  "allowSyntheticDefaultImports": true,
+  "esModuleInterop": true
 }
