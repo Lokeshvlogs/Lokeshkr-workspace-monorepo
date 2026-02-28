@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import ProfileCard from '../components/profile/ProfileCard'
-import RegisterSlider from "@/components/register/RegisterSlider";
 import { useAuth } from '../components/authProvider';
 import { REPLCommand } from 'repl';
 import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown';

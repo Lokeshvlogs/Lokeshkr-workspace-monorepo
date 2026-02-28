@@ -1,4 +1,6 @@
-  const familyIncomeOptions = [
+import { SelectOption } from "src/types/select";
+
+export const familyIncomeOptions: SelectOption[] = [
     { value: '0-5', label: '0-5 lacs' },
     { value: '5-10', label: '5-10 lacs' },
     { value: '10-15', label: '10-15 lacs' },
@@ -9,5 +11,3 @@
     { value: '200-500', label: '2-5 crores' },
     { value: '500+', label: '5+ crores' },
   ];
-
-export default familyIncomeOptions;

@@ -1,21 +1,12 @@
 "use client";
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
+import { SelectIconOption, SelectOption } from 'src/types/select';
 
-interface Option { 
-          // Optional icon URL to display alongside the option
-          icon?: string | null;
-          // Optional short label for the option
-          label?: string; 
-          // The main label to display for the option
-          extra_label: string;
-          // The actual value that will be set when this option is selected 
-          value: string; 
-        }
 
 interface Props {
   name?: string;
-  options: Option[];
+  options: SelectIconOption[];
   initialValue?: string;
   //tailwind classes to apply to the container
   className?: string;
@@ -45,7 +36,7 @@ export default function SelectDropdown({ name, options, initialValue = '', class
     function onDocClick(e: MouseEvent) {      
       const target = e.target as Node;
       if (btnRef.current && btnRef.current.contains(target)) return;
-      if (popupRef.current && popupRef.current.contains(target)) return;1
+      if (popupRef.current && popupRef.current.contains(target)) return;
       console.log('Document click outside dropdown, closing');
       setOpen(false);
     }
