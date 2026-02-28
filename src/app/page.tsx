@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import ProfileCard from '../components/profile/ProfileCard'
-import RegisterSlider from "@/components/register/RegisterSlider";
 import { useAuth } from '../components/authProvider';
 import { REPLCommand } from 'repl';
 import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown';
 import SelectDropdown from '@/components/dropdown/SelectDropdown';
-import { CountryCodes } from '@/utils/OptionsByCountry';
+import { CountryCodes } from 'src/constants/selectOptions/places';
 
 const sampleProfiles = [
   {
@@ -194,7 +193,7 @@ export default function Home() {
                       initialValue  ="+91"
                       className="w-28 text-sm"
                       buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
-                      labelClassName='whitespace-nowrap'
+                      extraLabelClassName='whitespace-nowrap'
                       onChange={(value) => setCountryCodeValue(value)}
                     />
 

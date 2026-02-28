@@ -6,15 +6,14 @@ import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
 import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
-import { communitiesByReligion, motherTongueOptions } from "@/utils/socialBackground";
-import {placesByCountry, countryOptions } from '@/utils/OptionsByCountry';
-import { professionOptions } from "@/utils/professionOptions";
-import { educationOptions, fieldOfStudyOptions, collegeOptions } from '@/utils/educationOptions';
-import familyIncomeOptions from "@/utils/incomeOptions";
-import { employedAsOptions, employedInOptions } from "@/utils/professionOptions";
-import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "@/utils/lifeStyleOptions";
-import {currentYear, years, days, months} from "@/utils/timeDateOptions";
-import { feetOptions, inchOptions } from "@/utils/bodyOptions";
+import { communitiesByReligion, motherTongueOptions } from "src/constants/selectOptions/social";
+import {placesByCountry, countryOptions } from 'src/constants/selectOptions/places';
+
+import { professionOptions, educationOptions, fieldOfStudyOptions, collegeOptions, employedAsOptions, employedInOptions } from 'src/constants/selectOptions/career';
+import {familyIncomeOptions} from "src/constants/selectOptions/family";
+import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "src/constants/selectOptions/person";
+import {currentYear, years, days, months} from "src/constants/selectOptions/timeDate";
+import { feetOptions, inchOptions } from "src/constants/selectOptions/person";
 
 export default function ProfileRegisterPage() {
 
@@ -138,6 +137,7 @@ export default function ProfileRegisterPage() {
 
   function handleDayInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/[^0-9]/g, '');
+    console.log('Day input changed to', raw);
     setDayInputText(raw);
     if (raw === '') { setSelectedDay(''); return; }
     const n = Number(raw);
@@ -170,8 +170,12 @@ export default function ProfileRegisterPage() {
     const r = yearBtnRef.current?.getBoundingClientRect();
     if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 144 });
     setOpenPicker('year');
-    if (raw === '') { setSelectedYear(''); return; }
-    if (years.includes(raw)) setSelectedYear(raw); else setSelectedYear('');
+    if (raw === '') { 
+      setSelectedYear(''); 
+      return; 
+    }
+    const matchingYear = years.find(y => y.value === raw);
+    if (matchingYear) setSelectedYear(matchingYear.value);
   }
 
   useEffect(() => {
@@ -465,17 +469,17 @@ export default function ProfileRegisterPage() {
                               <div ref={dayPopupRef} style={dayStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-5 gap-2 hide-scrollbar">
                                 {days.map((day) => (
                                   <button
-                                    key={day}
-                                    className={`p-1 text-sm text-center text-lg rounded-md ${selectedDay === day ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
+                                    key={day.value}
+                                    className={`p-1 text-sm text-center text-lg rounded-md ${selectedDay === day.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
                                     onClick={() => {
-                                      setSelectedDay(day);
+                                      setSelectedDay(day.value);
                                       setOpenPicker(null);
-                                      const date = selectedYear && selectedMonth && day ? `${selectedYear}-${selectedMonth}-${day}` : '';
+                                      const date = selectedYear && selectedMonth && day ? `${selectedYear}-${selectedMonth}-${day.value}` : '';
                                       const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
                                       setForm({ ...form, dob: combined });
                                     }}
                                   >
-                                    {Number(day)}
+                                    {Number(day.label)}
                                   </button>
                                 ))}
                               </div>,
@@ -540,19 +544,19 @@ export default function ProfileRegisterPage() {
                             />
                             {openPicker === 'year' && yearStyle && createPortal(
                               <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2 hide-scrollbar">
-                                {(yearInputText ? years.filter(y => y.startsWith(yearInputText)) : years).map((y) => (
+                                {(yearInputText ? years.filter(y => y.value.startsWith(yearInputText)) : years).map((y) => (
                                   <button
-                                    key={y}
-                                    className={`p-2 text-sm rounded-md ${selectedYear === y ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'} text-left`}
+                                    key={y.value}
+                                    className={`p-2 text-sm rounded-md ${selectedYear === y.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'} text-left`}
                                     onClick={() => {
-                                      setSelectedYear(y);
+                                      setSelectedYear(y.value);
                                       setOpenPicker(null);
-                                      const date = y && selectedMonth && selectedDay ? `${y}-${selectedMonth}-${selectedDay}` : '';
+                                      const date = y.value && selectedMonth && selectedDay ? `${y.value}-${selectedMonth}-${selectedDay}` : '';
                                       const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
                                       setForm({ ...form, dob: combined });
                                     }}
                                   >
-                                    {y}
+                                    {y.label}
                                   </button>
                                 ))}
                               </div>,
