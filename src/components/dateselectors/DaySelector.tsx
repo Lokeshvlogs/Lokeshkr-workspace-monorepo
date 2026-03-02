@@ -9,12 +9,13 @@ interface Props {
   value: string;
   onDayChange: (day: string) => void;
   inputClassName?: string;
+  popupwidth?: number;
 }
 
-export default function DaySelector({ value, onDayChange, inputClassName = '' }: Props) {
+export default function DaySelector({ value, onDayChange, inputClassName = '', popupwidth: initialPopupWidth = 200 }: Props) {
    
   const [inputText, setInputText] = useState<string>('');
-  const { open, setOpen, style, setStyle, btnRef, popupRef } = useOverlay({ initialPopupWidth: 160 });
+  const { open, setOpen, popupWidth, setPopupWidth, style, setStyle, btnRef, popupRef } = useOverlay({ initialPopupWidth });
 
   // Sync display text when value changes
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function DaySelector({ value, onDayChange, inputClassName = '' }:
     }
   }
 
-  // when clicking on the day selector popup
+  // when clicking on the day selector popups
   function handleDaySelect(day: string) {
     onDayChange(day);
     setOpen(false);
@@ -55,7 +56,7 @@ export default function DaySelector({ value, onDayChange, inputClassName = '' }:
         onClick={() => {
           if (btnRef.current) {
             const rect = btnRef.current.getBoundingClientRect();
-            setStyle({ position: 'fixed', top: rect.bottom + 8, left: rect.left, width: 200 });
+            setStyle({ position: 'fixed', top: rect.bottom + 8, left: rect.left, width: popupWidth, zIndex: 9999 });
           }
           setOpen(v => !v);
         }}
@@ -67,7 +68,7 @@ export default function DaySelector({ value, onDayChange, inputClassName = '' }:
           {days.map((day) => (
             <button
               key={day.value}
-              className={`p-1 text-sm text-center text-lg rounded-md ${value === day.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
+              className={`p-1 text-sm min-w-[32px] text-center text-lg rounded-md ${value === day.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
               onClick={() => handleDaySelect(day.value)}
             >
               {Number(day.label)}

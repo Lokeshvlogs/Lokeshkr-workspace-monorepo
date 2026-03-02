@@ -2,12 +2,15 @@
 
 import { ConciergeBell } from "lucide-react";
 import { useEffect, RefObject, useRef, CSSProperties, useState } from "react";
+import { SelectOption } from "src/types/select";
 
 interface UseOverlayProps {
+  options?: SelectOption[]; // Optional, in case the overlay needs to know about options for width calculation
   initialPopupWidth?: number;
 }
 
 export function useOverlay({
+  options = [],
   initialPopupWidth = 160,
 }: UseOverlayProps) {
 
@@ -103,7 +106,7 @@ export function useOverlay({
       document.removeEventListener('wheel', onScrollClose as EventListener, true as any);
       document.removeEventListener('touchmove', onScrollClose as EventListener, true as any);
     };
-  }, [open]);
+  }, [open, options]);
 
   return {
     open,
