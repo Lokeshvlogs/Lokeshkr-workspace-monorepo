@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { days } from 'src/constants/selectOptions/timeDate';
+import { useOverlay } from 'src/hooks/useOverlay';
 
 interface Props {
   value: string;
@@ -11,43 +12,16 @@ interface Props {
 }
 
 export default function DaySelector({ value, onDayChange, inputClassName = '' }: Props) {
-  const [open, setOpen] = useState(false);
+   
   const [inputText, setInputText] = useState<string>('');
-  const [style, setStyle] = useState<CSSProperties | null>(null);
-  const btnRef = useRef<HTMLInputElement | null>(null);
-  const popupRef = useRef<HTMLDivElement | null>(null);
+  const { open, setOpen, style, setStyle, btnRef, popupRef } = useOverlay({ initialPopupWidth: 160 });
 
   // Sync display text when value changes
   useEffect(() => {
     setInputText(value ? String(Number(value)) : '');
   }, [value]);
 
-  // Close picker when clicking outside
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      const target = e.target as Node;
-      if (btnRef.current && btnRef.current.contains(target)) return;
-      if (popupRef.current && popupRef.current.contains(target)) return;
-      setOpen(false);
-    }
-    document.addEventListener('click', onDocClick);
-    return () => document.removeEventListener('click', onDocClick);
-  }, []);
-
-  // Close picker on scroll outside the popup
-  useEffect(() => {
-    function onScroll(e: Event) {
-      if (!open) return;
-      const target = (e.target as Node) || null;
-      const isInsidePopup = popupRef.current && target && (popupRef.current === target || popupRef.current.contains(target));
-      const isInsideBtn = btnRef.current && target && (btnRef.current === target || btnRef.current.contains(target));
-      if (isInsidePopup || isInsideBtn) return;
-      setOpen(false);
-    }
-    document.addEventListener('scroll', onScroll, true);
-    return () => document.removeEventListener('scroll', onScroll, true);
-  }, [open]);
-
+  //called when typing in the day input field
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/[^0-9]/g, '');
     setInputText(raw);
@@ -64,6 +38,7 @@ export default function DaySelector({ value, onDayChange, inputClassName = '' }:
     }
   }
 
+  // when clicking on the day selector popup
   function handleDaySelect(day: string) {
     onDayChange(day);
     setOpen(false);
