@@ -58,17 +58,10 @@ export default function MonthSelector({ value, onMonthChange, inputClassName = '
         placeholder="Month"
         value={inputText}
         onClick={() => {
-          
           if (btnRef.current) {
             const rect = btnRef.current.getBoundingClientRect();
             console.log('onClick() -- Button popup width:', popupWidth);
-            setStyle({
-              position: 'fixed',
-              top: rect.bottom + 2,
-              left: rect.left,
-              width: popupWidth,
-              zIndex: 9999,
-            });
+            setStyle({position: 'fixed', top: rect.bottom + 2, left: rect.left,  width: popupWidth, zIndex: 9999,});
           }
           setOpen(v => !v);
         }}

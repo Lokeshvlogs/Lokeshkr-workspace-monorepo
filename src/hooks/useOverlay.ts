@@ -11,7 +11,7 @@ export function useOverlay({
   initialPopupWidth = 160,
 }: UseOverlayProps) {
 
-  const [popupWidth, setPopupWidth] = useState<number>(initialPopupWidth || 160);
+  const [popupWidth, setPopupWidth] = useState<number>(initialPopupWidth);
   const [open, setOpen] = useState(false);
   const [style, setStyle] = useState<CSSProperties | null>(null);
   const btnRef = useRef<HTMLInputElement>(null);
