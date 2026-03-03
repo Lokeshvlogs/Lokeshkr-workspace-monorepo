@@ -1,18 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useEffect, CSSProperties } from "react";
-import { createPortal } from "react-dom";
+import React, { useState, useRef, useEffect } from "react";
 import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
 import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
+import DaySelector from "@/components/dateselectors/DaySelector";
+import MonthSelector from "@/components/dateselectors/MonthSelector";
+import YearSelector from "@/components/dateselectors/YearSelector";
 import { communitiesByReligion, motherTongueOptions } from "src/constants/selectOptions/social";
 import {placesByCountry, countryOptions } from 'src/constants/selectOptions/places';
 
 import { professionOptions, educationOptions, fieldOfStudyOptions, collegeOptions, employedAsOptions, employedInOptions } from 'src/constants/selectOptions/career';
 import {familyIncomeOptions} from "src/constants/selectOptions/family";
 import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "src/constants/selectOptions/person";
-import {currentYear, years, days, months} from "src/constants/selectOptions/timeDate";
+import {currentYear} from "src/constants/selectOptions/timeDate";
 import { feetOptions, inchOptions } from "src/constants/selectOptions/person";
 
 export default function ProfileRegisterPage() {
@@ -22,11 +24,7 @@ export default function ProfileRegisterPage() {
   const [selectedDay, setSelectedDay] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [dayInputText, setDayInputText] = useState<string>('');
-  const [monthInputText, setMonthInputText] = useState<string>('');
-  const [yearInputText, setYearInputText] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [openPicker, setOpenPicker] = useState<null | 'day' | 'month' | 'year'>(null);
 
   const stepIcons = [
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" /></svg>),
@@ -104,16 +102,6 @@ export default function ProfileRegisterPage() {
     //profile photo
     photo: "",
   });
-  const dateContainerRef = useRef<HTMLDivElement | null>(null);
-  const dayBtnRef = useRef<HTMLInputElement | null>(null);
-  const monthBtnRef = useRef<HTMLInputElement | null>(null);
-  const yearBtnRef = useRef<HTMLInputElement | null>(null);
-  const dayPopupRef = useRef<HTMLDivElement | null>(null);
-  const monthPopupRef = useRef<HTMLDivElement | null>(null);
-  const yearPopupRef = useRef<HTMLDivElement | null>(null);
-  const [dayStyle, setDayStyle] = useState<CSSProperties | null>(null);
-  const [monthStyle, setMonthStyle] = useState<CSSProperties | null>(null);
-  const [yearStyle, setYearStyle] = useState<CSSProperties | null>(null);
   const [step, setStep] = useState<number | undefined>(undefined);
 
   // Keep form.dob in sync when selected date/time parts change
@@ -122,61 +110,6 @@ export default function ProfileRegisterPage() {
     const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
     setForm(prev => ({ ...prev, dob: combined }));
   }, [selectedDay, selectedMonth, selectedYear, selectedTime]);
-
-  // Sync display text inputs when selected values change (so typing or button selects reflect)
-  useEffect(() => {
-    setDayInputText(selectedDay ? String(Number(selectedDay)) : '');
-  }, [selectedDay]);
-  useEffect(() => {
-    const mo = months.find(m => m.value === selectedMonth);
-    setMonthInputText(mo ? mo.label : '');
-  }, [selectedMonth]);
-  useEffect(() => {
-    setYearInputText(selectedYear || '');
-  }, [selectedYear]);
-
-  function handleDayInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/[^0-9]/g, '');
-    console.log('Day input changed to', raw);
-    setDayInputText(raw);
-    if (raw === '') { setSelectedDay(''); return; }
-    const n = Number(raw);
-    if (!Number.isNaN(n) && n >= 1 && n <= 31) {
-      const pad = String(n).padStart(2, '0');
-      setSelectedDay(pad);
-    } else {
-      setSelectedDay('');
-    }
-  }
-
-  function handleMonthInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.trim();
-    setMonthInputText(raw);
-    if (raw === '') { setSelectedMonth(''); return; }
-    const numeric = Number(raw);
-    if (!Number.isNaN(numeric) && numeric >= 1 && numeric <= 12) {
-      setSelectedMonth(String(numeric).padStart(2, '0'));
-      return;
-    }
-    // try matching month label
-    const match = months.find(m => m.label.toLowerCase().startsWith(raw.toLowerCase()));
-    if (match) setSelectedMonth(match.value); else setSelectedMonth('');
-  }
-
-  function handleYearInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/[^0-9]/g, '');
-    setYearInputText(raw);
-    // open the year popup while typing and position it
-    const r = yearBtnRef.current?.getBoundingClientRect();
-    if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 144 });
-    setOpenPicker('year');
-    if (raw === '') { 
-      setSelectedYear(''); 
-      return; 
-    }
-    const matchingYear = years.find(y => y.value === raw);
-    if (matchingYear) setSelectedYear(matchingYear.value);
-  }
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -339,50 +272,6 @@ export default function ProfileRegisterPage() {
       window.localStorage.setItem('profileRegisterForm', JSON.stringify(form));
     }
   }, [form]);
-
-  // Close pickers when clicking outside or pressing Escape
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      const target = e.target as Node;
-      if (dateContainerRef.current && dateContainerRef.current.contains(target)) return;
-      if (dayPopupRef.current && dayPopupRef.current.contains(target)) return;
-      if (monthPopupRef.current && monthPopupRef.current.contains(target)) return;
-      if (yearPopupRef.current && yearPopupRef.current.contains(target)) return;
-      setOpenPicker(null);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpenPicker(null);
-    }
-    document.addEventListener('click', onDocClick);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('click', onDocClick);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, []);
-
-  // Close day/month/year popups on page scroll, except when scrolling inside their own popup or input
-  useEffect(() => {
-    function onScroll(e: Event) {
-      if (!openPicker) return;
-      const target = (e.target as Node) || null;
-      const isInsideDay = dayPopupRef.current && target && (dayPopupRef.current === target || dayPopupRef.current.contains(target));
-      const isInsideDayInput = dayBtnRef.current && target && (dayBtnRef.current === target || dayBtnRef.current.contains(target));
-      const isInsideMonth = monthPopupRef.current && target && (monthPopupRef.current === target || monthPopupRef.current.contains(target));
-      const isInsideMonthInput = monthBtnRef.current && target && (monthBtnRef.current === target || monthBtnRef.current.contains(target));
-
-      if (openPicker === 'day' && (isInsideDay || isInsideDayInput)) return;
-      if (openPicker === 'month' && (isInsideMonth || isInsideMonthInput)) return;
-      // allow scrolling inside year popup without closing if needed
-      const isInsideYear = yearPopupRef.current && target && (yearPopupRef.current === target || yearPopupRef.current.contains(target));
-      const isInsideYearInput = yearBtnRef.current && target && (yearBtnRef.current === target || yearBtnRef.current.contains(target));
-      if (openPicker === 'year' && (isInsideYear || isInsideYearInput)) return;
-
-      setOpenPicker(null);
-    }
-    document.addEventListener('scroll', onScroll, true);
-    return () => document.removeEventListener('scroll', onScroll, true);
-  }, [openPicker]);
   return (
     <div className="min-h-screen bg-white flex items-start justify-center py-40">
       <div
@@ -447,122 +336,22 @@ export default function ProfileRegisterPage() {
                           <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
                           <label className="mb-2 font-medium text-pink-700">Time of Birth</label>
                         </div>
-                        <div ref={dateContainerRef} className="flex gap-2 items-center relative">
-                          {/* Day picker button */}
-                          <div className="relative">
-                            <input
-                              ref={dayBtnRef}
-                              type="text"
-                              inputMode="numeric"
-                              placeholder="Day"
-                              value={dayInputText}
-                              onFocus={() => {
-                                if (openPicker === 'day') return setOpenPicker(null);
-                                const r = dayBtnRef.current?.getBoundingClientRect();
-                                if (r) setDayStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 200 });
-                                setOpenPicker('day');
-                              }}
-                              onChange={handleDayInputChange}
-                              className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
-                            />
-                            {openPicker === 'day' && dayStyle && createPortal(
-                              <div ref={dayPopupRef} style={dayStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-5 gap-2 hide-scrollbar">
-                                {days.map((day) => (
-                                  <button
-                                    key={day.value}
-                                    className={`p-1 text-sm text-center text-lg rounded-md ${selectedDay === day.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
-                                    onClick={() => {
-                                      setSelectedDay(day.value);
-                                      setOpenPicker(null);
-                                      const date = selectedYear && selectedMonth && day ? `${selectedYear}-${selectedMonth}-${day.value}` : '';
-                                      const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
-                                      setForm({ ...form, dob: combined });
-                                    }}
-                                  >
-                                    {Number(day.label)}
-                                  </button>
-                                ))}
-                              </div>,
-                              document.body
-                            )}
-                          </div>
-
-                          {/* Month picker button */}
-                          <div className="relative">
-                            <input
-                              ref={monthBtnRef}
-                              type="text"
-                              placeholder="Month"
-                              value={monthInputText}
-                              onFocus={() => {
-                                if (openPicker === 'month') return setOpenPicker(null);
-                                const r = monthBtnRef.current?.getBoundingClientRect();
-                                if (r) setMonthStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 160 });
-                                setOpenPicker('month');
-                              }}
-                              onChange={handleMonthInputChange}
-                              className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
-                            />
-                            {openPicker === 'month' && monthStyle && createPortal(
-                              <div ref={monthPopupRef} style={monthStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto grid grid-cols-3 gap-2">
-                                {months.map((mo) => (
-                                  <button
-                                    key={mo.value}
-                                    className={`p-2 text-sm rounded-md ${selectedMonth === mo.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
-                                    onClick={() => {
-                                      setSelectedMonth(mo.value);
-                                      setOpenPicker(null);
-                                      const date = selectedYear && mo.value && selectedDay ? `${selectedYear}-${mo.value}-${selectedDay}` : '';
-                                      const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
-                                      setForm({ ...form, dob: combined });
-                                    }}
-                                  >
-                                    {mo.label}
-                                  </button>
-                                ))}
-                              </div>,
-                              document.body
-                            )}
-                          </div>
-
-                          {/* Year picker button */}
-                          <div className="relative">
-                            <input
-                              ref={yearBtnRef}
-                              type="text"
-                              inputMode="numeric"
-                              placeholder="Year"
-                              value={yearInputText}
-                              onFocus={() => {
-                                if (openPicker === 'year') return setOpenPicker(null);
-                                const r = yearBtnRef.current?.getBoundingClientRect();
-                                if (r) setYearStyle({ position: 'fixed', top: r.bottom + 8, left: r.left, width: 80 });
-                                setOpenPicker('year');
-                              }}
-                              onChange={handleYearInputChange}
-                              className="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
-                            />
-                            {openPicker === 'year' && yearStyle && createPortal(
-                              <div ref={yearPopupRef} style={yearStyle} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 w-36 grid grid-cols-1 gap-2 hide-scrollbar">
-                                {(yearInputText ? years.filter(y => y.value.startsWith(yearInputText)) : years).map((y) => (
-                                  <button
-                                    key={y.value}
-                                    className={`p-2 text-sm rounded-md ${selectedYear === y.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'} text-left`}
-                                    onClick={() => {
-                                      setSelectedYear(y.value);
-                                      setOpenPicker(null);
-                                      const date = y.value && selectedMonth && selectedDay ? `${y.value}-${selectedMonth}-${selectedDay}` : '';
-                                      const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
-                                      setForm({ ...form, dob: combined });
-                                    }}
-                                  >
-                                    {y.label}
-                                  </button>
-                                ))}
-                              </div>,
-                              document.body
-                            )}
-                          </div>
+                        <div className="flex gap-2 items-center relative">
+                          <DaySelector
+                            value={selectedDay}
+                            onDayChange={setSelectedDay}
+                            inputClassName="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
+                          />
+                          <MonthSelector
+                            value={selectedMonth}
+                            onMonthChange={setSelectedMonth}
+                            inputClassName="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
+                          />
+                          <YearSelector
+                            value={selectedYear}
+                            onYearChange={setSelectedYear}
+                            inputClassName="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
+                          />
 
                           {/* Time inline with date pickers */}
                           <div className="ml-10 flex items-center gap-4" style={{ height: '3.25rem' }}>
