@@ -369,6 +369,7 @@ export default function ProfileRegisterPage() {
                       </div>
                     </div>
                   </div>
+                      {/* -- Sample of how a date range slider could look like.
                         <div className="mt-4 px-4">
                           <label className="mb-2 font-medium text-pink-700">Date Range (example)</label>
                           <div className="mt-2">
@@ -376,7 +377,7 @@ export default function ProfileRegisterPage() {
                             <div className="text-sm text-gray-600 mt-2">Selected range: {rangeFrom || '-'} — {rangeTo || '-'}</div>
                           </div>
                         </div>
-
+                   */}
                   <div className="flex gap-4 pl-4">
                     <div>
                       <label className="mb-2 font-medium text-pink-700">Gender</label>
