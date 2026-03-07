@@ -16,6 +16,8 @@ import {familyIncomeOptions} from "src/constants/selectOptions/family";
 import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "src/constants/selectOptions/person";
 import {currentYear} from "src/constants/selectOptions/timeDate";
 import { feetOptions, inchOptions } from "src/constants/selectOptions/person";
+import DatePicker from "@/components/dateselectors/DatePicker";
+import DateRangeSlider from "@/components/daterange/DateRangeSlider";
 
 export default function ProfileRegisterPage() {
 
@@ -25,6 +27,8 @@ export default function ProfileRegisterPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [rangeFrom, setRangeFrom] = useState<string | null>(null);
+  const [rangeTo, setRangeTo] = useState<string | null>(null);
 
   const stepIcons = [
     (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" /></svg>),
@@ -337,22 +341,17 @@ export default function ProfileRegisterPage() {
                           <label className="mb-2 font-medium text-pink-700">Time of Birth</label>
                         </div>
                         <div className="flex gap-2 items-center relative">
-                          <DaySelector
-                            value={selectedDay}
-                            onDayChange={setSelectedDay}
-                            inputClassName="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
-                          />
-                          <MonthSelector
-                            value={selectedMonth}
-                            onMonthChange={setSelectedMonth}
-                            inputClassName="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
-                          />
-                          <YearSelector
-                            value={selectedYear}
-                            onYearChange={setSelectedYear}
-                            inputClassName="p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300"
-                          />
-
+                            <DatePicker 
+                              value={form.dob ? form.dob.split('T')[0] : ''}
+                              onDateChange={(y, m, d) => {
+                                setSelectedYear(y);
+                                setSelectedMonth(m);
+                                setSelectedDay(d);
+                                const date = y && m && d ? `${y}-${m}-${d}` : '';
+                                const combined = date ? `${date}T${selectedTime}` : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
+                                setForm({ ...form, dob: combined });
+                              }}
+                            />
                           {/* Time inline with date pickers */}
                           <div className="ml-10 flex items-center gap-4" style={{ height: '3.25rem' }}>
                             <TimePicker
@@ -370,7 +369,15 @@ export default function ProfileRegisterPage() {
                       </div>
                     </div>
                   </div>
-
+                      {/* -- Sample of how a date range slider could look like.
+                        <div className="mt-4 px-4">
+                          <label className="mb-2 font-medium text-pink-700">Date Range (example)</label>
+                          <div className="mt-2">
+                            <DateRangeSlider onRangeChange={(f, t) => { setRangeFrom(f); setRangeTo(t); }} />
+                            <div className="text-sm text-gray-600 mt-2">Selected range: {rangeFrom || '-'} — {rangeTo || '-'}</div>
+                          </div>
+                        </div>
+                   */}
                   <div className="flex gap-4 pl-4">
                     <div>
                       <label className="mb-2 font-medium text-pink-700">Gender</label>

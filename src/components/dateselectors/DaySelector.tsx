@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { days } from 'src/constants/selectOptions/timeDate';
+// days are generated dynamically now based on `maxDays` prop
 import { useOverlay } from 'src/hooks/useOverlay';
 
 interface Props {
@@ -10,9 +10,10 @@ interface Props {
   onDayChange: (day: string) => void;
   inputClassName?: string;
   popupwidth?: number;
+  maxDays?: number;
 }
 
-export default function DaySelector({ value, onDayChange, inputClassName = '', popupwidth: initialPopupWidth = 200 }: Props) {
+export default function DaySelector({ value, onDayChange, inputClassName = '', popupwidth: initialPopupWidth = 200, maxDays = 31 }: Props) {
    
   const [inputText, setInputText] = useState<string>('');
   const { open, setOpen, popupWidth, setPopupWidth, style, setStyle, btnRef, popupRef } = useOverlay({ initialPopupWidth });
@@ -31,7 +32,7 @@ export default function DaySelector({ value, onDayChange, inputClassName = '', p
       return;
     }
     const n = Number(raw);
-    if (!Number.isNaN(n) && n >= 1 && n <= 31) {
+    if (!Number.isNaN(n) && n >= 1 && n <= maxDays) {
       const pad = String(n).padStart(2, '0');
       onDayChange(pad);
     } else {
@@ -65,15 +66,18 @@ export default function DaySelector({ value, onDayChange, inputClassName = '', p
       />
       {open && style && createPortal(
         <div ref={popupRef} style={style} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-5 gap-2 hide-scrollbar">
-          {days.map((day) => (
-            <button
-              key={day.value}
-              className={`p-1 text-sm min-w-[32px] text-center text-lg rounded-md ${value === day.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
-              onClick={() => handleDaySelect(day.value)}
-            >
-              {Number(day.label)}
-            </button>
-          ))}
+          {Array.from({ length: maxDays }, (_, i) => {
+            const v = String(i + 1).padStart(2, '0');
+            return (
+              <button
+                key={v}
+                className={`p-1 text-sm min-w-[32px] text-center text-lg rounded-md ${value === v ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
+                onClick={() => handleDaySelect(v)}
+              >
+                {i + 1}
+              </button>
+            );
+          })}
         </div>,
         document.body
       )}
