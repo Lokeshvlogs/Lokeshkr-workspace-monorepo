@@ -4,10 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import ProfileCard from '../components/profile/ProfileCard'
 import { useAuth } from '../components/authProvider';
-import { REPLCommand } from 'repl';
 import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown';
 import SelectDropdown from '@/components/dropdown/SelectDropdown';
 import { CountryCodes } from 'src/constants/selectOptions/places';
+import { validateEmail } from '@/lib/validateEmail';
 
 const sampleProfiles = [
   {
@@ -41,29 +41,24 @@ export default function Home() {
     const auth = useAuth();
     const [lookingForVisible, setLookingForVisible] = useState<boolean>(false);
     const [age, setAge] = useState<number>(25);
+    const [error, setError] = useState<{ valid: boolean; error?: string } | null>(null);
+    const [emailFocused, setEmailFocused] = useState<boolean>(false);
     const [countryCodeValue, setCountryCodeValue] = useState<string>("+91");
 
     // controlled email input with sanitization (only allow specific chars, max 2 @)
-    const [regEmail, setRegEmail] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
 
-  const handleRegEmailChange = (value: string) => {
-    // Allow only valid characters
-    const allowedCharsRegex = /^[a-zA-Z0-9@._+-]*$/;
-    if (!allowedCharsRegex.test(value)) return;
+  const handleEmailChange = (s: string) => {
+    const value = s.replace(/[^a-zA-Z0-9@._-]/g, ''); // allow only valid email chars
+    const atCount = (value.match(/@/g) || []).length;
+    if (atCount > 1) return; // allow only a single @ while typing
 
-    // Cannot start with special characters
-    if (/^[.@_-]/.test(value)) return;
+    setEmail(value);
 
-    // Only one @ allowed
-    if ((value.match(/@/g) || []).length > 1) return;
-
-    // Prevent consecutive dots
-    if (value.includes("..")) return;
-
-    // Cannot end with . - _
-    if (/[._-]$/.test(value)) return;
-
-    setRegEmail(value);
+    // clear previous error while typing
+    if (value === "") {
+      setError(null);
+    }
   };
 
     const [regMessage, setRegMessage] = useState<string>("");
@@ -111,7 +106,48 @@ export default function Home() {
 
   return (
     <div className="hero-bg min-h-screen">
-      <div className="container mx-auto px-6 py-16">
+        <div className="absolute left-1/2 transform -translate-x-1/2 top-[80px] max-w-4xl z-50">
+          <form onSubmit={(e) => e.preventDefault()} className="bg-white rounded-full shadow-lg border px-4 py-3 flex items-center gap-3">
+            <ScrollableDropdown
+              label="I'm a"
+              options={[{ value: 'male', label: 'Man' }, { value: 'female', label: 'Woman' }]}
+              className="w-36 text-sm"
+              optionButtonClassName='w-36 text-sm'
+            />
+            <ScrollableDropdown
+              label="Age"
+              options={Array.from({ length: 43 }, (_, i) => {
+                const v = (18 + i).toString();
+                return { value: v, label: v };
+              })}
+              className="w-24 text-sm"
+            />
+            <ScrollableDropdown
+              label="Looking for"
+              options={[{ value: 'male', label: 'Man' }, { value: 'female', label: 'Woman' }]}
+              className="w-36 text-sm"
+              optionButtonClassName='w-36 text-sm'
+            />
+            <ScrollableDropdown
+              label="Min age"
+              options={Array.from({ length: 43 }, (_, i) => {
+                const v = (18 + i).toString();
+                return { value: v, label: v };
+              })}
+              className="w-20 text-sm"
+            />
+            <ScrollableDropdown
+              label="Max age"
+              options={Array.from({ length: 43 }, (_, i) => {
+                const v = (18 + i).toString();
+                return { value: v, label: v };
+              })}
+              className="w-20 text-sm"
+            />
+            <button type="submit" className="btn bg-brand-500 text-white px-4 py-2 rounded-full">Search</button>
+          </form>
+        </div>
+      <div className="container mx-auto px-6 py-16 relative">
         <section id="Home-Top" className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           <div id="TagLine" className="max-w-xl">
             <div className="pb-6">
@@ -129,21 +165,36 @@ export default function Home() {
             </div>
 
             <div className="pt-6">
-              <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 border-red-100 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{boxShadow: '0 20px 40px rgba(236,72,153,0.14), 0 6px 12px rgba(236,72,153,0.08)'}}>
+              <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)'}}>
                 <div className="grid grid-cols-1 gap-3">
                   <input
                     name="email"
                     type="email"
                     placeholder="Email-Id"
-                    value={regEmail}
-                    onChange={(e) => handleRegEmailChange(e.target.value)}
+                    aria-invalid={error ? "true" : "false"}
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
                     onPaste={(e) => {
                       e.preventDefault();
                       const text = (e.clipboardData || (window as any).clipboardData).getData('text') || '';
-                      handleRegEmailChange(text);
+                      handleEmailChange(text);
                     }}
-                    className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => {
+                      setEmailFocused(false);
+                      if (email.trim() === "") {
+                        setError(null);
+                        return;
+                      }
+                      const res = validateEmail(email);
+                      if (res.valid) setError({ valid: true });
+                      else setError({ valid: false, error: res.error });
+                    }}
+                    className={`p-3 text-lg rounded-md placeholder-gray-400 border border-blue-200 ${
+                      emailFocused ? 'focus:ring-2 focus:ring-blue-300' : error && !error.valid ? 'border-2 border-red-400' : 'border border-blue-200'
+                    } focus:outline-none`}
                   />
+                  {error && <div className="text-red-500 text-sm mt-1">{error.error}</div>}
                   <div className="grid grid-cols-2 gap-3">
                     <input name="first_name" placeholder="First Name" className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
                     <input name="last_name" placeholder="Last Name" className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
@@ -233,7 +284,7 @@ export default function Home() {
               </form>
             </div>
           </div>
-          <div className="img-collage grid grid-cols-2 gap-1 pulse">
+          <div className="img-collage grid grid-cols-2 gap-1 wiggle relative top-[100px]">
             <img src="https://i.pinimg.com/1200x/42/26/91/422691e09e79e96b7075ef306a9c2d07.jpg" alt="portrait4"/>
             <img src="https://i.pinimg.com/1200x/5b/ff/eb/5bffeb824946fb9eee89e22cbbdab46b.jpg" alt="portrait3" />
             <img src="https://i.pinimg.com/1200x/69/82/29/69822936198d9451e50eab281ca524a1.jpg" alt="portrait" />
