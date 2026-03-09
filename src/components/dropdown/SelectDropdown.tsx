@@ -2,15 +2,17 @@
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption, SelectOption } from 'src/types/select';
+import { de } from 'zod/v4/locales';
 
 
 interface Props {
   name?: string;
-  options: SelectIconOption[];
+  options:  SelectIconOption[];
   initialValue?: string;
   //tailwind classes to apply to the container
   className?: string;
   buttonClassName?: string;
+  showButtonValue?: boolean;
   iconClassName?: string;
   labelClassName?: string;
   extraLabelClassName?: string;
@@ -21,7 +23,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ name, options, initialValue = '', className = '', buttonClassName = '', iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ name, options, initialValue = '', className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>(initialValue);
   const [popupWidth, setPopupWidth] = useState<number>(0);
@@ -112,10 +114,8 @@ export default function SelectDropdown({ name, options, initialValue = '', class
   }
 
   const selectedOption = options.find(o => o.value === selected);
-  const displayShort = selectedOption?.label || '';
-  const displayValue = selectedOption?.value || '';
-  const displayLabel = displayShort ? `${displayShort} ${displayValue}` : (selectedOption?.extra_label || selected || (initialValue ? initialValue : name) || 'Select');
-  const displayFlag = selectedOption?.icon;
+  const displayLabel = selectedOption?.label || initialValue || name;
+  const displayFlag = selectedOption?.icon? selectedOption.icon : undefined;
 
     const justify =
     align === "center"
@@ -134,13 +134,13 @@ export default function SelectDropdown({ name, options, initialValue = '', class
         onClick={() => { if (!disabled) setOpen(v => !v); }}
         aria-haspopup="listbox"
         aria-expanded={open ? "true" : "false"}
-        aria-disabled={disabled}
+        aria-disabled={disabled ? "true" : "false"}
         disabled={disabled}
-        title={selectedOption?.extra_label || displayLabel}
+        title={name}
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
-          <span className="text-sm">{displayLabel}</span>
+          <span className="text-sm">{ displayLabel + (showButtonValue ? ' ' + selectedOption?.value : '')}</span>
         </div>
       </button>
 

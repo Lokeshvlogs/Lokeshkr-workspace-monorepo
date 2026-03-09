@@ -10,15 +10,20 @@ export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
   const auth = useAuth()
 
-  const [lookingForVisible, setLookingForVisible] = useState<boolean>(false)
-  const [age, setAge] = useState<number>(25)
+  
+  
   const [email, setEmail] = useState<string>('')
+  const [emailFocused, setEmailFocused] = useState<boolean>(false)
   const [error, setError] = useState<{ valid: boolean; error?: string } | null>(null)
   const [regMessage, setRegMessage] = useState<string>('')
   const [regLoading, setRegLoading] = useState<boolean>(false)
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const [countryCodeValue, setCountryCodeValue] = useState<string>('+91')
-  const [emailFocused, setEmailFocused] = useState<boolean>(false)
+  
+  const [lookingFor, setLookingFor] = useState<string>('bride')
+  const [age, setAge] = useState<number>(25)
+  const [lookingForVisible, setLookingForVisible] = useState<boolean>(false)
+  const [profileFor, setProfileFor] = useState<string>('son')
 
   const handleEmailChange = (s: string) => {
     const value = s.replace(/[^a-zA-Z0-9@._-]/g, '')
@@ -28,6 +33,10 @@ export default function RegisterForm() {
     if (value === '') setError(null)
   }
 
+  const handleLookingForChange = (value: string) => {
+    setLookingFor(value)
+  }
+  
   async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setRegMessage('')
@@ -89,7 +98,7 @@ export default function RegisterForm() {
             if (res.valid) setError({ valid: true })
             else setError({ valid: false, error: res.error })
           }}
-          className={`p-3 text-lg rounded-md placeholder-gray-400 ${emailFocused ? 'border-2 border-pink-400' : error && !error.valid ? 'border-2 border-red-500' : 'border border-pink-200'} focus:outline-none`}
+          className={`p-3 text-lg rounded-md placeholder-gray-400 ${emailFocused ? 'border-2 border-pink-200' : error && !error.valid ? 'border-2 border-red-500' : 'border border-pink-200'} focus:outline-none`}
         />
         {error && <div className="text-red-500 text-sm mt-1">{error.error}</div>}
 
@@ -99,8 +108,8 @@ export default function RegisterForm() {
         </div>
 
         <div className="flex gap-3">
-          <ScrollableDropdown
-            label="Profile for"
+          <SelectDropdown
+            name="Profile for"
             options={[
               { value: 'son', label: 'Son' },
               { value: 'daughter', label: 'Daughter' },
@@ -109,24 +118,33 @@ export default function RegisterForm() {
               { value: 'self', label: 'Self' },
             ]}
             className='w-36 text-sm'
-            optionButtonClassName='w-36 text-sm'
-            onChange={(value) => setLookingForVisible(value === 'self')}
+            buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+            extraLabelClassName='whitespace-nowrap'
+            onChange={(value) => {
+              setProfileFor(value);
+              setLookingForVisible(value === 'self');
+            }}
           />
-          <ScrollableDropdown
-            label="Age"
+          <SelectDropdown
+            name="Age"
             options={Array.from({length: 43}, (_,i) => {
               const v = (18 + i).toString();
               return { value: v, label: v };
             })}
             className='w-20 text-sm'
-            onChange={(value) => setAge(Number(value))}
+            buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+            extraLabelClassName='whitespace-nowrap'
+            onChange={(value) => setAge(parseInt(value))}
           />
           <input type="hidden" name="age" value={age} />
           {lookingForVisible && (
-            <ScrollableDropdown
-              label="Looking for"
+            <SelectDropdown 
+              name="Looking for"
               options={[{ value: 'bride', label: 'Bride' }, { value: 'groom', label: 'Groom' }]}
               className='w-40 text-sm'
+              buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+              extraLabelClassName='whitespace-nowrap'
+              onChange={handleLookingForChange}
             />
           )}
         </div>
@@ -136,9 +154,10 @@ export default function RegisterForm() {
             name="Country code"
             options={CountryCodes}
             initialValue={'+91'}
-            className="w-28 text-sm"
+            className="w-35 text-sm"
             buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
             extraLabelClassName='whitespace-nowrap'
+            showButtonValue={true}
             onChange={(value) => setCountryCodeValue(value)}
           />
 
