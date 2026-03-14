@@ -4,7 +4,7 @@ import { useAuth } from '../components/authProvider'
 import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown'
 import SelectDropdown from '@/components/dropdown/SelectDropdown'
 import { CountryCodes } from 'src/constants/selectOptions/places'
-import { validateEmail } from '@/lib/validateEmail'
+import { validateEmail } from '@/lib/validate'
 
 export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
@@ -117,8 +117,9 @@ export default function RegisterForm() {
               { value: 'sister', label: 'Sister' },
               { value: 'self', label: 'Self' },
             ]}
-            className='w-36 text-sm'
-            buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+            className='w-36'
+            buttonClassName='p-4 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+            buttonLabelClassName='text-lg'
             extraLabelClassName='whitespace-nowrap'
             onChange={(value) => {
               setProfileFor(value);
@@ -131,8 +132,9 @@ export default function RegisterForm() {
               const v = (18 + i).toString();
               return { value: v, label: v };
             })}
-            className='w-20 text-sm'
+            className='w-20'
             buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+            buttonLabelClassName='text-lg'
             extraLabelClassName='whitespace-nowrap'
             onChange={(value) => setAge(parseInt(value))}
           />
@@ -141,7 +143,7 @@ export default function RegisterForm() {
             <SelectDropdown 
               name="Looking for"
               options={[{ value: 'bride', label: 'Bride' }, { value: 'groom', label: 'Groom' }]}
-              className='w-40 text-sm'
+              className='w-40'
               buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
               extraLabelClassName='whitespace-nowrap'
               onChange={handleLookingForChange}
@@ -154,10 +156,10 @@ export default function RegisterForm() {
             name="Country code"
             options={CountryCodes}
             initialValue={'+91'}
-            className="w-35 text-sm"
+            showButtonValue={true}
+            className="w-35"
             buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
             extraLabelClassName='whitespace-nowrap'
-            showButtonValue={true}
             onChange={(value) => setCountryCodeValue(value)}
           />
 

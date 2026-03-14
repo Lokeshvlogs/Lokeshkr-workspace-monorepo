@@ -12,8 +12,9 @@ interface Props {
   //tailwind classes to apply to the container
   className?: string;
   buttonClassName?: string;
+  buttonLabelClassName?: string;
   showButtonValue?: boolean;
-  iconClassName?: string;
+  iconSelectListClassName?: string;
   labelClassName?: string;
   extraLabelClassName?: string;
 
@@ -23,7 +24,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ name, options, initialValue = '', className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ name, options, initialValue = '', className = '', buttonClassName = '', buttonLabelClassName = '', showButtonValue = false, iconSelectListClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>(initialValue);
   const [popupWidth, setPopupWidth] = useState<number>(0);
@@ -140,7 +141,7 @@ export default function SelectDropdown({ name, options, initialValue = '', class
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
-          <span className="text-sm">{ displayLabel + (showButtonValue ? ' ' + selectedOption?.value : '')}</span>
+          <span className={buttonLabelClassName ? buttonLabelClassName : 'text-lg'}>{ displayLabel + (showButtonValue ? ' ' + selectedOption?.value : '')}</span>
         </div>
       </button>
 
@@ -156,7 +157,7 @@ export default function SelectDropdown({ name, options, initialValue = '', class
                   className={`flex gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
                   onClick={() => doSelect(o.value)}
                   >
-                    {o.icon && <img src={o.icon} alt={o.label || o.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
+                    {o.icon && <img src={o.icon} alt={o.label || o.extra_label} className={iconSelectListClassName ? `${iconSelectListClassName} w-5 h-4 object-contain` : 'w-5 h-4 object-contain'} />}
                     {o.label && <span className={`text-sm ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{o.label}</span>}
                     {o.extra_label && <span className={`text-sm ml-5  text-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{o.extra_label}</span>}
                   
