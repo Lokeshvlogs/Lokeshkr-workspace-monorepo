@@ -11,3 +11,4 @@ export const familyIncomeOptions: SelectOption[] = [
     { value: '200-500', label: '2-5 crores' },
     { value: '500+', label: '5+ crores' },
   ];
+

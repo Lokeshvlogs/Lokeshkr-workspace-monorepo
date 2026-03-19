@@ -1,20 +1,33 @@
 "use client"
 import React, { useState } from 'react'
 import { useAuth } from '../components/authProvider'
-import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown'
 import SelectDropdown from '@/components/dropdown/SelectDropdown'
 import { CountryCodes } from 'src/constants/selectOptions/places'
-import { validateEmail } from '@/lib/validateEmail'
+import { validateEmail } from '@/lib/validation/schemas/validateEmail'
+import { registerSchema } from '@/lib/validation/schemas/registerUserSchema'
+import { useZodForm } from '@/hooks/useZodForm'
+import { registerUser } from '@/actions/registerUser'
+import { clear } from 'console'
 
 export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
   const auth = useAuth()
 
-  
+  const { errors, action, validateField, clearFieldError, values, setField } = useZodForm(registerSchema, registerUser, {
+  email: "",
+  first_name: "",
+  surname: "",
+  profile_for: "",
+  age: 18,
+  looking_for: "",
+  country: "",
+  phone: "",
+  password: "",
+})
   
   const [email, setEmail] = useState<string>('')
   const [emailFocused, setEmailFocused] = useState<boolean>(false)
-  const [error, setError] = useState<{ valid: boolean; error?: string } | null>(null)
+ 
   const [regMessage, setRegMessage] = useState<string>('')
   const [regLoading, setRegLoading] = useState<boolean>(false)
   const [showPassword, setShowPassword] = useState<boolean>(false)
@@ -24,14 +37,6 @@ export default function RegisterForm() {
   const [age, setAge] = useState<number>(25)
   const [lookingForVisible, setLookingForVisible] = useState<boolean>(false)
   const [profileFor, setProfileFor] = useState<string>('son')
-
-  const handleEmailChange = (s: string) => {
-    const value = s.replace(/[^a-zA-Z0-9@._-]/g, '')
-    const atCount = (value.match(/@/g) || []).length
-    if (atCount > 1) return
-    setEmail(value)
-    if (value === '') setError(null)
-  }
 
   const handleLookingForChange = (value: string) => {
     setLookingFor(value)
@@ -76,35 +81,65 @@ export default function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleRegister} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)'}}>
+    <form action={action} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)'}}>
       <div className="grid grid-cols-1 gap-3">
         <input
           name="email"
           type="email"
           placeholder="Email-Id"
-          aria-invalid={error ? 'true' : 'false'}
-          value={email}
-          onChange={(e) => handleEmailChange(e.target.value)}
+          aria-invalid={errors.email ? 'true' : 'false'}
+          value={values.email || ''}
+          onChange={(e) => {
+           setField("email", e.target.value)
+          //clear error when starts typing again
+           clearFieldError("email")
+      }}
           onPaste={(e) => {
             e.preventDefault()
             const text = (e.clipboardData || (window as any).clipboardData).getData('text') || ''
-            handleEmailChange(text)
+            setField("email", text)
+            validateField("email", text)
           }}
           onFocus={() => setEmailFocused(true)}
-          onBlur={() => {
+          onBlur={(e) => {
             setEmailFocused(false)
-            if (email.trim() === '') { setError(null); return }
-            const res = validateEmail(email)
-            if (res.valid) setError({ valid: true })
-            else setError({ valid: false, error: res.error })
+
+          // ✅ validate ONLY on blur
+           validateField("email", e.target.value)
           }}
-          className={`p-3 text-lg rounded-md placeholder-gray-400 ${emailFocused ? 'border-2 border-pink-200' : error && !error.valid ? 'border-2 border-red-500' : 'border border-pink-200'} focus:outline-none`}
+          className={`p-3 text-lg rounded-md placeholder-gray-400 ${emailFocused ? 'border-2 border-pink-200' : errors.email ? 'border-2 border-red-500' : 'border border-pink-200'} focus:outline-none`}
         />
-        {error && <div className="text-red-500 text-sm mt-1">{error.error}</div>}
+        {errors.email && <div className="text-red-500 text-sm mt-1">{errors.email[0]}</div>}
 
         <div className="grid grid-cols-2 gap-3">
-          <input name="first_name" placeholder="First Name" className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
-          <input name="last_name" placeholder="Last Name" className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
+          <input
+            name="first_name"
+            placeholder="First Name"
+            value={values.first_name || ''}
+            onChange={(e) => {
+              setField("first_name", e.target.value)
+              clearFieldError("first_name")
+            }}
+            onBlur={(e) => {
+              validateField("first_name", e.target.value)
+            }}
+            className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+          />
+          {errors.first_name && <div className="text-red-500 text-sm mt-1">{errors.first_name[0]}</div>}
+          <input
+            name="last_name"
+            placeholder="Last Name"
+            value={values.surname || ''}
+            onChange={(e) => {
+              setField("surname", e.target.value)
+              clearFieldError("surname")
+            }}
+            onBlur={(e) => {
+              validateField("surname", e.target.value)
+            }}
+            className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+          />
+          {errors.surname && <div className="text-red-500 text-sm mt-1">{errors.surname[0]}</div>}
         </div>
 
         <div className="flex gap-3">
@@ -125,6 +160,7 @@ export default function RegisterForm() {
               setLookingForVisible(value === 'self');
             }}
           />
+          {errors.profile_for && <div className="text-red-500 text-sm mt-1">{errors.profile_for[0]}</div>}
           <SelectDropdown
             name="Age"
             options={Array.from({length: 43}, (_,i) => {
@@ -136,7 +172,7 @@ export default function RegisterForm() {
             extraLabelClassName='whitespace-nowrap'
             onChange={(value) => setAge(parseInt(value))}
           />
-          <input type="hidden" name="age" value={age} />
+          {errors.age && <div className="text-red-500 text-sm mt-1">{errors.age[0]}</div>}
           {lookingForVisible && (
             <SelectDropdown 
               name="Looking for"
@@ -160,8 +196,9 @@ export default function RegisterForm() {
             showButtonValue={true}
             onChange={(value) => setCountryCodeValue(value)}
           />
-
+          {errors.country_code && <div className="text-red-500 text-sm mt-1">{errors.country_code[0]}</div>}
           <input name="phone" placeholder="Phone no." type="tel" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
+          {errors.phone && <div className="text-red-500 text-sm mt-1">{errors.phone[0]}</div>}
         </div>
 
         <div className="relative">
@@ -169,7 +206,7 @@ export default function RegisterForm() {
             name="password"
             placeholder="Password"
             type={showPassword ? 'text' : 'password'}
-            className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400 pr-10"
+            className="p-3 border border-pink-200 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400 pr-10"
             aria-label="Password"
           />
           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-2 flex items-center text-gray-500" aria-label={showPassword ? 'Hide password' : 'Show password'}>
@@ -184,6 +221,7 @@ export default function RegisterForm() {
               </svg>
             )}
           </button>
+          {errors.password && <div className="text-red-500 text-sm mt-1">{errors.password[0]}</div>}
         </div>
 
         <div className="flex items-center justify-center">
