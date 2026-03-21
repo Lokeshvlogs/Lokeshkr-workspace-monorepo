@@ -13,7 +13,7 @@ export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
   const auth = useAuth()
 
-  const { errors, action, validateField, clearFieldError, values, setField } = useZodForm(registerSchema, registerUser, {
+  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused } = useZodForm(registerSchema, registerUser, {
   email: "",
   first_name: "",
   surname: "",
@@ -25,8 +25,6 @@ export default function RegisterForm() {
   password: "",
 })
   
-  const [email, setEmail] = useState<string>('')
-  const [emailFocused, setEmailFocused] = useState<boolean>(false)
  
   const [regMessage, setRegMessage] = useState<string>('')
   const [regLoading, setRegLoading] = useState<boolean>(false)
@@ -88,6 +86,7 @@ export default function RegisterForm() {
           type="email"
           placeholder="Email-Id"
           aria-invalid={errors.email ? 'true' : 'false'}
+          aria-describedby="email-error"
           value={values.email || ''}
           onChange={(e) => {
            setField("email", e.target.value)
@@ -100,22 +99,26 @@ export default function RegisterForm() {
             setField("email", text)
             validateField("email", text)
           }}
-          onFocus={() => setEmailFocused(true)}
           onBlur={(e) => {
-            setEmailFocused(false)
+            setFocused(null)
 
           // ✅ validate ONLY on blur
            validateField("email", e.target.value)
           }}
-          className={`p-3 text-lg rounded-md placeholder-gray-400 ${emailFocused ? 'border-2 border-pink-200' : errors.email ? 'border-2 border-red-500' : 'border border-pink-200'} focus:outline-none`}
+          onFocus={() => setFocused('email')}
+          className={`p-3 text-lg border ${errors.email ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`}
+          id="email"
         />
-        {errors.email && <div className="text-red-500 text-sm mt-1">{errors.email[0]}</div>}
+        {errors.email && <p id="email-error" className="text-red-500 text-sm mt-1" role="alert">{errors.email[0]}</p>}
 
         <div className="grid grid-cols-2 gap-3">
           <input
+            id='first_name'
             name="first_name"
             placeholder="First Name"
             value={values.first_name || ''}
+            aria-invalid={errors.first_name ? 'true' : 'false'}
+            aria-describedby="first_name-error"
             onChange={(e) => {
               setField("first_name", e.target.value)
               clearFieldError("first_name")
@@ -123,24 +126,35 @@ export default function RegisterForm() {
             onBlur={(e) => {
               validateField("first_name", e.target.value)
             }}
-            className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+            onFocus={() => setFocused('first_name')}
+            className={`p-3 text-lg border ${errors.first_name ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`}
           />
-          {errors.first_name && <div className="text-red-500 text-sm mt-1">{errors.first_name[0]}</div>}
           <input
-            name="last_name"
-            placeholder="Last Name"
+            id='surname'
+            name="surname"
+            placeholder="Surname"
             value={values.surname || ''}
+            aria-invalid={errors.surname ? 'true' : 'false'}
+            aria-describedby="surname-error"
             onChange={(e) => {
               setField("surname", e.target.value)
               clearFieldError("surname")
             }}
+            onPaste={(e)=> {
+              e.preventDefault()
+              const text = (e.clipboardData || (window as any).clipboardData).getData('text') || ''
+              setField("surname", text)
+              validateField("surname", text)
+            }}
             onBlur={(e) => {
               validateField("surname", e.target.value)
             }}
-            className="p-3 text-lg border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+            onFocus={() => setFocused('surname')}
+            className={`p-3 text-lg border ${errors.surname ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`}
           />
-          {errors.surname && <div className="text-red-500 text-sm mt-1">{errors.surname[0]}</div>}
-        </div>
+            {errors.first_name && <div id="first_name-error" className="text-red-500 text-sm mt-1">{errors.first_name[0]}</div>}
+            {errors.surname && <div id="surname-error" className="col-start-2 text-red-500 text-sm mt-1">{errors.surname[0]}</div>}
+          </div>
 
         <div className="flex gap-3">
           <SelectDropdown

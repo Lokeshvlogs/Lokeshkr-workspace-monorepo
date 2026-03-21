@@ -12,7 +12,7 @@ import { communitiesByReligion, motherTongueOptions } from "src/constants/select
 import {placesByCountry, countryOptions } from 'src/constants/selectOptions/places';
 
 import { professionOptions, educationOptions, fieldOfStudyOptions, collegeOptions, employedAsOptions, employedInOptions } from 'src/constants/selectOptions/career';
-import {familyIncomeOptions} from "src/constants/selectOptions/family";
+import {familyIncomeOptions} from "src/constants/selectOptions/people";
 import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "src/constants/selectOptions/person";
 import {currentYear} from "src/constants/selectOptions/timeDate";
 import { feetOptions, inchOptions } from "src/constants/selectOptions/person";

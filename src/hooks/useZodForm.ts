@@ -6,11 +6,12 @@ import { ZodSchema } from "zod"
 export function useZodForm<T extends Record<string, any>>(
   schema: ZodSchema<T>,
   actionFn: any,
-  initialValues: Partial<T> = {}
+  initialValues: Partial<T> = {},
 ) {
 
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [values, setValues] = useState<Partial<T>>(initialValues)
+  const [focused, setFocused] = useState<string | null>(null)
 
   function setField(name: keyof T, value: any) {
     setValues((prev) => ({
@@ -64,12 +65,12 @@ export function useZodForm<T extends Record<string, any>>(
   }
 
   function clearFieldError(name: keyof T) {
-  setErrors((prev) => {
-    const newErrors = { ...prev }
-    delete newErrors[name as string]
-    return newErrors
-  })
-}
+    setErrors((prev) => {
+      const newErrors = { ...prev }
+      delete newErrors[name as string]
+      return newErrors
+    })
+  }
 
-  return { errors, action, validateField, clearFieldError, values, setField }
+  return { errors, action, validateField, clearFieldError, values, setField, focused, setFocused }
 }
