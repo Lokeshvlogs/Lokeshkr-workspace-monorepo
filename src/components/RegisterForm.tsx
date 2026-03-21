@@ -100,7 +100,7 @@ export default function RegisterForm() {
           )}
         </div>
 
-        <div className="flex gap-3">
+        <div className="grid grid-cols-[1fr_2fr] gap-3">
           <SelectDropdown
             name="Country code"
             options={CountryCodes}
@@ -113,7 +113,7 @@ export default function RegisterForm() {
           />
           {errors.country_code && <div className="text-red-500 text-sm mt-1">{errors.country_code[0]}</div>}
           <input {...registerInputOnPros('phone')} name="phone" placeholder="Phone no." type="tel" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
-          {errors.phone && <div className="text-red-500 text-sm mt-1">{errors.phone[0]}</div>}
+          {errors.phone && <div className="col-start-2 col-span-2 text-red-500 text-sm mt-1">{errors.phone[0]}</div>}
         </div>
 
         <div className="relative">
