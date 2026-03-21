@@ -13,145 +13,46 @@ export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
   const auth = useAuth()
 
-  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused } = useZodForm(registerSchema, registerUser, {
+  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register: registerInputOnPros } = useZodForm(registerSchema, registerUser, {
   email: "",
   first_name: "",
   surname: "",
   profile_for: "",
   age: 18,
   looking_for: "",
-  country: "",
+  country_code: "",
   phone: "",
   password: "",
 })
   
- 
+  const passwordProps = registerInputOnPros('password')
+
   const [regMessage, setRegMessage] = useState<string>('')
   const [regLoading, setRegLoading] = useState<boolean>(false)
   const [showPassword, setShowPassword] = useState<boolean>(false)
-  const [countryCodeValue, setCountryCodeValue] = useState<string>('+91')
-  
-  const [lookingFor, setLookingFor] = useState<string>('bride')
-  const [age, setAge] = useState<number>(25)
   const [lookingForVisible, setLookingForVisible] = useState<boolean>(false)
-  const [profileFor, setProfileFor] = useState<string>('son')
 
   const handleLookingForChange = (value: string) => {
-    setLookingFor(value)
+    setField('looking_for', value)
   }
   
-  async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setRegMessage('')
-    setRegLoading(true)
-
-    const formData = new FormData(event.currentTarget as HTMLFormElement)
-    const dataObject: any = Object.fromEntries(formData as any)
-    if (dataObject.country_code) {
-      dataObject.phone = `${dataObject.country_code}${dataObject.phone || ''}`
-      delete dataObject.country_code
-    }
-    const jsonData = JSON.stringify(dataObject)
-
-    const requestOptions: RequestInit = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: jsonData,
-    }
-
-    try {
-      const response = await fetch(REGISTER_URL, requestOptions)
-      let data: any = {}
-      try {
-        data = await response.json()
-      } catch {}
-
-      if (response.ok) {
-        auth.loginRequiredRedirect()
-      } else {
-        setRegMessage(data?.error || 'Registration failed.')
-      }
-    } catch (err) {
-      setRegMessage('Network error.')
-    }
-
-    setRegLoading(false)
-  }
-
   return (
     <form action={action} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)'}}>
       <div className="grid grid-cols-1 gap-3">
         <input
-          name="email"
+          {...registerInputOnPros('email')}
           type="email"
           placeholder="Email-Id"
           aria-invalid={errors.email ? 'true' : 'false'}
           aria-describedby="email-error"
-          value={values.email || ''}
-          onChange={(e) => {
-           setField("email", e.target.value)
-          //clear error when starts typing again
-           clearFieldError("email")
-      }}
-          onPaste={(e) => {
-            e.preventDefault()
-            const text = (e.clipboardData || (window as any).clipboardData).getData('text') || ''
-            setField("email", text)
-            validateField("email", text)
-          }}
-          onBlur={(e) => {
-            setFocused(null)
-
-          // ✅ validate ONLY on blur
-           validateField("email", e.target.value)
-          }}
-          onFocus={() => setFocused('email')}
           className={`p-3 text-lg border ${errors.email ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`}
           id="email"
         />
         {errors.email && <p id="email-error" className="text-red-500 text-sm mt-1" role="alert">{errors.email[0]}</p>}
 
         <div className="grid grid-cols-2 gap-3">
-          <input
-            id='first_name'
-            name="first_name"
-            placeholder="First Name"
-            value={values.first_name || ''}
-            aria-invalid={errors.first_name ? 'true' : 'false'}
-            aria-describedby="first_name-error"
-            onChange={(e) => {
-              setField("first_name", e.target.value)
-              clearFieldError("first_name")
-            }}
-            onBlur={(e) => {
-              validateField("first_name", e.target.value)
-            }}
-            onFocus={() => setFocused('first_name')}
-            className={`p-3 text-lg border ${errors.first_name ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`}
-          />
-          <input
-            id='surname'
-            name="surname"
-            placeholder="Surname"
-            value={values.surname || ''}
-            aria-invalid={errors.surname ? 'true' : 'false'}
-            aria-describedby="surname-error"
-            onChange={(e) => {
-              setField("surname", e.target.value)
-              clearFieldError("surname")
-            }}
-            onPaste={(e)=> {
-              e.preventDefault()
-              const text = (e.clipboardData || (window as any).clipboardData).getData('text') || ''
-              setField("surname", text)
-              validateField("surname", text)
-            }}
-            onBlur={(e) => {
-              validateField("surname", e.target.value)
-            }}
-            onFocus={() => setFocused('surname')}
-            className={`p-3 text-lg border ${errors.surname ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`}
-          />
+          <input {...registerInputOnPros('first_name')} id='first_name' placeholder="First Name" aria-invalid={errors.first_name ? 'true' : 'false'} aria-describedby="first_name-error" className={`p-3 text-lg border ${errors.first_name ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`} />
+          <input {...registerInputOnPros('surname')} id='surname' placeholder="Surname" aria-invalid={errors.surname ? 'true' : 'false'} aria-describedby="surname-error" className={`p-3 text-lg border ${errors.surname ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`} />
             {errors.first_name && <div id="first_name-error" className="text-red-500 text-sm mt-1">{errors.first_name[0]}</div>}
             {errors.surname && <div id="surname-error" className="col-start-2 text-red-500 text-sm mt-1">{errors.surname[0]}</div>}
           </div>
@@ -170,7 +71,7 @@ export default function RegisterForm() {
             buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
             extraLabelClassName='whitespace-nowrap'
             onChange={(value) => {
-              setProfileFor(value);
+              setField('profile_for', value);
               setLookingForVisible(value === 'self');
             }}
           />
@@ -184,7 +85,7 @@ export default function RegisterForm() {
             className='w-20 text-sm'
             buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
             extraLabelClassName='whitespace-nowrap'
-            onChange={(value) => setAge(parseInt(value))}
+            onChange={(value) => setField('age', parseInt(value))}
           />
           {errors.age && <div className="text-red-500 text-sm mt-1">{errors.age[0]}</div>}
           {lookingForVisible && (
@@ -194,7 +95,7 @@ export default function RegisterForm() {
               className='w-40 text-sm'
               buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
               extraLabelClassName='whitespace-nowrap'
-              onChange={handleLookingForChange}
+              onChange={(value) => setField('looking_for', value)}
             />
           )}
         </div>
@@ -208,21 +109,15 @@ export default function RegisterForm() {
             buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
             extraLabelClassName='whitespace-nowrap'
             showButtonValue={true}
-            onChange={(value) => setCountryCodeValue(value)}
+            onChange={(value) => setField('country_code', value)}
           />
           {errors.country_code && <div className="text-red-500 text-sm mt-1">{errors.country_code[0]}</div>}
-          <input name="phone" placeholder="Phone no." type="tel" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
+          <input {...registerInputOnPros('phone')} name="phone" placeholder="Phone no." type="tel" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
           {errors.phone && <div className="text-red-500 text-sm mt-1">{errors.phone[0]}</div>}
         </div>
 
         <div className="relative">
-          <input
-            name="password"
-            placeholder="Password"
-            type={showPassword ? 'text' : 'password'}
-            className="p-3 border border-pink-200 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400 pr-10"
-            aria-label="Password"
-          />
+          <input {...passwordProps} name="password" placeholder="Password" type={showPassword ? 'text' : 'password'} className="p-3 border border-pink-200 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400 pr-10" aria-label="Password" />
           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-2 flex items-center text-gray-500" aria-label={showPassword ? 'Hide password' : 'Show password'}>
             {showPassword ? (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
