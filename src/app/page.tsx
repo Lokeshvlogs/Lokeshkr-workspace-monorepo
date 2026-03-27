@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import ProfileCard from '../components/profile/ProfileCard'
 import { useAuth } from '../components/authProvider';
-import RegisterForm from '../components/RegisterForm'
+import RegisterForm from './Register/RegisterForm'
 import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown';
 import SelectDropdown from '@/components/dropdown/SelectDropdown';
 import { CountryCodes } from 'src/constants/selectOptions/places';

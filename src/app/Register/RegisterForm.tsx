@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import { useAuth } from '../components/authProvider'
+import { useAuth } from '../../components/authProvider'
 import SelectDropdown from '@/components/dropdown/SelectDropdown'
 import { CountryCodes } from 'src/constants/selectOptions/places'
 import { validateEmail } from '@/lib/validation/schemas/validateEmail'
@@ -8,6 +8,7 @@ import { registerSchema } from '@/lib/validation/schemas/registerUserSchema'
 import { useZodForm } from '@/hooks/useZodForm'
 import { registerUser } from '@/actions/registerUser'
 import { clear } from 'console'
+import { PROFILE_FOR_OPTIONS, LOOKING_FOR_OPTIONS } from './constants/RegisterUserOptions'
 
 export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
@@ -17,12 +18,12 @@ export default function RegisterForm() {
   email: "",
   first_name: "",
   surname: "",
-  profile_for: "",
-  age: 18,
-  looking_for: "",
+  profile_for: undefined,
+  age: undefined,
+  looking_for: undefined,
   country_code: "",
-  phone: "",
-  password: "",
+  phone: undefined,
+  password: undefined,
 })
   
   const passwordProps = registerInputOnPros('password')
@@ -53,29 +54,29 @@ export default function RegisterForm() {
         <div className="grid grid-cols-2 gap-3">
           <input {...registerInputOnPros('first_name')} id='first_name' placeholder="First Name" aria-invalid={errors.first_name ? 'true' : 'false'} aria-describedby="first_name-error" className={`p-3 text-lg border ${errors.first_name ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`} />
           <input {...registerInputOnPros('surname')} id='surname' placeholder="Surname" aria-invalid={errors.surname ? 'true' : 'false'} aria-describedby="surname-error" className={`p-3 text-lg border ${errors.surname ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`} />
-            {errors.first_name && <div id="first_name-error" className="text-red-500 text-sm mt-1">{errors.first_name[0]}</div>}
-            {errors.surname && <div id="surname-error" className="col-start-2 text-red-500 text-sm mt-1">{errors.surname[0]}</div>}
+            {errors.first_name && <p id="first_name-error" className="text-red-500 text-sm mt-1" role="alert">{errors.first_name[0]}</p>}
+            {errors.surname && <p id="surname-error" className="col-start-2 text-red-500 text-sm mt-1" role="alert">{errors.surname[0]}</p>}
           </div>
 
-        <div className="flex gap-3">
+        <div className="grid grid-cols-[2fr_1fr_2fr] gap-3">
           <SelectDropdown
             name="Profile for"
-            options={[
-              { value: 'son', label: 'Son' },
-              { value: 'daughter', label: 'Daughter' },
-              { value: 'brother', label: 'Brother' },
-              { value: 'sister', label: 'Sister' },
-              { value: 'self', label: 'Self' },
-            ]}
+            options={PROFILE_FOR_OPTIONS}
             className='w-36 text-sm'
-            buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+            buttonClassName='p-3 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
             extraLabelClassName='whitespace-nowrap'
+
             onChange={(value) => {
               setField('profile_for', value);
+              clearFieldError('profile_for')
+              validateField('profile_for', value)
               setLookingForVisible(value === 'self');
             }}
+            onBlur={(value, index) => {
+              const val = values.profile_for
+              validateField('profile_for', val)
+              }}
           />
-          {errors.profile_for && <div className="text-red-500 text-sm mt-1">{errors.profile_for[0]}</div>}
           <SelectDropdown
             name="Age"
             options={Array.from({length: 43}, (_,i) => {
@@ -83,21 +84,43 @@ export default function RegisterForm() {
               return { value: v, label: v };
             })}
             className='w-20 text-sm'
-            buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+            buttonClassName='p-3 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
             extraLabelClassName='whitespace-nowrap'
-            onChange={(value) => setField('age', parseInt(value))}
+  
+            onChange={(value) => {
+              console.log('Selected age:', value);
+              const v = parseInt(value)
+              setField('age', v)
+              clearFieldError('age')
+              validateField('age', v)
+            }}
+
+            onBlur={(value, index) => {
+              const val = values.age
+              validateField('age', val)
+            }}
           />
-          {errors.age && <div className="text-red-500 text-sm mt-1">{errors.age[0]}</div>}
           {lookingForVisible && (
             <SelectDropdown 
               name="Looking for"
-              options={[{ value: 'bride', label: 'Bride' }, { value: 'groom', label: 'Groom' }]}
-              className='w-40 text-sm'
-              buttonClassName='p-4 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
+              options={LOOKING_FOR_OPTIONS}
+              className='w-36 text-sm'
+              buttonClassName='p-3 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400'
               extraLabelClassName='whitespace-nowrap'
-              onChange={(value) => setField('looking_for', value)}
+              onChange={(value) => {
+                setField('looking_for', value)
+                clearFieldError('looking_for')
+                validateField('looking_for', value)
+              }}
+              onBlur={(value, index) => {
+              const val = values.looking_for
+              validateField('looking_for', val)
+              }}
             />
           )}
+          {errors.profile_for && <p id='profile-for-error' className="row-start-2 text-red-500 text-sm mt-1" role='alert'>{errors.profile_for[0]}</p>}
+          {errors.age && <p id='age-error' className="col-start-2 text-red-500 text-sm mt-1" role='alert'>{errors.age[0]}</p>}
+          {lookingForVisible && errors.looking_for && <p id='looking_for-error' className="col-start-3 text-red-500 text-sm mt-1" role='alert'>{errors.looking_for[0]}</p>}
         </div>
 
         <div className="grid grid-cols-[1fr_2fr] gap-3">
@@ -111,9 +134,9 @@ export default function RegisterForm() {
             showButtonValue={true}
             onChange={(value) => setField('country_code', value)}
           />
-          {errors.country_code && <div className="text-red-500 text-sm mt-1">{errors.country_code[0]}</div>}
+          {errors.country_code && <p id='country-code-error' className="text-red-500 text-sm mt-1" role='alert'>{errors.country_code[0]}</p>}
           <input {...registerInputOnPros('phone')} name="phone" placeholder="Phone no." type="tel" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
-          {errors.phone && <div className="col-start-2 col-span-2 text-red-500 text-sm mt-1">{errors.phone[0]}</div>}
+          {errors.phone && <p id='phone-error' className="col-start-2 col-span-2 text-red-500 text-sm mt-1" role='alert'>{errors.phone[0]}</p>}
         </div>
 
         <div className="relative">
@@ -130,7 +153,7 @@ export default function RegisterForm() {
               </svg>
             )}
           </button>
-          {errors.password && <div className="text-red-500 text-sm mt-1">{errors.password[0]}</div>}
+          {errors.password && <p id='password-error' className="text-red-500 text-sm mt-1" role='alert'>{errors.password[0]}</p>}
         </div>
 
         <div className="flex items-center justify-center">
