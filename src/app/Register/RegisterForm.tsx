@@ -42,20 +42,21 @@ export default function RegisterForm() {
       <div className="grid grid-cols-1 gap-3">
         <input
           {...registerInputOnPros('email')}
+          id="email"
           type="email"
           placeholder="Email-Id"
           aria-invalid={errors.email ? 'true' : 'false'}
           aria-describedby="email-error"
-          className={`p-3 text-lg border ${errors.email ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`}
-          id="email"
+          className={`input
+            ${errors.email ? 'input-error' : ''}`}
         />
-        {errors.email && <p id="email-error" className="text-red-500 text-sm mt-1" role="alert">{errors.email[0]}</p>}
+        {errors.email && <p id="email-error" className="error-text" role="alert">{errors.email[0]}</p>}
 
         <div className="grid grid-cols-2 gap-3">
-          <input {...registerInputOnPros('first_name')} id='first_name' placeholder="First Name" aria-invalid={errors.first_name ? 'true' : 'false'} aria-describedby="first_name-error" className={`p-3 text-lg border ${errors.first_name ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`} />
-          <input {...registerInputOnPros('surname')} id='surname' placeholder="Surname" aria-invalid={errors.surname ? 'true' : 'false'} aria-describedby="surname-error" className={`p-3 text-lg border ${errors.surname ? 'border-2 border-red-500' : 'border-pink-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400`} />
-            {errors.first_name && <p id="first_name-error" className="text-red-500 text-sm mt-1" role="alert">{errors.first_name[0]}</p>}
-            {errors.surname && <p id="surname-error" className="col-start-2 text-red-500 text-sm mt-1" role="alert">{errors.surname[0]}</p>}
+          <input id='first_name' placeholder="First Name" aria-invalid={errors.first_name ? 'true' : 'false'} aria-describedby="first_name-error" className={`input ${errors.first_name ? 'input-error' : ''}`}  {...registerInputOnPros('first_name')}/>
+          <input id='surname' placeholder="Surname" aria-invalid={errors.surname ? 'true' : 'false'} aria-describedby="surname-error" className={`input ${errors.surname ? 'input-error' : ''}`}  {...registerInputOnPros('surname')}/>
+            {errors.first_name && <p id="first_name-error" className="error-text" role="alert">{errors.first_name[0]}</p>}
+            {errors.surname && <p id="surname-error" className="col-start-2 error-text" role="alert">{errors.surname[0]}</p>}
           </div>
 
         <div className="grid grid-cols-[2fr_1fr_2fr] gap-3">
@@ -118,9 +119,9 @@ export default function RegisterForm() {
               }}
             />
           )}
-          {errors.profile_for && <p id='profile-for-error' className="row-start-2 text-red-500 text-sm mt-1" role='alert'>{errors.profile_for[0]}</p>}
-          {errors.age && <p id='age-error' className="col-start-2 text-red-500 text-sm mt-1" role='alert'>{errors.age[0]}</p>}
-          {lookingForVisible && errors.looking_for && <p id='looking_for-error' className="col-start-3 text-red-500 text-sm mt-1" role='alert'>{errors.looking_for[0]}</p>}
+          {errors.profile_for && <p id='profile-for-error' className="row-start-2 error-text" role='alert'>{errors.profile_for[0]}</p>}
+          {errors.age && <p id='age-error' className="col-start-2 error-text" role='alert'>{errors.age[0]}</p>}
+          {lookingForVisible && errors.looking_for && <p id='looking_for-error' className="col-start-3 error-text" role='alert'>{errors.looking_for[0]}</p>}
         </div>
 
         <div className="grid grid-cols-[1fr_2fr] gap-3">
@@ -134,9 +135,9 @@ export default function RegisterForm() {
             showButtonValue={true}
             onChange={(value) => setField('country_code', value)}
           />
-          {errors.country_code && <p id='country-code-error' className="text-red-500 text-sm mt-1" role='alert'>{errors.country_code[0]}</p>}
-          <input {...registerInputOnPros('phone')} name="phone" placeholder="Phone no." type="tel" className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400" />
-          {errors.phone && <p id='phone-error' className="col-start-2 col-span-2 text-red-500 text-sm mt-1" role='alert'>{errors.phone[0]}</p>}
+          {errors.country_code && <p id='country-code-error' className="error-text" role='alert'>{errors.country_code[0]}</p>}
+          <input {...registerInputOnPros('phone')} name="phone" placeholder="Phone no." type="tel" className={`input ${errors.phone ? 'input-error' : ''}`} />
+          {errors.phone && <p id='phone-error' className="col-start-2 col-span-2 error-text" role='alert'>{errors.phone[0]}</p>}
         </div>
 
         <div className="relative">
@@ -157,7 +158,7 @@ export default function RegisterForm() {
         </div>
 
         <div className="flex items-center justify-center">
-          <button type="submit" className="btn bg-brand-500 text-white mx-auto" disabled={regLoading}>{regLoading ? 'Registering...' : 'Register'}</button>
+          <button type="submit" className="btn-primary" disabled={regLoading}>{regLoading ? 'Registering...' : 'Register'}</button>
         </div>
         {regMessage && <div className="text-sm text-red-600">{regMessage}</div>}
       </div>

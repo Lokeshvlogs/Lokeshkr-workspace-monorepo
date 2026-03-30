@@ -38,7 +38,7 @@ const sampleProfiles = [
 ]
 
 export default function Home() {
-    const REGISTER_URL = "/api/register/";
+    const REGISTER_URL = "/api/register/"; 
     const auth = useAuth();
     
 
@@ -82,7 +82,7 @@ export default function Home() {
               })}
               className="w-20 text-sm"
             />
-            <button type="submit" className="btn bg-brand-500 text-white px-4 py-2 rounded-full">Search</button>
+            <button type="submit" className="btn-primary px-4 py-2 rounded-full">Search</button>
           </form>
         </div>
       <div className="container mx-auto px-6 py-16 relative">
@@ -92,7 +92,7 @@ export default function Home() {
               <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight">Vivah4U — Where Traditions Meet</h1>
               <p className="mt-4 text-lg text-gray-600">Find curated, verified profiles with family-friendly matchmaking tools and a modern, secure experience. Beautifully designed for meaningful connections.</p>
               <div className="mt-6 flex flex-wrap gap-4">
-                <Link href="#profiles" className="btn bg-brand-500 text-white">Explore Profiles</Link>
+                <Link href="#profiles" className="btn bg-primary text-white">Explore Profiles</Link>
                 <Link href="#features" className="btn border border-gray-200">Learn More</Link>
               </div>
               <div className="mt-4 text-sm text-gray-500">Join thousands of happy families. Your privacy is our priority.</div>
@@ -106,7 +106,7 @@ export default function Home() {
               <RegisterForm />
             </div>
           </div>
-          <div className="img-collage grid grid-cols-2 gap-1 wiggle relative top-[100px]">
+          <div className="img-collage grid grid-cols-2 gap-1 pulse relative top-[100px]">
             <img src="https://i.pinimg.com/1200x/42/26/91/422691e09e79e96b7075ef306a9c2d07.jpg" alt="portrait4"/>
             <img src="https://i.pinimg.com/1200x/5b/ff/eb/5bffeb824946fb9eee89e22cbbdab46b.jpg" alt="portrait3" />
             <img src="https://i.pinimg.com/1200x/69/82/29/69822936198d9451e50eab281ca524a1.jpg" alt="portrait" />
@@ -116,7 +116,7 @@ export default function Home() {
         </section>
 
 
-        <section id="profiles" className="mt-16">v
+        <section id="profiles" className="mt-16">
           <h2 className="text-2xl font-bold">Featured Profiles</h2>
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {sampleProfiles.map((p) => (
