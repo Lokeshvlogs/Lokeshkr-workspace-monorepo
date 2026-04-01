@@ -1,3 +1,5 @@
+const { bg } = require('zod/locales');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -10,11 +12,15 @@ module.exports = {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial']
       },
       colors: {
-        brand: {
-          50: '#fff6fb',
-          100: '#ffeef6',
-          500: '#ec4899'
-        }
+            primary: "var(--color-primary)",
+            "primary-light": "var(--color-primary-light)",
+            bg: "var(--color-bg)",
+            border: "var(--color-border)",
+            error: "var(--color-error)",
+            success: "var(--color-success)",
+      },
+      borderRadius: {
+        md: "8px",
       }
     }
   },

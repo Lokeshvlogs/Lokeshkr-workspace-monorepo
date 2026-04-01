@@ -6,7 +6,7 @@ import { de } from 'zod/v4/locales';
 
 
 interface Props {
-  name: string;
+  placeholder: string;
   options:  SelectIconOption[];
   initialValue?: string;
   //tailwind classes to apply to the container
@@ -18,13 +18,13 @@ interface Props {
   extraLabelClassName?: string;
 
   align?: 'left' | 'center' | 'right';
-
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onChange?: (value: string) => void;
   onBlur?: (value: string, index: number) => void;
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ name, options, initialValue = '', className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, options, initialValue = '', className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<{ value: string; index: number }>({ value: '', index: -1 });
   const [popupWidth, setPopupWidth] = useState<number>(0);
@@ -128,12 +128,15 @@ export default function SelectDropdown({ name, options, initialValue = '', class
   }
 
   function doBlur() {
-    if (onBlur) onBlur(selected.value, selected.index);
+    if (!open && onBlur) {
+      const val = selected.value;
+      onBlur(val, selected.index);
+    }
   }
 
 
   const selectedOption = options.find(o => o.value === selected.value);
-  const displayLabel = selectedOption?.label || initialValue || name;
+  const displayLabel = selectedOption?.label || initialValue || placeholder;
   const displayFlag = selectedOption?.icon? selectedOption.icon : undefined;
 
     const justify =
@@ -145,14 +148,14 @@ export default function SelectDropdown({ name, options, initialValue = '', class
 
   return (
     <div ref={containerRef} className={`relative flex flex-col ${className}`}>
-      {name && <input type="hidden" name={name} value={selected.value} />}
+      {placeholder && <input type="hidden" name={placeholder} value={selected.value} />}
       <button
         type="button"
         ref={btnRef}
         className={`${buttonClassName ? buttonClassName : 'p-4'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         onClick={() => { if (!disabled) setOpen(v => !v); }}
         disabled={disabled}
-        title={name}
+        title={placeholder}
         onBlur={() => doBlur()}
       >
         <div className="flex items-center gap-2">

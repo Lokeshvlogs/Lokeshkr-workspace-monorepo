@@ -114,6 +114,9 @@ html,body,#root {
            focus-within:ring-2 focus-within:ring-pink-300;
   }
 
+  .select-button {
+    @apply w-full text-sm text-left;
+  }
   .select-error {
     @apply border-2 border-red-500;
   }
