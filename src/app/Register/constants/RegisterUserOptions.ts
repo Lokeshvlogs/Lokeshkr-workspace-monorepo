@@ -21,3 +21,11 @@ export const LOOKING_FOR_OPTIONS = LOOKING_FOR_VALUES.map((value) => ({
   value,
   label: value.charAt(0).toUpperCase() + value.slice(1),
 }));
+
+
+export const AGE_OPTIONS = Array.from({length: 43}, (_,i) => {
+              const v = (18 + i).toString();
+              return { value: v, label: v };
+            })
+
+

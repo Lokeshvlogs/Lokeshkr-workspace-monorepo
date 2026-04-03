@@ -8,7 +8,7 @@ import { registerSchema } from '@/lib/validation/schemas/registerUserSchema'
 import { useZodForm } from '@/hooks/useZodForm'
 import { registerUser } from '@/actions/registerUser'
 import { clear } from 'console'
-import { PROFILE_FOR_OPTIONS, LOOKING_FOR_OPTIONS } from './constants/RegisterUserOptions'
+import { PROFILE_FOR_OPTIONS, LOOKING_FOR_OPTIONS, AGE_OPTIONS } from './constants/RegisterUserOptions'
 
 export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
@@ -84,10 +84,7 @@ export default function RegisterForm() {
           <SelectDropdown
             {...registerInput('age')}
             placeholder="Age"
-            options={Array.from({length: 43}, (_,i) => {
-              const v = (18 + i).toString();
-              return { value: v, label: v };
-            })}
+            options={AGE_OPTIONS}
             className={`select-wrapper ${errors.age ? 'select-error' : ''}`}
             buttonClassName='select-button'
             extraLabelClassName='whitespace-nowrap'
@@ -100,15 +97,6 @@ export default function RegisterForm() {
               className={`select-wrapper ${errors.looking_for ? 'select-error' : ''}`}
               buttonClassName='select-button'
               extraLabelClassName='whitespace-nowrap'
-              onChange={(value) => {
-                setField('looking_for', value)
-                clearFieldError('looking_for')
-                //validateField('looking_for', value)
-              }}
-              onBlur={(value, index) => {
-              const val = values.looking_for
-              validateField('looking_for', val)
-              }}
             />
           )}
           {errors.profile_for && <p id='profile-for-error' className="row-start-2 error-text" role='alert'>{errors.profile_for[0]}</p>}
@@ -125,10 +113,10 @@ export default function RegisterForm() {
             buttonClassName='select-button'
             extraLabelClassName='whitespace-nowrap'
             showButtonValue={true}
-            onChange={(value) => setField('country_code', value)}
+            {...registerInput('country_code')}
           />
-          {errors.country_code && <p id='country-code-error' className="error-text" role='alert'>{errors.country_code[0]}</p>}
           <input {...registerInput('phone')} name="phone" placeholder="Phone no." type="tel" className={`input ${errors.phone ? 'input-error' : ''}`} />
+          {errors.country_code && <p id='country-code-error' className="row-start-2 error-text" role='alert'>{errors.country_code[0]}</p>}
           {errors.phone && <p id='phone-error' className="col-start-2 col-span-2 error-text" role='alert'>{errors.phone[0]}</p>}
         </div>
 
