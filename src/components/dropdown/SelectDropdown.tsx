@@ -1,4 +1,5 @@
 "use client";
+import { cp } from 'fs';
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption, SelectOption } from 'src/types/select';
@@ -6,9 +7,11 @@ import { de } from 'zod/v4/locales';
 
 
 interface Props {
-  name?: string;
+  placeholder: string;
   options:  SelectIconOption[];
   initialValue?: string;
+  value?: string;
+  name?: string;
   //tailwind classes to apply to the container
   className?: string;
   buttonClassName?: string;
@@ -18,21 +21,33 @@ interface Props {
   extraLabelClassName?: string;
 
   align?: 'left' | 'center' | 'right';
-
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onChange?: (value: string) => void;
+  onBlur?: (value: string, index: number) => void;
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ name, options, initialValue = '', className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, options, initialValue = '', value, name, className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<string>(initialValue);
+  const [selected, setSelected] = useState<{ value: string; index: number }>({ value: '', index: -1 });
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const [style, setStyle] = useState<CSSProperties | null>(null);
 
-  useEffect(() => setSelected(initialValue), [initialValue]);
+  useEffect(() => {
+    const currentValue = value ?? initialValue ?? '';
+    console.log('SelectDropdown initialValue/value changed:', currentValue);
+    if (currentValue === '' || currentValue === undefined) return;
+    const initialIndex = options.findIndex(option => option.value === currentValue);
+    if (initialIndex === -1) {
+      console.warn(`Invalid initial/current value "${currentValue}" not found in options`);
+      setSelected({ value: currentValue, index: -1 });
+      return;
+    }
+    setSelected({ value: currentValue, index: initialIndex });
+  }, [options, initialValue, value]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {      
@@ -107,15 +122,25 @@ export default function SelectDropdown({ name, options, initialValue = '', class
     };
   }, [open, options]);
 
-  function doSelect(v: string) {
-    setSelected(v);
+  function doSelect(v: string, idx: number) {
+    console.log('Option selected:', v);
+    setSelected({ value: v, index: idx });
     setOpen(false);
     if (onChange) onChange(v);
   }
 
-  const selectedOption = options.find(o => o.value === selected);
-  const displayLabel = selectedOption?.label || initialValue || name;
-  const displayFlag = selectedOption?.icon? selectedOption.icon : undefined;
+  function doBlur() {
+    if (!open && onBlur) {
+      const val = selected.value;
+      onBlur(val, selected.index);
+    }
+  }
+
+
+  const currentValue = value ?? initialValue ?? selected.value;
+  const selectedOption = options.find(o => o.value === currentValue);
+  const displayLabel = selectedOption?.label || currentValue || placeholder;
+  const displayFlag = selectedOption?.icon ? selectedOption.icon : undefined;
 
     const justify =
     align === "center"
@@ -126,21 +151,19 @@ export default function SelectDropdown({ name, options, initialValue = '', class
 
   return (
     <div ref={containerRef} className={`relative flex flex-col ${className}`}>
-      {name && <input type="hidden" name={name} value={selected} />}
+      {placeholder && <input type="hidden" name={name ?? placeholder} value={value ?? selected.value} />}
       <button
         type="button"
         ref={btnRef}
         className={`${buttonClassName ? buttonClassName : 'p-4'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         onClick={() => { if (!disabled) setOpen(v => !v); }}
-        aria-haspopup="listbox"
-        aria-expanded={open ? "true" : "false"}
-        aria-disabled={disabled ? "true" : "false"}
         disabled={disabled}
-        title={name}
+        title={placeholder}
+        onBlur={() => doBlur()}
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
-          <span className="text-sm">{ displayLabel + (showButtonValue ? ' ' + selectedOption?.value : '')}</span>
+          <span className="text-lg">{showButtonValue ? selectedOption?.value ? selectedOption.value + ' ' + displayLabel: displayLabel : displayLabel}</span>
         </div>
       </button>
 
@@ -148,17 +171,17 @@ export default function SelectDropdown({ name, options, initialValue = '', class
         <div ref={popupRef} style={style} className="z-50 bg-white w-max border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar">
           <div className="divide-y divide-pink-50">
             {options.map((o, idx) => {
-              const isSelected = selected === o.value;
+              const isSelected = selected.value === o.value;
               return (
                 <div
-                  key={`${o.value}-${idx}`}
+                  key={`${idx}`}
                   data-option
                   className={`flex gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
-                  onClick={() => doSelect(o.value)}
+                  onClick={() => doSelect(o.value, idx)}
                   >
                     {o.icon && <img src={o.icon} alt={o.label || o.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
-                    {o.label && <span className={`text-sm ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{o.label}</span>}
-                    {o.extra_label && <span className={`text-sm ml-5  text-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{o.extra_label}</span>}
+                    {o.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{o.label}</label>}
+                    {o.extra_label && <label className={`text-lg ml-5  align-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{o.extra_label}</label>}
                   
                 </div>
               );
