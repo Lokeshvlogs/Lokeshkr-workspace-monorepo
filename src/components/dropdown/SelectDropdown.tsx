@@ -1,4 +1,5 @@
 "use client";
+import { cp } from 'fs';
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption, SelectOption } from 'src/types/select';
@@ -9,6 +10,8 @@ interface Props {
   placeholder: string;
   options:  SelectIconOption[];
   initialValue?: string;
+  value?: string;
+  name?: string;
   //tailwind classes to apply to the container
   className?: string;
   buttonClassName?: string;
@@ -24,7 +27,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, options, initialValue = '', className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, options, initialValue = '', value, name, className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<{ value: string; index: number }>({ value: '', index: -1 });
   const [popupWidth, setPopupWidth] = useState<number>(0);
@@ -34,18 +37,17 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
   const [style, setStyle] = useState<CSSProperties | null>(null);
 
   useEffect(() => {
-    console.log('SelectDropdown initialValue changed:', initialValue);
-    if (initialValue == '') {
-      return
-    }
-    const initialIndex = options.findIndex(option => option.value === initialValue);
+    const currentValue = value ?? initialValue ?? '';
+    console.log('SelectDropdown initialValue/value changed:', currentValue);
+    if (currentValue === '' || currentValue === undefined) return;
+    const initialIndex = options.findIndex(option => option.value === currentValue);
     if (initialIndex === -1) {
-      console.warn(`Invalid initial value "${initialValue}" not found in options`);
-      setSelected({ value: initialValue, index: -1 });
+      console.warn(`Invalid initial/current value "${currentValue}" not found in options`);
+      setSelected({ value: currentValue, index: -1 });
       return;
     }
-    setSelected({ value: initialValue, index: initialIndex });
-  }, [options]);
+    setSelected({ value: currentValue, index: initialIndex });
+  }, [options, initialValue, value]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {      
@@ -135,9 +137,10 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
   }
 
 
-  const selectedOption = options.find(o => o.value === selected.value);
-  const displayLabel = selectedOption?.label || initialValue || placeholder;
-  const displayFlag = selectedOption?.icon? selectedOption.icon : undefined;
+  const currentValue = value ?? initialValue ?? selected.value;
+  const selectedOption = options.find(o => o.value === currentValue);
+  const displayLabel = selectedOption?.label || currentValue || placeholder;
+  const displayFlag = selectedOption?.icon ? selectedOption.icon : undefined;
 
     const justify =
     align === "center"
@@ -148,7 +151,7 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
 
   return (
     <div ref={containerRef} className={`relative flex flex-col ${className}`}>
-      {placeholder && <input type="hidden" name={placeholder} value={selected.value} />}
+      {placeholder && <input type="hidden" name={name ?? placeholder} value={value ?? selected.value} />}
       <button
         type="button"
         ref={btnRef}
@@ -160,7 +163,7 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
-          <span className="text-lg">{ displayLabel + (showButtonValue ? ' ' + selectedOption?.value : '')}</span>
+          <span className="text-lg">{showButtonValue ? selectedOption?.value ? selectedOption.value + ' ' + displayLabel: displayLabel : displayLabel}</span>
         </div>
       </button>
 
@@ -177,8 +180,8 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
                   onClick={() => doSelect(o.value, idx)}
                   >
                     {o.icon && <img src={o.icon} alt={o.label || o.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
-                    {o.label && <span className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{o.label}</span>}
-                    {o.extra_label && <span className={`text-lg ml-5  text-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{o.extra_label}</span>}
+                    {o.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{o.label}</label>}
+                    {o.extra_label && <label className={`text-lg ml-5  align-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{o.extra_label}</label>}
                   
                 </div>
               );

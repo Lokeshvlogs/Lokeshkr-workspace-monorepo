@@ -1,7 +1,8 @@
 "use client"
 
+import { Console } from "console"
 import React, { useState } from "react"
-import { ZodSchema } from "zod"
+import { string, ZodSchema } from "zod"
 
 export function useZodForm<T extends Record<string, any>>(
   schema: ZodSchema<T>,
@@ -19,9 +20,16 @@ export function useZodForm<T extends Record<string, any>>(
       value: (values[name] ?? '') as any,
       name: name as string,
       onChange: (e: any) => {
-        const val = e?.target?.value
-        setField(name, val)
-        clearFieldError(name)
+        // support both native events and direct value calls from custom components
+        let val: any;
+        if (e && typeof e === 'object' && 'target' in e && e.target && 'value' in e.target) {
+          val = e.target.value;
+        } else {
+          val = e;
+        }
+        console.log('changed', name, val);
+        setField(name, val);
+        clearFieldError(name);
       },
       onPaste: (e: any) => {
         e.preventDefault()
@@ -31,8 +39,14 @@ export function useZodForm<T extends Record<string, any>>(
       },
       onFocus: () => setFocused(name as string),
       onBlur: (e: any) => {
+        console.log('blurred', values[name])
         setFocused(null)
-        const val = e?.target?.value
+        let val: any;
+        if (e && typeof e === 'object' && 'target' in e && e.target && 'value' in e.target) {
+          val = e.target.value;
+        } else {
+          val = e;
+        }
         validateField(name, val)
       },
     }

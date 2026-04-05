@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../components/authProvider'
 import SelectDropdown from '@/components/dropdown/SelectDropdown'
-import { CountryCodes } from 'src/constants/selectOptions/places'
+import { COUNTRY_CODES_OPTIONS } from 'src/constants/selectOptions/places'
 import { validateEmail } from '@/lib/validation/schemas/validateEmail'
 import { registerSchema } from '@/lib/validation/schemas/registerUserSchema'
 import { useZodForm } from '@/hooks/useZodForm'
@@ -14,19 +14,19 @@ export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
   const auth = useAuth()
 
-  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register: registerInput } = useZodForm(registerSchema, registerUser, {
+  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register: registerFormInput } = useZodForm(registerSchema, registerUser, {
   email: "",
   first_name: "",
   surname: "",
   profile_for: undefined,
   age: undefined,
   looking_for: undefined,
-  country_code: "",
+  country_code: "IN",
   phone: undefined,
   password: undefined,
 })
   
-  const passwordProps = registerInput('password')
+  const passwordProps = registerFormInput('password')
 
   const [regMessage, setRegMessage] = useState<string>('')
   const [regLoading, setRegLoading] = useState<boolean>(false)
@@ -41,7 +41,7 @@ export default function RegisterForm() {
     <form action={action} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)'}}>
       <div className="grid grid-cols-1 gap-3">
         <input
-          {...registerInput('email')}
+          {...registerFormInput('email')}
           id="email"
           type="email"
           placeholder="Email-Id"
@@ -53,20 +53,21 @@ export default function RegisterForm() {
 
         <div className="grid grid-cols-2 gap-3">
           <input 
+            {...registerFormInput('first_name')}
             id='first_name' 
             placeholder="First Name" 
             aria-invalid={errors.first_name ? 'true' : 'false'} 
             aria-describedby="first_name-error" 
             className={`input ${errors.first_name ? 'input-error' : ''}`} 
-            {...registerInput('first_name')}
           />
           <input 
+            {...registerFormInput('surname')}
             id='surname' 
             placeholder="Surname" 
             aria-invalid={errors.surname ? 'true' : 'false'} 
             aria-describedby="surname-error" 
             className={`input ${errors.surname ? 'input-error' : ''}`} 
-            {...registerInput('surname')}
+            
           />
             {errors.first_name && <p id="first_name-error" className="error-text" role="alert">{errors.first_name[0]}</p>}
             {errors.surname && <p id="surname-error" className="col-start-2 error-text" role="alert">{errors.surname[0]}</p>}
@@ -74,7 +75,7 @@ export default function RegisterForm() {
 
         <div className="grid grid-cols-[2fr_1fr_2fr] gap-3">
           <SelectDropdown
-           {...registerInput('profile_for')}
+           {...registerFormInput('profile_for')}
             placeholder="Profile for"
             options={PROFILE_FOR_OPTIONS}
             className={`select-wrapper ${errors.profile_for ? 'select-error' : ''}`}
@@ -82,7 +83,7 @@ export default function RegisterForm() {
             extraLabelClassName='whitespace-nowrap'
           />
           <SelectDropdown
-            {...registerInput('age')}
+            {...registerFormInput('age')}
             placeholder="Age"
             options={AGE_OPTIONS}
             className={`select-wrapper ${errors.age ? 'select-error' : ''}`}
@@ -91,7 +92,7 @@ export default function RegisterForm() {
           />
           {lookingForVisible && (
             <SelectDropdown
-              {...registerInput('looking_for')}
+              {...registerFormInput('looking_for')}
               placeholder="Looking for"
               options={LOOKING_FOR_OPTIONS}
               className={`select-wrapper ${errors.looking_for ? 'select-error' : ''}`}
@@ -107,15 +108,15 @@ export default function RegisterForm() {
         <div className="grid grid-cols-[1fr_2fr] gap-3">
           <SelectDropdown
             placeholder="Country code"
-            options={CountryCodes}
-            initialValue={'+91'}
+            options={COUNTRY_CODES_OPTIONS}
+            initialValue={'IN'}
             className={`select-wrapper ${errors.country_code ? 'select-error' : ''}`}
             buttonClassName='select-button'
             extraLabelClassName='whitespace-nowrap'
             showButtonValue={true}
-            {...registerInput('country_code')}
+            {...registerFormInput('country_code')}
           />
-          <input {...registerInput('phone')} name="phone" placeholder="Phone no." type="tel" className={`input ${errors.phone ? 'input-error' : ''}`} />
+          <input {...registerFormInput('phone')} name="phone" placeholder="Phone no." type="tel" className={`input ${errors.phone ? 'input-error' : ''}`} />
           {errors.country_code && <p id='country-code-error' className="row-start-2 error-text" role='alert'>{errors.country_code[0]}</p>}
           {errors.phone && <p id='phone-error' className="col-start-2 col-span-2 error-text" role='alert'>{errors.phone[0]}</p>}
         </div>

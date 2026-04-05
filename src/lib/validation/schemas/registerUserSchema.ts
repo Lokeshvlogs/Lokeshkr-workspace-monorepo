@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { PROFILE_FOR_VALUES, LOOKING_FOR_VALUES } from "src/app/Register/constants/RegisterUserOptions"
+import { COUNTRY_DIAL_CODES} from "src/constants/selectOptions/places"
 
 export const registerSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -14,7 +15,9 @@ export const registerSchema = z.object({
   looking_for: z.enum(LOOKING_FOR_VALUES).optional().refine((val) => val !== undefined, {
     message: "Please select what you are looking for",
   }),
-  country_code: z.string().min(2, "Select a country"),
+  country_code: z.enum(Object.keys(COUNTRY_DIAL_CODES)).optional().refine((val) => val !== undefined, {
+    message: "Please select a country",
+  }),
   phone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number must be less than 15 digits"),
   password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password must be less than 100 characters"),
 })
