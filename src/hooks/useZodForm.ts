@@ -39,15 +39,19 @@ export function useZodForm<T extends Record<string, any>>(
       },
       onFocus: () => setFocused(name as string),
       onBlur: (e: any) => {
-        console.log('blurred', values[name])
         setFocused(null)
         let val: any;
         if (e && typeof e === 'object' && 'target' in e && e.target && 'value' in e.target) {
+          
           val = e.target.value;
+          console.log('blurred e === object', name, values[name], typeof e)
+           validateField(name, val)
         } else {
-          val = e;
+          console.log('blurred e !== object', name, values[name], typeof e)
+          
+          validateField(name, e)
         }
-        validateField(name, val)
+        
       },
     }
   }
@@ -63,23 +67,34 @@ export function useZodForm<T extends Record<string, any>>(
     const fieldSchema = (schema as any).shape?.[name]
 
     if (!fieldSchema) return
+    let result = fieldSchema.safeParse(value)
 
-    const result = fieldSchema.safeParse(value)
+    // If initial parse failed, but value is a numeric string, try coercing to number
+    if (!result.success && typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))) {
+      console.log(`Attempting to coerce value "${value}" to number for field "${name as string}"`)
+      const numeric = Number(value)
+      const coerced = fieldSchema.safeParse(numeric)
+      if (coerced.success) {
+        // update stored value to the coerced number so subsequent logic uses correct type
+        setField(name, numeric)
+        result = coerced
+      }
+    }
 
     setErrors((prev) => {
       const newErrors = { ...prev }
 
-    if (!result.success) {
-      const message = result.error.issues?.[0]?.message
+      if (!result.success) {
+        const message = result.error.issues?.[0]?.message
 
-      if (message) {
-        newErrors[name as string] = [message]
+        if (message) {
+          newErrors[name as string] = [message]
+        }
+      } else {
+        delete newErrors[name as string]
       }
-    } else {
-      delete newErrors[name as string]
-    }
 
-    return newErrors
+      return newErrors
     })
   }
   async function action(formData: FormData) {

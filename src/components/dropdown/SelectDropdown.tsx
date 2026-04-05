@@ -37,24 +37,25 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
   const [style, setStyle] = useState<CSSProperties | null>(null);
 
   useEffect(() => {
-    const currentValue = value ?? initialValue ?? '';
-    console.log('SelectDropdown initialValue/value changed:', currentValue);
-    if (currentValue === '' || currentValue === undefined) return;
-    const initialIndex = options.findIndex(option => option.value === currentValue);
+    console.log('SelectDropdown initialValue changed:', initialValue);
+    if (initialValue == '') {
+      return
+    }
+    const initialIndex = options.findIndex(option => option.value === initialValue);
     if (initialIndex === -1) {
-      console.warn(`Invalid initial/current value "${currentValue}" not found in options`);
-      setSelected({ value: currentValue, index: -1 });
+      console.warn(`Invalid initial value "${initialValue}" not found in options`);
+      setSelected({ value: initialValue, index: -1 });
       return;
     }
-    setSelected({ value: currentValue, index: initialIndex });
-  }, [options, initialValue, value]);
+    setSelected({ value: initialValue, index: initialIndex });
+  }, [options]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {      
       const target = e.target as Node;
-      if (btnRef.current && btnRef.current.contains(target)) return;
+      if (containerRef.current && containerRef.current.contains(target)) return;
       if (popupRef.current && popupRef.current.contains(target)) return;
-      console.log('Document click outside dropdown, closing');
+      console.log('Document click outside dropdown, closing ', placeholder);
       setOpen(false);
     }
     document.addEventListener('mousedown', onDocClick);

@@ -6,15 +6,29 @@ export const registerSchema = z.object({
   email: z.string().email("Invalid email"),
   first_name: z.string().min(1, "First name must be at least 1 character"),
   surname: z.string().min(1, "Surname must be at least 1 character"),
-  profile_for: z.enum(PROFILE_FOR_VALUES).optional().refine((val) => val !== undefined, {
+  profile_for: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() === '') return undefined
+    return val
+  }, z.enum(PROFILE_FOR_VALUES).optional().refine((val) => val !== undefined , {
     message: "Please select a profile for",
-  }),
-  age: z.number().int().min(18, "You must be at least 18 years old").max(60, "Age must be less than 60").optional().refine((val) => val !== undefined, {
-    message: "Please select age",
-  }),
-  looking_for: z.enum(LOOKING_FOR_VALUES).optional().refine((val) => val !== undefined, {
+  })),
+
+  age: z.number({
+  error: (iss) => {
+    console.log("Value received:", iss.input, "Type:", typeof iss.input);
+    return "Please select an age";
+  }
+})
+  .int()
+  .min(18, "Age must be at least 18")
+  .max(60, "Age must be less than 60"),
+
+  looking_for: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() === '') return undefined
+    return val
+  }, z.enum(LOOKING_FOR_VALUES).optional().refine((val) => val !== undefined, {
     message: "Please select what you are looking for",
-  }),
+  })),
   country_code: z.enum(Object.keys(COUNTRY_DIAL_CODES)).optional().refine((val) => val !== undefined, {
     message: "Please select a country",
   }),
