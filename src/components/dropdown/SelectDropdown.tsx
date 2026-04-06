@@ -151,13 +151,13 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       : "justify-start";
 
   return (
-    <div ref={containerRef} className={`relative flex flex-col ${className}`}>
-      {placeholder && <input type="hidden" name={name ?? placeholder} value={value ?? selected.value} />}
+    <div ref={containerRef} className={`relative flex flex-col ${className}`} onClick={() => { if (!disabled) setOpen(v => !v); }}>
+      {placeholder && <input type="hidden" name={name ?? placeholder} value={value ?? selected.value}/>}
       <button
         type="button"
         ref={btnRef}
         className={`${buttonClassName ? buttonClassName : 'p-4'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={() => { if (!disabled) setOpen(v => !v); }}
+       // onClick={() => { if (!disabled) setOpen(v => !v); }}
         disabled={disabled}
         title={placeholder}
         onBlur={() => doBlur()}
@@ -167,7 +167,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
           <span className="text-lg">{showButtonValue ? selectedOption?.value ? selectedOption.value + ' ' + displayLabel: displayLabel : displayLabel}</span>
         </div>
       </button>
-
+      
       {open && style && createPortal(
         <div ref={popupRef} style={style} className="z-50 bg-white w-max border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar">
           <div className="divide-y divide-pink-50">
