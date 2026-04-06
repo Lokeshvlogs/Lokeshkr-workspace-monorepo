@@ -25,9 +25,8 @@ export function useZodForm<T extends Record<string, any>>(
         if (e && typeof e === 'object' && 'target' in e && e.target && 'value' in e.target) {
           val = e.target.value;
         } else {
-          val = e;
+          val = e ;
         }
-        console.log('changed', name, val);
         setField(name, val);
         clearFieldError(name);
       },
@@ -39,19 +38,15 @@ export function useZodForm<T extends Record<string, any>>(
       },
       onFocus: () => setFocused(name as string),
       onBlur: (e: any) => {
-        setFocused(null)
+        
         let val: any;
         if (e && typeof e === 'object' && 'target' in e && e.target && 'value' in e.target) {
-          
-          val = e.target.value;
-          console.log('blurred e === object', name, values[name], typeof e)
-           validateField(name, val)
+           val = e.target.value;
         } else {
-          console.log('blurred e !== object', name, values[name], typeof e)
-          
-          validateField(name, e)
+           val = e ;
         }
-        
+        validateField(name, val)
+        setFocused(null)
       },
     }
   }
@@ -67,19 +62,8 @@ export function useZodForm<T extends Record<string, any>>(
     const fieldSchema = (schema as any).shape?.[name]
 
     if (!fieldSchema) return
-    let result = fieldSchema.safeParse(value)
-
-    // If initial parse failed, but value is a numeric string, try coercing to number
-    if (!result.success && typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))) {
-      console.log(`Attempting to coerce value "${value}" to number for field "${name as string}"`)
-      const numeric = Number(value)
-      const coerced = fieldSchema.safeParse(numeric)
-      if (coerced.success) {
-        // update stored value to the coerced number so subsequent logic uses correct type
-        setField(name, numeric)
-        result = coerced
-      }
-    }
+  
+    const result = fieldSchema.safeParse(value)
 
     setErrors((prev) => {
       const newErrors = { ...prev }

@@ -109,7 +109,6 @@ export default function RegisterForm() {
           <SelectDropdown
             placeholder="Country code"
             options={COUNTRY_CODES_OPTIONS}
-            initialValue={'IN'}
             className={`select-wrapper ${errors.country_code ? 'select-error' : ''}`}
             buttonClassName='select-button'
             extraLabelClassName='whitespace-nowrap'

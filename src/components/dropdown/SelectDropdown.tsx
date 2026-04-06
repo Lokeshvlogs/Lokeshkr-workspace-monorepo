@@ -9,8 +9,7 @@ import { de } from 'zod/v4/locales';
 interface Props {
   placeholder: string;
   options:  SelectIconOption[];
-  initialValue?: string;
-  value?: string;
+  value?: any;
   name?: string;
   //tailwind classes to apply to the container
   className?: string;
@@ -27,9 +26,9 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, options, initialValue = '', value, name, className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, value, name, options, className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<{ value: string; index: number }>({ value: '', index: -1 });
+  const [selected, setSelected] = useState<{ value: any; index: number }>({ value: undefined, index: -1 });
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
@@ -37,25 +36,27 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
   const [style, setStyle] = useState<CSSProperties | null>(null);
 
   useEffect(() => {
-    console.log('SelectDropdown initialValue changed:', initialValue);
-    if (initialValue == '') {
+    console.log('SelectDropdown value changed:', value);
+    if (value == '') {
       return
     }
-    const initialIndex = options.findIndex(option => option.value === initialValue);
-    if (initialIndex === -1) {
-      console.warn(`Invalid initial value "${initialValue}" not found in options`);
-      setSelected({ value: initialValue, index: -1 });
+    const index = options.findIndex(option => option.value === value);
+    if (index === -1) {
+      console.warn(`Invalid initial value "${value}" not found in options`);
+      setSelected({ value: value, index: -1 });
       return;
     }
-    setSelected({ value: initialValue, index: initialIndex });
+    setSelected({ value: value, index: index });
   }, [options]);
-
-  useEffect(() => {
+  
+  
+   useEffect(() => {
     function onDocClick(e: MouseEvent) {      
       const target = e.target as Node;
-      if (containerRef.current && containerRef.current.contains(target)) return;
+    
+      if (btnRef.current && btnRef.current.contains(target)) return;
       if (popupRef.current && popupRef.current.contains(target)) return;
-      console.log('Document click outside dropdown, closing ', placeholder);
+      console.log('Document click outside dropdown, closing');
       setOpen(false);
     }
     document.addEventListener('mousedown', onDocClick);
@@ -123,8 +124,8 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
     };
   }, [open, options]);
 
-  function doSelect(v: string, idx: number) {
-    console.log('Option selected:', v);
+  function doSelect(v: any, idx: number) {
+    console.log('Option selected:', v, typeof v, 'at index', idx);
     setSelected({ value: v, index: idx });
     setOpen(false);
     if (onChange) onChange(v);
@@ -138,9 +139,8 @@ export default function SelectDropdown({ placeholder, options, initialValue = ''
   }
 
 
-  const currentValue = value ?? initialValue ?? selected.value;
-  const selectedOption = options.find(o => o.value === currentValue);
-  const displayLabel = selectedOption?.label || currentValue || placeholder;
+  const selectedOption = options.find(o => o.value === value);
+  const displayLabel = selectedOption?.label || placeholder || name;
   const displayFlag = selectedOption?.icon ? selectedOption.icon : undefined;
 
     const justify =
