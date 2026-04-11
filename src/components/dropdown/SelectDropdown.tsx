@@ -22,34 +22,19 @@ interface Props {
   align?: 'left' | 'center' | 'right';
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onChange?: (value: string) => void;
-  onBlur?: (value: string, index: number) => void;
+  onBlur?: (value: string) => void;
   disabled?: boolean;
 }
 
 export default function SelectDropdown({ placeholder, value, name, options, className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<{ value: any; index: number }>({ value: undefined, index: -1 });
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const [style, setStyle] = useState<CSSProperties | null>(null);
 
-  useEffect(() => {
-    console.log('SelectDropdown value changed:', value);
-    if (value == '') {
-      return
-    }
-    const index = options.findIndex(option => option.value === value);
-    if (index === -1) {
-      console.warn(`Invalid initial value "${value}" not found in options`);
-      setSelected({ value: value, index: -1 });
-      return;
-    }
-    setSelected({ value: value, index: index });
-  }, [options]);
-  
-  
+
    useEffect(() => {
     function onDocClick(e: MouseEvent) {      
       const target = e.target as Node;
@@ -124,17 +109,15 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
     };
   }, [open, options]);
 
-  function doSelect(v: any, idx: number) {
-    console.log('Option selected:', v, typeof v, 'at index', idx);
-    setSelected({ value: v, index: idx });
+  function doSelect(option: any) {
+    console.log('Option selected! -- new option:', option);
     setOpen(false);
-    if (onChange) onChange(v);
+    if (onChange) onChange(option.value);
   }
 
   function doBlur() {
     if (!open && onBlur) {
-      const val = selected.value;
-      onBlur(val, selected.index);
+        onBlur(value);
     }
   }
 
@@ -151,38 +134,38 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       : "justify-start";
 
   return (
-    <div ref={containerRef} className={`relative flex flex-col ${className}`} onClick={() => { if (!disabled) setOpen(v => !v); }}>
-      {placeholder && <input type="hidden" name={name ?? placeholder} value={value ?? selected.value}/>}
+    <div ref={containerRef} className={`relative flex flex-col ${justify} ${className}`}>
+      {name && <input type="hidden" name={name} value={value ?? ""}/>}
       <button
         type="button"
         ref={btnRef}
         className={`${buttonClassName ? buttonClassName : 'p-4'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-       // onClick={() => { if (!disabled) setOpen(v => !v); }}
+        onClick={() => { if (!disabled) setOpen(v => !v); }}
         disabled={disabled}
         title={placeholder}
         onBlur={() => doBlur()}
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
-          <span className="text-lg">{showButtonValue ? selectedOption?.value ? selectedOption.value + ' ' + displayLabel: displayLabel : displayLabel}</span>
+          <span className="text-lg">{showButtonValue ? value ? value + ' ' + displayLabel: displayLabel : displayLabel}</span>
         </div>
       </button>
       
       {open && style && createPortal(
         <div ref={popupRef} style={style} className="z-50 bg-white w-max border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar">
           <div className="divide-y divide-pink-50">
-            {options.map((o, idx) => {
-              const isSelected = selected.value === o.value;
+            {options.map((option) => {
+              const isSelected = value === option.value;
               return (
                 <div
-                  key={`${idx}`}
+                  key={`${option.value}`}
                   data-option
                   className={`flex gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
-                  onClick={() => doSelect(o.value, idx)}
+                  onClick={() => doSelect(option)}
                   >
-                    {o.icon && <img src={o.icon} alt={o.label || o.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
-                    {o.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{o.label}</label>}
-                    {o.extra_label && <label className={`text-lg ml-5  align-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{o.extra_label}</label>}
+                    {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
+                    {option.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{option.label}</label>}
+                    {option.extra_label && <label className={`text-lg ml-5  align-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{option.extra_label}</label>}
                   
                 </div>
               );
