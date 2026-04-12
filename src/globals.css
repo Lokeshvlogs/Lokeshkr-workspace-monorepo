@@ -123,7 +123,10 @@ html,body,#root {
 
   .select-label {
     @apply text-lg text-color-primary-text;
-  } 
+  }
+  .select-placeholder {
+    @apply text-lg text-color-placeholder-text;
+  }
   .select-icon {
     @apply w-5 h-4 object-contain mr-1;
 
