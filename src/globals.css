@@ -121,6 +121,17 @@ html,body,#root {
     @apply border-2 border-color-error;
   }
 
+  .select-popup {
+    @apply absolute z-10 bg-color-bg w-full border border-color-border rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar;
+  } 
+
+  .select-option {
+    @apply flex items-center gap-2 w-full text-left p-2 bg-white text-black hover:bg-pink-100;
+  }
+
+  .select-selected-option {
+    @apply flex items-center gap-2 w-full text-left p-2 bg-color-primary text-white;
+  }
   .select-label {
     @apply text-lg text-color-primary-text;
   }

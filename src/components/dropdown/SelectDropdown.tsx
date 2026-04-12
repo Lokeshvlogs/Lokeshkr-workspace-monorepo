@@ -12,10 +12,11 @@ interface Props {
   options:  SelectIconOption[];
   value?: any;
   name?: string;
+  showButtonValue?: boolean;
   //tailwind classes to apply to the container
   className?: string;
   selectLabelClassName?: string;
-  showButtonValue?: boolean;
+  selectPopupClassName?: string;
   iconClassName?: string;
   optionsLabelClassName?: string;
   extraLabelClassName?: string;
@@ -27,7 +28,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -159,13 +160,13 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       </button>
       
       {open && (
-        <div ref={popupRef} className="absolute z-10 bg-white w-full border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar" style={{width: popupWidth}}> 
+        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{width: popupWidth}}> 
             {options.map((option ) => {
               const isSelected = value === option.value;
               return (
                 <div
                   key={`${option.value}`}
-                  className={`flex items-center gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
+                  className={`select-option ${isSelected ? 'select-selected-option' : ''}`}
                   onClick={() => doSelect(option)}
                 >
                     {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
