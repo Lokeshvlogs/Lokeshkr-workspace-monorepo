@@ -86,6 +86,7 @@ export default function RegisterForm() {
             placeholder="Age"
             options={AGE_OPTIONS}
             className={`select-button ${errors.age ? 'select-error' : ''}`}
+            selectLabelClassName='mr-1'
             extraLabelClassName='whitespace-nowrap'
           />
           {lookingForVisible && (

@@ -14,6 +14,7 @@ interface Props {
   name?: string;
   //tailwind classes to apply to the container
   className?: string;
+  selectLabelClassName?: string;
   showButtonValue?: boolean;
   iconClassName?: string;
   optionsLabelClassName?: string;
@@ -26,7 +27,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, value, name, options, className = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -147,7 +148,9 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
-          <span className="text-lg">{showButtonValue ? value ? value + ' ' + displayLabel: displayLabel : displayLabel}</span>
+          <span className={`text-lg ${selectLabelClassName}`}>{showButtonValue ? value ? value + ' ' + displayLabel: displayLabel : displayLabel}</span>
+        </div>
+        <div className="ml-auto flex items-center z-10">
           <ChevronDown size={18} />
         </div>
       </button>
