@@ -159,7 +159,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       </button>
       
       {open && (
-        <div ref={popupRef} className="absolute z-10 bg-white w-full border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar" style={{ maxWidth: popupWidth, ...style }}> 
+        <div ref={popupRef} className="absolute z-10 bg-white w-full border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar" style={{width: popupWidth}}> 
             {options.map((option ) => {
               const isSelected = value === option.value;
               return (
