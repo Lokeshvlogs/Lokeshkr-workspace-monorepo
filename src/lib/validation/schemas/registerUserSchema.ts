@@ -4,8 +4,14 @@ import { COUNTRY_DIAL_CODES} from "src/constants/selectOptions/places"
 
 export const registerSchema = z.object({
   email: z.string().email("Invalid email"),
-  first_name: z.string().min(1, "First name must be at least 1 character"),
-  surname: z.string().min(1, "Surname must be at least 1 character"),
+  first_name: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() === '') return undefined
+    return val
+  }, z.string().regex(/^[A-Za-z]+$/, "Must be Alphabets only.").min(1, "First name must be at least 1 character")),
+  surname: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() === '') return undefined
+    return val
+  }, z.string().regex(/^[A-Za-z]+$/, "Must be Alphabets only.").min(1, "Surname must be at least 1 character")),
   profile_for: z.preprocess((val) => {
     if (typeof val === 'string' && val.trim() === '') return undefined
     return val
@@ -29,10 +35,16 @@ export const registerSchema = z.object({
   }, z.enum(LOOKING_FOR_VALUES).optional().refine((val) => val !== undefined, {
     message: "Please select what you are looking for",
   })),
-  country_code: z.enum(Object.keys(COUNTRY_DIAL_CODES)).optional().refine((val) => val !== undefined, {
+  country_code: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() === '') return undefined
+    return val
+  }, z.enum(Object.keys(COUNTRY_DIAL_CODES)).optional().refine((val) => val !== undefined, {
     message: "Please select a country",
-  }),
-  phone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number must be less than 15 digits"),
+  })),
+  phone: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() === '') return undefined
+    return val
+  }, z.string().regex(/^\d+$/, "Phone number must contain only digits").min(9, "Phone number must be at least 9 digits").max(10, "Phone number must not exceed 10 digits")),
   password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password must be less than 100 characters"),
 })
 

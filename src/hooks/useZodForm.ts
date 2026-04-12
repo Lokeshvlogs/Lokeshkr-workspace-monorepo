@@ -39,12 +39,8 @@ export function useZodForm<T extends Record<string, any>>(
       onFocus: () => setFocused(name as string),
       onBlur: (e: any) => {
         
-        let val: any;
-        if (e && typeof e === 'object' && 'target' in e && e.target && 'value' in e.target) {
-           val = e.target.value;
-        } else {
-           val = e ;
-        }
+        const val = values[name];
+        console.log("Blur event for field:", name, "Value:", val);
         validateField(name, val)
         setFocused(null)
       },
