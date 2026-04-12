@@ -18,7 +18,8 @@ module.exports = {
             "color-border": "var(--color-border)",
             "color-error": "var(--color-error)",
             "color-success": "var(--color-success)",
-            "color-placeholder-text": "var(--color-placeholder-text)"
+            "color-placeholder-text": "var(--color-placeholder-text)",
+            "color-primary-text": "var(--color-primary-text)"
       },
       borderRadius: {
         md: "8px",

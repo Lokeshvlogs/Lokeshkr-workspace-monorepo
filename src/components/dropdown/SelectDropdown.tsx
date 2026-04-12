@@ -146,9 +146,12 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
         title={placeholder}
         onBlur={(e) => doBlur(e)}
       >
+        <div className="flex items-center gap-2 z-5">
+          {displayFlag && <img src={displayFlag} alt={displayLabel} className={`select-icon ${iconClassName}`} />}
+        </div>
+
         <div className="flex items-center gap-2">
-          {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
-          <span className={`text-lg ${selectLabelClassName}`}>{showButtonValue ? value ? value + ' ' + displayLabel: displayLabel : displayLabel}</span>
+          <span className={`${selectedOption ? 'select-label' : 'text-color-placeholder-text'} ${selectLabelClassName} `}>{showButtonValue ? value ? value + ' ' + displayLabel: displayLabel : displayLabel}</span>
         </div>
         <div className="ml-auto flex items-center z-10">
           <ChevronDown size={18} />
@@ -165,9 +168,9 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
                   className={`flex items-center gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
                   onClick={() => doSelect(option)}
                 >
-                    {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
-                    {option.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${optionsLabelClassName}`}>{option.label}</label>}
-                    {option.extra_label && <label className={`text-lg ml-5  align-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{option.extra_label}</label>}
+                    {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
+                    {option.label && <label className={`select-label ${isSelected ? 'text-white/90' : 'text-color-placeholder-text'} ${optionsLabelClassName}`}>{option.label}</label>}
+                    {option.extra_label && <label className={`select-label ${isSelected ? 'text-white/90' : 'text-color-placeholder-text'} ${extraLabelClassName}`}>{option.extra_label}</label>}
                   
                 </div>
               )
