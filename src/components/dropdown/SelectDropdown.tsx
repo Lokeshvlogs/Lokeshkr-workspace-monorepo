@@ -170,9 +170,9 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
                   onClick={() => doSelect(option)}
                 >
                     {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
-                    {option.label && <label className={`select-label ${isSelected ? 'text-white/90' : 'text-color-placeholder-text'} ${optionsLabelClassName}`}>{option.label}</label>}
+                    {option.label && <label className={`${isSelected ? 'text-white/90' : ''} ${optionsLabelClassName}`}>{option.label}</label>}
                     <div className='ml-auto flex items-center z-5'>
-                      {option.extra_label && <label className={`select-placeholder ${isSelected ? 'text-white/90' : ''} ${extraLabelClassName}`}>{option.extra_label}</label>}
+                      {option.extra_label && <label className={`${isSelected ? 'text-white/90' : ''} ${extraLabelClassName}`}>{option.extra_label}</label>}
                    </div>
                 </div>
               )

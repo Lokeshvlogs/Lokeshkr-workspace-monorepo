@@ -79,6 +79,7 @@ export default function RegisterForm() {
             placeholder="Profile for"
             options={PROFILE_FOR_OPTIONS}
             className={`select-button ${errors.profile_for ? 'select-error' : ''}`}
+            selectPopupClassName='z-20'
             extraLabelClassName='whitespace-nowrap'
           />
           <SelectDropdown
@@ -87,6 +88,7 @@ export default function RegisterForm() {
             options={AGE_OPTIONS}
             className={`select-button ${errors.age ? 'select-error' : ''}`}
             selectLabelClassName='mr-1'
+            selectPopupClassName='z-20'
             extraLabelClassName='whitespace-nowrap'
           />
           {lookingForVisible && (
@@ -95,6 +97,7 @@ export default function RegisterForm() {
               placeholder="Looking for"
               options={LOOKING_FOR_OPTIONS}
               className={`select-button ${errors.looking_for ? 'select-error' : ''}`}
+              selectPopupClassName='z-20'
               extraLabelClassName='whitespace-nowrap'
             />
           )}
@@ -105,12 +108,13 @@ export default function RegisterForm() {
 
         <div className="grid grid-cols-[1fr_2fr] gap-3">
           <SelectDropdown
+            {...registerFormInput('country_code')}
             placeholder="Country code"
             options={COUNTRY_CODES_OPTIONS}
             className={`select-button ${errors.country_code ? 'select-error' : ''}`}
+            selectPopupClassName="z-10"
             extraLabelClassName='whitespace-nowrap'
             showButtonValue={true}
-            {...registerFormInput('country_code')}
           />
           <input {...registerFormInput('phone')} name="phone" placeholder="Phone no." type="tel" className={`input ${errors.phone ? 'input-error' : ''}`} />
           {errors.country_code && <p id='country-code-error' className="row-start-2 error-text" role='alert'>{errors.country_code[0]}</p>}
