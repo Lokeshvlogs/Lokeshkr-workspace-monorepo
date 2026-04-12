@@ -1,5 +1,6 @@
 "use client";
 import { cp } from 'fs';
+import { ChevronDown } from 'lucide-react';
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption, SelectOption } from 'src/types/select';
@@ -115,9 +116,9 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
     if (onChange) onChange(option.value);
   }
 
-  function doBlur() {
+  function doBlur(e: any) {
     if (!open && onBlur) {
-        onBlur(value);
+        onBlur(e);
     }
   }
 
@@ -134,45 +135,42 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       : "justify-start";
 
   return (
-    <div ref={containerRef} className={`relative flex flex-col ${justify} ${className}`}>
+    <div ref={containerRef} className={`relative w-full ${justify}`}>
       {name && <input type="hidden" name={name} value={value ?? ""}/>}
       <button
         type="button"
         ref={btnRef}
-        className={`${buttonClassName ? buttonClassName : 'p-4'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className="flex items-center justify-between w-full p-2 border rounded-md bg-white"
         onClick={() => { if (!disabled) setOpen(v => !v); }}
         disabled={disabled}
         title={placeholder}
-        onBlur={() => doBlur()}
+        onBlur={(E) => doBlur(e.target.value)}
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
           <span className="text-lg">{showButtonValue ? value ? value + ' ' + displayLabel: displayLabel : displayLabel}</span>
+          <ChevronDown size={18} />
         </div>
       </button>
       
-      {open && style && createPortal(
-        <div ref={popupRef} style={style} className="z-50 bg-white w-max border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar">
-          <div className="divide-y divide-pink-50">
-            {options.map((option) => {
+      {open && (
+        <div ref={popupRef} className="absolute z-10 bg-white w-full border border-pink-100 rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar"> 
+            {options.map((option ) => {
               const isSelected = value === option.value;
               return (
                 <div
                   key={`${option.value}`}
-                  data-option
-                  className={`flex gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
+                  className={`flex items-center gap-2 w-full text-left p-2 ${isSelected ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'}`}
                   onClick={() => doSelect(option)}
-                  >
+                >
                     {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
                     {option.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{option.label}</label>}
                     {option.extra_label && <label className={`text-lg ml-5  align-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{option.extra_label}</label>}
                   
                 </div>
-              );
-            })}
+              )
+         })}
           </div>
-        </div>,
-        document.body
       )}
     </div>
   );
