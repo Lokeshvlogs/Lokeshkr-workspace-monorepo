@@ -12,12 +12,13 @@ module.exports = {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial']
       },
       colors: {
-            primary: "var(--color-primary)",
-            "primary-light": "var(--color-primary-light)",
-            bg: "var(--color-bg)",
-            border: "var(--color-border)",
-            error: "var(--color-error)",
-            success: "var(--color-success)",
+            "color-primary": "var(--color-primary)",
+            "color-primary-light": "var(--color-primary-light)",
+            "color-bg": "var(--color-bg)",
+            "color-border": "var(--color-border)",
+            "color-error": "var(--color-error)",
+            "color-success": "var(--color-success)",
+            "color-placeholder-text": "var(--color-placeholder-text)"
       },
       borderRadius: {
         md: "8px",

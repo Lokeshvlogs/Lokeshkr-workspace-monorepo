@@ -78,16 +78,14 @@ export default function RegisterForm() {
            {...registerFormInput('profile_for')}
             placeholder="Profile for"
             options={PROFILE_FOR_OPTIONS}
-            className={`select-wrapper ${errors.profile_for ? 'select-error' : ''}`}
-            buttonClassName='select-button'
+            className={`select-button ${errors.profile_for ? 'select-error' : ''}`}
             extraLabelClassName='whitespace-nowrap'
           />
           <SelectDropdown
             {...registerFormInput('age')}
             placeholder="Age"
             options={AGE_OPTIONS}
-            className={`select-wrapper ${errors.age ? 'select-error' : ''}`}
-            buttonClassName='select-button'
+            className={`select-button ${errors.age ? 'select-error' : ''}`}
             extraLabelClassName='whitespace-nowrap'
           />
           {lookingForVisible && (
@@ -95,8 +93,7 @@ export default function RegisterForm() {
               {...registerFormInput('looking_for')}
               placeholder="Looking for"
               options={LOOKING_FOR_OPTIONS}
-              className={`select-wrapper ${errors.looking_for ? 'select-error' : ''}`}
-              buttonClassName='select-button'
+              className={`select-button ${errors.looking_for ? 'select-error' : ''}`}
               extraLabelClassName='whitespace-nowrap'
             />
           )}
@@ -109,8 +106,7 @@ export default function RegisterForm() {
           <SelectDropdown
             placeholder="Country code"
             options={COUNTRY_CODES_OPTIONS}
-            className={`select-wrapper ${errors.country_code ? 'select-error' : ''}`}
-            buttonClassName='select-button'
+            className={`select-button ${errors.country_code ? 'select-error' : ''}`}
             extraLabelClassName='whitespace-nowrap'
             showButtonValue={true}
             {...registerFormInput('country_code')}

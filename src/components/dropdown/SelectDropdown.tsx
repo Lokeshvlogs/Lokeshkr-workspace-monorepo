@@ -14,10 +14,9 @@ interface Props {
   name?: string;
   //tailwind classes to apply to the container
   className?: string;
-  buttonClassName?: string;
   showButtonValue?: boolean;
   iconClassName?: string;
-  labelClassName?: string;
+  optionsLabelClassName?: string;
   extraLabelClassName?: string;
 
   align?: 'left' | 'center' | 'right';
@@ -27,7 +26,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, value, name, options, className = '', buttonClassName = '', showButtonValue = false, iconClassName = '', labelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, value, name, options, className = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -135,16 +134,16 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       : "justify-start";
 
   return (
-    <div ref={containerRef} className={`relative w-full ${justify}`}>
+    <div ref={containerRef} className={`select-wrapper ${justify}`}>
       {name && <input type="hidden" name={name} value={value ?? ""}/>}
       <button
         type="button"
         ref={btnRef}
-        className="flex items-center justify-between w-full p-2 border rounded-md bg-white"
+        className={`select-button ${className}`}
         onClick={() => { if (!disabled) setOpen(v => !v); }}
         disabled={disabled}
         title={placeholder}
-        onBlur={(E) => doBlur(e.target.value)}
+        onBlur={(e) => doBlur(e)}
       >
         <div className="flex items-center gap-2">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className="w-5 h-4 object-contain" />}
@@ -164,7 +163,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
                   onClick={() => doSelect(option)}
                 >
                     {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`w-5 h-4 object-contain ${iconClassName}`} />}
-                    {option.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${labelClassName}`}>{option.label}</label>}
+                    {option.label && <label className={`text-lg ml-1  align-left ${isSelected ? 'text-white/90' : 'text-gray-500'} ${optionsLabelClassName}`}>{option.label}</label>}
                     {option.extra_label && <label className={`text-lg ml-5  align-right ${isSelected ? 'text-white/90' : 'text-gray-500'} ${extraLabelClassName}`}>{option.extra_label}</label>}
                   
                 </div>

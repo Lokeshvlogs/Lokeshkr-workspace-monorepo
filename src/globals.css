@@ -5,8 +5,6 @@
 :root{
   --radius: 8px;
     /* Brand */
-  --color-primary-50: #fff6fb;
-  --color-primary-300: #ffeef6;
   --color-primary: #ec4899;
   --color-primary-light: #f9a8d4;
 
@@ -19,7 +17,9 @@
   --color-success: #22c55e;
 
   /* Text */
-  --color-text: #111827;
+  /*--color-text: #111827;*/
+    --color-placeholder-text: #6B7280;
+
 }
 
 html,body,#root {
@@ -46,11 +46,11 @@ html,body,#root {
   }
 
   .btn-primary {
-    @apply btn bg-primary text-white hover:opacity-90;
+    @apply btn bg-color-primary text-white hover:opacity-90;
   }
 
   .link {
-    @apply text-primary hover:underline;
+    @apply text-color-primary hover:underline;
   }
 }
 
@@ -90,8 +90,8 @@ html,body,#root {
 
   .input {
     @apply w-full p-3 text-lg border border-pink-200 rounded-md 
-           focus:outline-none focus:ring-2 focus:ring-pink-300 
-           placeholder-gray-400;
+           focus:outline-none focus:ring-2 focus:ring-color-primary-light 
+           placeholder-color-placeholder-text;
   }
 
   /* Error state */
@@ -109,16 +109,16 @@ html,body,#root {
 ========================= */
 @layer components {
   .select-wrapper {
-    @apply w-full p-3 text-lg border border-pink-200 rounded-md 
-           flex items-center justify-between cursor-pointer
-           focus-within:ring-2 focus-within:ring-pink-300;
+    @apply relative w-full;
   }
 
   .select-button {
-    @apply w-full text-sm text-left;
+    @apply w-full text-left p-3 text-lg text-gray-500 border border-color-border rounded-md 
+           flex items-center justify-between cursor-pointer
+           focus-within:ring-2 focus-within:ring-color-primary-light;
   }
   .select-error {
-    @apply border-2 border-red-500;
+    @apply border-2 border-color-error;
   }
 
 }
@@ -128,7 +128,7 @@ html,body,#root {
 ========================= */
 @layer utilities {
   .border-primary {
-    @apply border border-primary;
+    @apply border border-color-primary;
   }
 }
 
