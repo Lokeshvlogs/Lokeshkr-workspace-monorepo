@@ -1,11 +1,11 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from '../../components/authProvider'
 import SelectDropdown from '@/components/dropdown/SelectDropdown'
 import { COUNTRY_CODES_OPTIONS } from 'src/constants/selectOptions/places'
 import { validateEmail } from '@/lib/validation/schemas/validateEmail'
 import { registerSchema } from '@/lib/validation/schemas/registerUserSchema'
-import { useZodForm } from '@/hooks/useZodForm'
+import { useZodForm, blockEnterKeySubmit } from '@/hooks/useZodForm'
 import { registerUser } from '@/actions/registerUser'
 import { clear } from 'console'
 import { PROFILE_FOR_OPTIONS, LOOKING_FOR_OPTIONS, AGE_OPTIONS } from './constants/RegisterUserOptions'
@@ -33,12 +33,18 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const [lookingForVisible, setLookingForVisible] = useState<boolean>(false)
 
-  const handleLookingForChange = (value: string) => {
-    setField('looking_for', value)
-  }
+  useEffect(() => {
+    if (values?.profile_for === 'self') {
+      setLookingForVisible(true)
+    } else {
+      setLookingForVisible(false)
+      setField('looking_for', undefined)
+      clearFieldError('looking_for')
+    }
+  }, [values.profile_for])
   
   return (
-    <form action={action} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)'}}>
+    <form action={action} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)'}} onKeyDown={blockEnterKeySubmit}>
       <div className="grid grid-cols-1 gap-3">
         <input
           {...registerFormInput('email')}

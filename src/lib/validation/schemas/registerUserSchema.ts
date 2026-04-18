@@ -19,9 +19,8 @@ export const registerSchema = z.object({
     message: "Please select a profile for",
   })),
 
-  age: z.number({
+  age: z.coerce.number({
   error: (iss) => {
-    console.log("Value received:", iss.input, "Type:", typeof iss.input);
     return "Please select an age";
   }
 })

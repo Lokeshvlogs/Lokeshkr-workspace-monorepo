@@ -108,3 +108,9 @@ export function useZodForm<T extends Record<string, any>>(
 
   return { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register }
 }
+
+export const blockEnterKeySubmit = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+}
