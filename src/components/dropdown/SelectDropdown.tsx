@@ -9,7 +9,7 @@ import { de } from 'zod/v4/locales';
 
 interface Props {
   placeholder: string;
-  options:  SelectIconOption[];
+  options: SelectIconOption[];
   value?: any;
   name?: string;
   showButtonValue?: boolean;
@@ -29,19 +29,19 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
-  const [style, setStyle] = useState<CSSProperties | null>(null);
+  // const [style, setStyle] = useState<CSSProperties | null>(null);
 
 
-   useEffect(() => {
-    function onDocClick(e: MouseEvent) {      
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
       const target = e.target as Node;
-    
+
       if (btnRef.current && btnRef.current.contains(target)) return;
       if (popupRef.current && popupRef.current.contains(target)) return;
       console.log('Document click outside dropdown, closing');
@@ -51,27 +51,27 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
+
   useEffect(() => {
     if (!open) return;
 
     let rafId: number | null = null;
 
     const updateWidthAndPosition = () => {
-      if (!btnRef.current) return;
+      if (!btnRef.current || !popupRef.current) return;
       const rect = btnRef.current.getBoundingClientRect();
 
       // Choose the widest between the button and the popup content
       let maxPopupWidth = rect.width;
 
-      if (popupRef.current) {
-        // scrollWidth reflects the widest content inside the popup
-        const contentWidth = popupRef.current.scrollWidth;
-        // Add small fudge for borders/padding if needed
-        maxPopupWidth = Math.max(rect.width, contentWidth);
-      }
+      // scrollWidth reflects the widest content inside the popup
+      const contentWidth = popupRef.current.scrollWidth;
+      // Add small fudge for borders/padding if needed
+      maxPopupWidth = Math.max(rect.width, contentWidth);
+
 
       setPopupWidth(maxPopupWidth);
-      setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: maxPopupWidth, zIndex: 9999 });
+      // setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: maxPopupWidth, zIndex: 9999 });
     };
 
     // Run once after render to ensure popupRef is available, then keep in sync on resize
@@ -83,7 +83,11 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
     };
 
     scheduleUpdate();
-    
+
+    const observer = new ResizeObserver(() => {
+      updateWidthAndPosition();
+    });
+
     const onScrollClose = (e?: Event) => {
       try {
         // If the scroll/wheel event originated from within the popup, don't close
@@ -98,7 +102,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
 
     window.addEventListener('resize', scheduleUpdate);
     window.addEventListener('scroll', onScrollClose, true);
-    document.addEventListener('scroll', onScrollClose, true); 
+    document.addEventListener('scroll', onScrollClose, true);
     document.addEventListener('wheel', onScrollClose as EventListener, { passive: true, capture: true } as any);
     document.addEventListener('touchmove', onScrollClose as EventListener, { passive: true, capture: true } as any);
 
@@ -109,8 +113,10 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       document.removeEventListener('scroll', onScrollClose, true);
       document.removeEventListener('wheel', onScrollClose as EventListener, true as any);
       document.removeEventListener('touchmove', onScrollClose as EventListener, true as any);
+      observer.disconnect();
     };
   }, [open, options]);
+
 
   function doSelect(option: any) {
     console.log('Option selected! -- new option:', option);
@@ -120,7 +126,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
 
   function doBlur(e: any) {
     if (!open && onBlur) {
-        onBlur(e);
+      onBlur(e);
     }
   }
 
@@ -129,23 +135,23 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
   const displayLabel = selectedOption?.label || placeholder || name;
   const displayFlag = selectedOption?.icon ? selectedOption.icon : undefined;
 
-    const justify =
+  const justify =
     align === "center"
       ? "justify-center"
       : align === "right"
-      ? "justify-end"
-      : "justify-start";
+        ? "justify-end"
+        : "justify-start";
 
   const extraLabelJustify =
     extraLabelAlighn === "center"
       ? "justify-center"
       : extraLabelAlighn === "right"
-      ? "justify-end"
-      : "justify-start";
+        ? "justify-end"
+        : "justify-start";
 
   return (
     <div ref={containerRef} className={`select-wrapper ${justify}`}>
-      {name && <input type="hidden" name={name} value={value ?? ""}/>}
+      {name && <input type="hidden" name={name} value={value ?? ""} />}
       <button
         type="button"
         ref={btnRef}
@@ -160,32 +166,32 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
         </div>
 
         <div className="flex items-center gap-2">
-          <span className={`${selectedOption ? 'select-label' : 'select-placeholder'} ${selectLabelClassName} `}>{showButtonValue ? value ? value + ' ' + displayLabel: displayLabel : displayLabel}</span>
+          <span className={`${selectedOption ? 'select-label' : 'select-placeholder'} ${selectLabelClassName} `}>{showButtonValue ? value ? value + ' ' + displayLabel : displayLabel : displayLabel}</span>
         </div>
         <div className="ml-auto flex items-center z-10">
           <ChevronDown size={18} />
         </div>
       </button>
-      
+
       {open && (
-        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{width: popupWidth}}> 
-            {options.map((option ) => {
-              const isSelected = value === option.value;
-              return (
-                <div
-                  key={`${option.value}`}
-                  className={`select-option ${isSelected ? 'select-selected-option' : ''}`}
-                  onClick={() => doSelect(option)}
-                >
-                    {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
-                    {option.label && <label className={`${isSelected ? 'text-white/90' : ''} ${optionsLabelClassName}`}>{option.label}</label>}
-                    <div className={`flex-auto flex items-center ${extraLabelJustify} gap-2`}>
-                      {option.extra_label && <label className={`${isSelected ? 'text-white/90' : ''} ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
-                   </div>
+        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{ width: popupWidth }}>
+          {options.map((option) => {
+            const isSelected = value === option.value;
+            return (
+              <div
+                key={`${option.value}`}
+                className={`select-option ${isSelected ? 'select-selected-option' : ''}`}
+                onClick={() => doSelect(option)}
+              >
+                {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
+                {option.label && <label className={`${isSelected ? 'text-white/90' : ''} ${optionsLabelClassName}`}>{option.label}</label>}
+                <div className={`flex-auto flex items-center ${extraLabelJustify} gap-2`}>
+                  {option.extra_label && <label className={`${isSelected ? 'text-white/90' : ''} ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
                 </div>
-              )
-         })}
-          </div>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   );
