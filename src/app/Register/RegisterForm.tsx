@@ -115,6 +115,7 @@ export default function RegisterForm() {
             selectPopupClassName="z-10"
             extraLabelClassName='whitespace-nowrap'
             showButtonValue={true}
+            extraLabelAlighn='right'
           />
           <input {...registerFormInput('phone')} name="phone" placeholder="Phone no." type="tel" className={`input ${errors.phone ? 'input-error' : ''}`} />
           {errors.country_code && <p id='country-code-error' className="row-start-2 error-text" role='alert'>{errors.country_code[0]}</p>}

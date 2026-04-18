@@ -7,7 +7,7 @@
     /* Brand */
   --color-primary: #ec4899;
   --color-primary-light: #f96cba;
-  --color-primary-extra-light: #fdbae2;
+  --color-primary-extra-light: #fab2dd;
 
   /* UI */
   --color-border: #fbcfe8;
@@ -123,15 +123,15 @@ html,body,#root {
   }
 
   .select-popup {
-    @apply absolute bg-color-bg w-full border border-color-border rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar;
+    @apply absolute bg-color-bg w-full  border border-color-border rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar;
   } 
 
   .select-option {
-    @apply flex items-center gap-2 w-full text-left p-2 bg-white text-lg text-color-placeholder-text hover:bg-color-primary-extra-light hover:text-white;
+    @apply flex items-center gap-2 w-full text-left p-2 bg-white text-lg text-color-placeholder-text hover:bg-color-primary-extra-light hover:text-color-bg;
   }
 
   .select-selected-option {
-    @apply flex items-center gap-2 w-full text-left p-2 bg-color-primary text-white hover:bg-color-primary-light;
+    @apply flex items-center  gap-2 w-full text-left p-2 bg-color-primary text-color-bg hover:bg-color-primary-light;
   }
   .select-label {
     @apply text-lg text-color-primary-text;

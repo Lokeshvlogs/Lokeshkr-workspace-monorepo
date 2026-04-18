@@ -22,13 +22,14 @@ interface Props {
   extraLabelClassName?: string;
 
   align?: 'left' | 'center' | 'right';
+  extraLabelAlighn?: 'left' | 'center' | 'right';
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onChange?: (value: string) => void;
   onBlur?: (value: string) => void;
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName  = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
   const [open, setOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -82,7 +83,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
     };
 
     scheduleUpdate();
-
+    
     const onScrollClose = (e?: Event) => {
       try {
         // If the scroll/wheel event originated from within the popup, don't close
@@ -97,7 +98,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
 
     window.addEventListener('resize', scheduleUpdate);
     window.addEventListener('scroll', onScrollClose, true);
-    document.addEventListener('scroll', onScrollClose, true);
+    document.addEventListener('scroll', onScrollClose, true); 
     document.addEventListener('wheel', onScrollClose as EventListener, { passive: true, capture: true } as any);
     document.addEventListener('touchmove', onScrollClose as EventListener, { passive: true, capture: true } as any);
 
@@ -132,6 +133,13 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
     align === "center"
       ? "justify-center"
       : align === "right"
+      ? "justify-end"
+      : "justify-start";
+
+  const extraLabelJustify =
+    extraLabelAlighn === "center"
+      ? "justify-center"
+      : extraLabelAlighn === "right"
       ? "justify-end"
       : "justify-start";
 
@@ -171,8 +179,8 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
                 >
                     {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
                     {option.label && <label className={`${isSelected ? 'text-white/90' : ''} ${optionsLabelClassName}`}>{option.label}</label>}
-                    <div className='ml-auto flex items-center z-5'>
-                      {option.extra_label && <label className={`${isSelected ? 'text-white/90' : ''} ${extraLabelClassName}`}>{option.extra_label}</label>}
+                    <div className={`flex-auto flex items-center ${extraLabelJustify} gap-2`}>
+                      {option.extra_label && <label className={`${isSelected ? 'text-white/90' : ''} ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
                    </div>
                 </div>
               )
