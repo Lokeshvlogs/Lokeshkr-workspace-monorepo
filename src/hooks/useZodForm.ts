@@ -17,6 +17,7 @@ export function useZodForm<T extends Record<string, any>>(
   // returns handlers and value for wiring inputs
   function register(name: keyof T) {
     return {
+      id: name as string,
       value: (values[name] ?? '') as any,
       name: name as string,
       onChange: (e: any) => {

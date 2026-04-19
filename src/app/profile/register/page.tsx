@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
-import ScrollableDropdown from "@/components/dropdown/ScrollableDropdown";
+import ScrollableDropdown from "@/components/input/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import DaySelector from "@/components/dateselectors/DaySelector";
