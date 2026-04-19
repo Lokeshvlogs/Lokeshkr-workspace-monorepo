@@ -114,7 +114,7 @@ html,body,#root {
   }
 
   .select-button {
-    @apply w-full text-left p-3 text-lg text-gray-500 border border-color-border rounded-md 
+    @apply w-full text-left p-3 text-lg text-gray-500 whitespace-nowrap border border-color-border rounded-md 
            flex items-center justify-between cursor-pointer
            focus-within:ring-2 focus-within:ring-color-primary-light;
   }

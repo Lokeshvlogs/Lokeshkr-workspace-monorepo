@@ -174,7 +174,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
       </button>
 
       {open && (
-        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{ width: popupWidth }}>
+        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{ width: popupWidth}}>
           {options.map((option) => {
             const isSelected = value === option.value;
             return (
