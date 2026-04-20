@@ -55,9 +55,9 @@ export default function RegisterForm() {
             placeholder=""
             aria-invalid={errors.email ? 'true' : 'false'}
             aria-describedby="email-error"
-            className={`input ${errors.email ? 'input-error' : ''}`}
+            errorValue={errors.email ? errors.email[0] : undefined}
           />
-        {errors.email && <p id="email-error" className="error-text" role="alert">{errors.email[0]}</p>}
+          {/* {errors.email && <p id="email-error" className="error-text" role="alert">{errors.email[0]}</p>} */}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <input
@@ -158,7 +158,7 @@ export default function RegisterForm() {
           </button>
           {errors.password && <p id='password-error' className="text-red-500 text-sm mt-1" role='alert'>{errors.password[0]}</p>}
         </div>
-        
+
         <div className="flex items-center justify-center">
           <button type="submit" className="btn-primary" disabled={regLoading}>{regLoading ? 'Registering...' : 'Register'}</button>
         </div>
