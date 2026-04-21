@@ -53,32 +53,27 @@ export default function RegisterForm() {
             label="Email"
             type='email'
             placeholder=""
-            aria-invalid={errors.email ? 'true' : 'false'}
-            aria-describedby="email-error"
             errorValue={errors.email ? errors.email[0] : undefined}
           />
           {/* {errors.email && <p id="email-error" className="error-text" role="alert">{errors.email[0]}</p>} */}
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <input
+          <TextField
             {...registerFormInput('first_name')}
+            label="First Name"
             id='first_name'
             placeholder="First Name"
-            aria-invalid={errors.first_name ? 'true' : 'false'}
-            aria-describedby="first_name-error"
-            className={`input ${errors.first_name ? 'input-error' : ''}`}
+            errorValue={errors.first_name ? errors.first_name[0] : undefined}
           />
-          <input
+          <TextField
             {...registerFormInput('surname')}
+            label="Surname"
             id='surname'
             placeholder="Surname"
-            aria-invalid={errors.surname ? 'true' : 'false'}
-            aria-describedby="surname-error"
-            className={`input ${errors.surname ? 'input-error' : ''}`}
-
+            errorValue={errors.surname ? errors.surname[0] : undefined}
           />
-          {errors.first_name && <p id="first_name-error" className="error-text" role="alert">{errors.first_name[0]}</p>}
-          {errors.surname && <p id="surname-error" className="col-start-2 error-text" role="alert">{errors.surname[0]}</p>}
+          {/* {errors.first_name && <p id="first_name-error" className="error-text" role="alert">{errors.first_name[0]}</p>}
+          {errors.surname && <p id="surname-error" className="col-start-2 error-text" role="alert">{errors.surname[0]}</p>} */}
         </div>
 
         <div className="grid grid-cols-[2fr_1fr_2fr] gap-3">

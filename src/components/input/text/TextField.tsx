@@ -7,25 +7,29 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   className?: string;
   inputLabelClassName?: string;
   errorValue?: string;
+  showError?: boolean;
+  labelUpScale?: number;
+  xTranslate?: number;
+  yTranslate?: number;
 }
 
-export const TextField = ({ label, id, inputLabelClassName, errorValue, ...props }: TextFieldProps) => {
+export const TextField = ({ label, id, inputLabelClassName, errorValue, showError = true, labelUpScale = 75, ...props }: TextFieldProps) => {
   return (
     <div className="relative mt-4 w-full">
       {/* Border Label */}
         <input
           {...props}
-          aria-invalid={props['aria-invalid']}
-          aria-describedby={errorValue ? `${id}-error` : props['aria-describedby']}
+          aria-invalid={errorValue ? 'true' : 'false'}
+          aria-describedby={`${id}-error`}
           className={`input peer ${errorValue ? 'input-error' : ''} ${props.className}`}
         />
         <label
             htmlFor={id}
-            className={`text-field-label ${errorValue ? 'text-color-error' : ''} ${inputLabelClassName}`}
+            className={`text-field-label ${labelUpScale ? `scale-[.${labelUpScale}]` : ''} ${props.xTranslate ? `-translate-x-[.${props.xTranslate}]` : ''} ${props.yTranslate ? `-translate-y-[.${props.yTranslate}]` : ''} ${errorValue ? 'text-color-error' : ''} ${inputLabelClassName}`}
           >
             {label}
         </label>
-        {errorValue && <p id={`${id}-error`} className="error-text" role="alert">{errorValue}</p>}
+        {showError && errorValue && <p id={`${id}-error`} className="error-text" role="alert">{errorValue}</p>}
     </div>
   );
 };
