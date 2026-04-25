@@ -28,7 +28,7 @@ export const registerSchema = z.object({
   }, z.enum(LOOKING_FOR_VALUES).optional().refine((val) => val !== undefined, {
     message: "Please select what you are looking for",
   })),
-  
+
   country_code: z.preprocess((val) => {
     if (typeof val === 'string' && val.trim() === '') return undefined
     return val
@@ -42,16 +42,22 @@ export const registerSchema = z.object({
   },
     z.string({
       // This function catches the 'undefined' produced by your preprocess
-      error: (issue) => issue.input === undefined ? "Invalid Phone no." : "Invalid input"
+      error: (issue) => issue.input === undefined ? "Please enter a Phone number" : "Invalid Phone number"
     })
       .regex(/^\d+$/, "Phone number must contain only digits")
       .min(9, "Phone number must be at least 9 digits")
       .max(10, "Phone number must not exceed 10 digits")),
 
-  password: z.
-    string().
-    min(6, "Password must be at least 6 characters").
-    max(100, "Password must be less than 100 characters"),
+  password: z.preprocess((val) => {
+    if (typeof val === 'string' && val.trim() === '') return undefined;
+    return val;
+  },
+    z.string({
+      // This function catches the 'undefined' produced by your preprocess
+      error: (issue) => issue.input === undefined ? "Please enter a Password" : "Invalid Password"
+    })
+    .min(6, "Password must be at least 6 characters")
+    .max(100, "Password must be less than 100 characters")),
 })
 
 export type RegisterSchema = z.infer<typeof registerSchema>
