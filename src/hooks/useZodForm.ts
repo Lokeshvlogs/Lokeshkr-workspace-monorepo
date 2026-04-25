@@ -2,12 +2,12 @@
 
 import { Console } from "console"
 import React, { useState } from "react"
-import { string, ZodSchema } from "zod"
+import { z } from "zod"
 
 export function useZodForm<T extends Record<string, any>>(
-  schema: ZodSchema<T>,
+  schema: z.ZodObject<any>,
   actionFn: any,
-  initialValues: Partial<T> = {},
+  initialValues: Partial<T> = {}
 ) {
 
   const [errors, setErrors] = useState<Record<string, string[]>>({})
@@ -59,7 +59,7 @@ export function useZodForm<T extends Record<string, any>>(
   }
   // 🔥 Validate single field
   function validateField(name: keyof T, value: any) {
-    const fieldSchema = (schema as any).shape?.[name]
+    const fieldSchema = schema.shape[name as string];
 
     if (!fieldSchema) return
 
@@ -85,8 +85,8 @@ export function useZodForm<T extends Record<string, any>>(
 
     const rawData = Object.fromEntries(formData.entries())
 
-    console.log("Validing at client side:", rawData);
-    const result = schema.safeParse(rawData)
+    console.log("Validing at client side:", values, "Raw form data:", rawData);
+    const result = schema.safeParse(values)
 
     if (!result.success) {
       console.log("Validation failed with errors:", result.error.flatten().fieldErrors);
