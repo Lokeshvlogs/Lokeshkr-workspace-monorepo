@@ -15,12 +15,14 @@ export function useZodForm<T extends Record<string, any>>(
   const [focused, setFocused] = useState<string | null>(null)
 
   // returns handlers and value for wiring inputs
-  function register(name: keyof T) {
+  function register(name: keyof T, isSelectdropdown = false, placeholder?: string) {
     return {
+
       id: name as string,
-      placeholder: '',
+      placeholder: placeholder ?? '',
       value: (values[name] ?? '') as any,
       name: name as string,
+      ...(isSelectdropdown && { zIndex: 9999 - Object.keys(values).length}), // ensure dropdowns are above other elements
       onChange: (e: any) => {
         // support both native events and direct value calls from custom components
         let val: any;

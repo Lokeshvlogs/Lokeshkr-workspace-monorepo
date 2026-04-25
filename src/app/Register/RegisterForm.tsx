@@ -70,34 +70,30 @@ export default function RegisterForm() {
 
         <div className="flex justify-start gap-4">
           <SelectDropdown
-            {...registerInputProps('profile_for')}
+            {...registerInputProps('profile_for', true)}
             placeholder=""
             label="Profile for"
             options={PROFILE_FOR_OPTIONS}
             errorValue={errors.profile_for ? errors.profile_for[0] : undefined}
-            selectPopupClassName='z-20'
-            extraLabelClassName='whitespace-nowrap'
             PlaceHolderX={2}
             LabelX={-5}
           />
           <SelectDropdown
-            {...registerInputProps('age')}
+            {...registerInputProps('age', true)}
             placeholder=""
             label="Age"
             options={AGE_OPTIONS}
             errorValue={errors.age ? errors.age[0] : undefined}
             selectLabelClassName='mr-1'
-            selectPopupClassName='z-20'
           />
           {lookingForVisible && (
             <SelectDropdown
-              {...registerInputProps('looking_for')}
+              {...registerInputProps('looking_for', true)}
               label="Looking for"
               options={LOOKING_FOR_OPTIONS}
               errorValue={errors.looking_for ? errors.looking_for[0] : undefined}
-              selectPopupClassName='z-20'
               PlaceHolderX={-5}
-              LabelX={-1}
+              LabelX={-5}
               className="w-[550px]"
             />
           )}
@@ -108,13 +104,11 @@ export default function RegisterForm() {
           {/* 🔹 Country Code */}
           <div className="flex flex-col shrink-0">
             <SelectDropdown
-              {...registerInputProps('country_code')}
+              {...registerInputProps('country_code', true)}
               label="Country code"
               options={COUNTRY_CODES_OPTIONS}
               errorValue={errors.country_code ? errors.country_code[0] : undefined}
               showButtonValue={true}
-              extraLabelClassName="whitespace-nowrap"
-              selectPopupClassName='z-10'
               LabelX={-10}
             />
           </div>

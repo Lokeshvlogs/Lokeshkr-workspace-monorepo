@@ -1,7 +1,7 @@
 "use client";
 import { cp } from 'fs';
 import { ChevronDown } from 'lucide-react';
-import React, { useState, useRef, useEffect, CSSProperties } from 'react';
+import React, { useState, useRef, useEffect, CSSProperties, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption, SelectOption } from 'src/types/select';
 import { de } from 'zod/v4/locales';
@@ -22,7 +22,7 @@ interface Props {
   PlaceHolderY?: number;
   LabelX?: number;
   LabelY?: number;
-  
+
   //tailwind classes to apply to the container
   className?: string;
   labelClassName?: string;
@@ -31,7 +31,8 @@ interface Props {
   iconClassName?: string;
   optionsLabelClassName?: string;
   extraLabelClassName?: string;
-
+  
+  zIndex?: number;
   align?: 'left' | 'center' | 'right';
   extraLabelAlighn?: 'left' | 'center' | 'right';
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -40,13 +41,13 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName }: Props) {
+export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName, zIndex = 10 }: Props) {
+  
   const [open, setOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
-
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -62,7 +63,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
   }, []);
 
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
 
     let rafId: number | null = null;
@@ -73,15 +74,16 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
 
       // Choose the widest between the button and the popup content
       let maxPopupWidth = rect.width;
-      
+
 
       // scrollWidth reflects the widest content inside the popup
       const contentWidth = popupRef.current.scrollWidth;
       // Add small fudge for borders/padding if needed
       maxPopupWidth = Math.max(rect.width, contentWidth);
-     
 
-      setPopupWidth(maxPopupWidth);
+      popupRef.current.style.minWidth = `${rect.width}px`; // ensure it doesn't go below button width
+      //popupRef.current.style.width = `${maxPopupWidth}px`; // set the width to the maximum calculated
+      setPopupWidth(maxPopupWidth); 
       // setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: maxPopupWidth, zIndex: 9999 });
     };
 
@@ -98,7 +100,8 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
     const observer = new ResizeObserver(() => {
       updateWidthAndPosition();
     });
-
+    observer.observe(btnRef.current!); // Observe the button too!
+    if (popupRef.current) observer.observe(popupRef.current); // observe popup for any layout changes that might affect positioning
     const onScrollClose = (e?: Event) => {
       try {
         // If the scroll/wheel event originated from within the popup, don't close
@@ -161,9 +164,9 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
 
   return (
     <div ref={containerRef} className={`select-wrapper ${justify} ${className}`}>
-      {name && <input placeholder={placeholder} type="hidden" name={name} value={value ?? ""}/>}
+      {name && <input placeholder={placeholder} type="hidden" name={name} value={value ?? ""} />}
       <button
-        id={id} 
+        id={id}
         type="button"
         ref={btnRef}
         className={`select-button order-2 peer ${errorValue ? 'select-error' : ''}`}
@@ -172,22 +175,22 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
         onBlur={(e) => doBlur(e)}
       >
         <label
-            htmlFor={id}
-            className={`text-field-label order-1 transition-all duration-150`}
-             style={{
-                      transform: `
-                        translate(${selectedOption ? 
-                                  `${LabelX ?  `${LabelX < 0 ? `-${Math.abs(LabelX)}%` : `${Math.abs(LabelX)}%`}` : '2%'}` :
-                                  `${PlaceHolderX ? `${PlaceHolderX < 0 ? `-${Math.abs(PlaceHolderX)}px` : `${Math.abs(PlaceHolderX)}px`}` : '0'}`}, 
+          htmlFor={id}
+          className={`text-field-label order-1 transition-all duration-150`}
+          style={{
+            transform: `
+                        translate(${selectedOption ?
+                `${LabelX ? `${LabelX < 0 ? `-${Math.abs(LabelX)}%` : `${Math.abs(LabelX)}%`}` : '2%'}` :
+                `${PlaceHolderX ? `${PlaceHolderX < 0 ? `-${Math.abs(PlaceHolderX)}px` : `${Math.abs(PlaceHolderX)}px`}` : '0'}`}, 
                         
                                   ${selectedOption ?
-                                  `${LabelY ? `${LabelY < 0 ? `-${Math.abs(LabelY)}px` : `${Math.abs(LabelY)}px`}` : '-1rem'}` : 
-                                  `${PlaceHolderY ? `${PlaceHolderY < 0 ? `-${Math.abs(PlaceHolderY)}px` : `${Math.abs(PlaceHolderY)}px`}` : '0'}`}) 
+                `${LabelY ? `${LabelY < 0 ? `-${Math.abs(LabelY)}px` : `${Math.abs(LabelY)}px`}` : '-1rem'}` :
+                `${PlaceHolderY ? `${PlaceHolderY < 0 ? `-${Math.abs(PlaceHolderY)}px` : `${Math.abs(PlaceHolderY)}px`}` : '0'}`}) 
                         scale(${selectedOption ? LabelBorderScale / 100 : 1})
                       `
-                    }}
-          >
-            {label}
+          }}
+        >
+          {label}
         </label>
         <div className="flex items-center gap-2 z-5">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className={`select-icon ${iconClassName}`} />}
@@ -196,13 +199,13 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
         <div className="flex items-center mr-2 gap-2">
           <span className={`${selectedOption ? 'select-label' : 'select-placeholder'} ${selectLabelClassName} `}>{showButtonValue ? value ? value + ' ' + displayLabel : displayLabel : displayLabel}</span>
         </div>
-        <div className="ml-auto flex items-center z-10">
+        <div className="ml-auto flex items-center z-5">
           <ChevronDown size={18} />
         </div>
       </button>
 
       {open && (
-        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{ width: popupWidth}}>
+        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{ width: 'max-content', zIndex: zIndex }}>
           {options.map((option) => {
             const isSelected = value === option.value;
             return (
