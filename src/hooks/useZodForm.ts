@@ -18,6 +18,7 @@ export function useZodForm<T extends Record<string, any>>(
   function register(name: keyof T) {
     return {
       id: name as string,
+      placeholder: '',
       value: (values[name] ?? '') as any,
       name: name as string,
       onChange: (e: any) => {

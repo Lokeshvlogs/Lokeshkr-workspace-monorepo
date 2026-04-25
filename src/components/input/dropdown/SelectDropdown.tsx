@@ -8,13 +8,24 @@ import { de } from 'zod/v4/locales';
 
 
 interface Props {
+  id?: string;
   placeholder: string;
+  label: string;
   options: SelectIconOption[];
   value?: any;
   name?: string;
   showButtonValue?: boolean;
+  errorValue?: string;
+  showError?: boolean;
+  LabelBorderScale?: number;
+  PlaceHolderX?: number;
+  PlaceHolderY?: number;
+  LabelX?: number;
+  LabelY?: number;
+  
   //tailwind classes to apply to the container
   className?: string;
+  labelClassName?: string;
   selectLabelClassName?: string;
   selectPopupClassName?: string;
   iconClassName?: string;
@@ -29,13 +40,12 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function SelectDropdown({ placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left' }: Props) {
+export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName }: Props) {
   const [open, setOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
-  // const [style, setStyle] = useState<CSSProperties | null>(null);
 
 
   useEffect(() => {
@@ -63,12 +73,13 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
 
       // Choose the widest between the button and the popup content
       let maxPopupWidth = rect.width;
+      
 
       // scrollWidth reflects the widest content inside the popup
       const contentWidth = popupRef.current.scrollWidth;
       // Add small fudge for borders/padding if needed
       maxPopupWidth = Math.max(rect.width, contentWidth);
-
+     
 
       setPopupWidth(maxPopupWidth);
       // setStyle({ position: 'fixed', top: rect.bottom + 6, left: rect.left, width: maxPopupWidth, zIndex: 9999 });
@@ -117,7 +128,6 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
     };
   }, [open, options]);
 
-
   function doSelect(option: any) {
     console.log('Option selected! -- new option:', option);
     setOpen(false);
@@ -132,7 +142,7 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
 
 
   const selectedOption = options.find(o => o.value === value);
-  const displayLabel = selectedOption?.label || placeholder || name;
+  const displayLabel = selectedOption?.label || "";
   const displayFlag = selectedOption?.icon ? selectedOption.icon : undefined;
 
   const justify =
@@ -150,22 +160,40 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
         : "justify-start";
 
   return (
-    <div ref={containerRef} className={`select-wrapper ${justify}`}>
-      {name && <input type="hidden" name={name} value={value ?? ""} />}
+    <div ref={containerRef} className={`select-wrapper ${justify} ${className}`}>
+      {name && <input placeholder={placeholder} type="hidden" name={name} value={value ?? ""}/>}
       <button
+        id={id} 
         type="button"
         ref={btnRef}
-        className={`select-button ${className}`}
+        className={`select-button order-2 peer ${errorValue ? 'select-error' : ''}`}
         onClick={() => { if (!disabled) setOpen(v => !v); }}
         disabled={disabled}
-        title={placeholder}
         onBlur={(e) => doBlur(e)}
       >
+        <label
+            htmlFor={id}
+            className={`text-field-label order-1 transition-all duration-150`}
+             style={{
+                      transform: `
+                        translate(${selectedOption ? 
+                                  `${LabelX ?  `${LabelX < 0 ? `-${Math.abs(LabelX)}%` : `${Math.abs(LabelX)}%`}` : '2%'}` :
+                                  `${PlaceHolderX ? `${PlaceHolderX < 0 ? `-${Math.abs(PlaceHolderX)}px` : `${Math.abs(PlaceHolderX)}px`}` : '0'}`}, 
+                        
+                                  ${selectedOption ?
+                                  `${LabelY ? `${LabelY < 0 ? `-${Math.abs(LabelY)}px` : `${Math.abs(LabelY)}px`}` : '-1rem'}` : 
+                                  `${PlaceHolderY ? `${PlaceHolderY < 0 ? `-${Math.abs(PlaceHolderY)}px` : `${Math.abs(PlaceHolderY)}px`}` : '0'}`}) 
+                        scale(${selectedOption ? LabelBorderScale / 100 : 1})
+                      `
+                    }}
+          >
+            {label}
+        </label>
         <div className="flex items-center gap-2 z-5">
           {displayFlag && <img src={displayFlag} alt={displayLabel} className={`select-icon ${iconClassName}`} />}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center mr-2 gap-2">
           <span className={`${selectedOption ? 'select-label' : 'select-placeholder'} ${selectLabelClassName} `}>{showButtonValue ? value ? value + ' ' + displayLabel : displayLabel : displayLabel}</span>
         </div>
         <div className="ml-auto flex items-center z-10">
@@ -186,13 +214,14 @@ export default function SelectDropdown({ placeholder, value, name, options, clas
                 {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
                 {option.label && <label className={`${isSelected ? 'text-white/90' : ''} ${optionsLabelClassName}`}>{option.label}</label>}
                 <div className={`flex-auto flex items-center ${extraLabelJustify} gap-2`}>
-                  {option.extra_label && <label className={`${isSelected ? 'text-white/90' : ''} ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
+                  {option.extra_label && <label className={`whitespace-nowrap ${isSelected ? 'text-white/90' : ''} ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
                 </div>
               </div>
             )
           })}
         </div>
       )}
+      {showError && errorValue && <p id={`${id}-error`} className="error-text" role="alert">{errorValue}</p>}
     </div>
   );
 }

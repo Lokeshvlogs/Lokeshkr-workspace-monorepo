@@ -15,7 +15,7 @@ export default function RegisterForm() {
   const REGISTER_URL = '/api/register/'
   const auth = useAuth()
 
-  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register: registerFormInput } = useZodForm(registerSchema, registerUser, {
+  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register: registerInputProps } = useZodForm(registerSchema, registerUser, {
     email: "",
     first_name: "",
     surname: "",
@@ -27,7 +27,7 @@ export default function RegisterForm() {
     password: undefined,
   })
 
-  const passwordProps = registerFormInput('password')
+  const passwordProps = registerInputProps('password')
 
   const [regMessage, setRegMessage] = useState<string>('')
   const [regLoading, setRegLoading] = useState<boolean>(false)
@@ -49,64 +49,58 @@ export default function RegisterForm() {
       <div className="grid grid-cols-1 gap-3">
         <div className="relative mt-6">
           <TextField
-            {...registerFormInput('email')}
+            {...registerInputProps('email')}
             label="Email"
             type='email'
-            placeholder=""
             errorValue={errors.email ? errors.email[0] : undefined}
           />
-          {/* {errors.email && <p id="email-error" className="error-text" role="alert">{errors.email[0]}</p>} */}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <TextField
-            {...registerFormInput('first_name')}
+            {...registerInputProps('first_name')}
             label="First Name"
-            id='first_name'
-            placeholder="First Name"
             errorValue={errors.first_name ? errors.first_name[0] : undefined}
           />
           <TextField
-            {...registerFormInput('surname')}
+            {...registerInputProps('surname')}
             label="Surname"
-            id='surname'
-            placeholder="Surname"
             errorValue={errors.surname ? errors.surname[0] : undefined}
           />
-          {/* {errors.first_name && <p id="first_name-error" className="error-text" role="alert">{errors.first_name[0]}</p>}
-          {errors.surname && <p id="surname-error" className="col-start-2 error-text" role="alert">{errors.surname[0]}</p>} */}
         </div>
 
-        <div className="grid grid-cols-[2fr_1fr_2fr] gap-3">
+        <div className="flex justify-start gap-4">
           <SelectDropdown
-            {...registerFormInput('profile_for')}
-            placeholder="Profile for"
+            {...registerInputProps('profile_for')}
+            placeholder=""
+            label="Profile for"
             options={PROFILE_FOR_OPTIONS}
-            className={`select-button ${errors.profile_for ? 'select-error' : ''}`}
+            errorValue={errors.profile_for ? errors.profile_for[0] : undefined}
             selectPopupClassName='z-20'
             extraLabelClassName='whitespace-nowrap'
+            PlaceHolderX={2}
+            LabelX={-5}
           />
           <SelectDropdown
-            {...registerFormInput('age')}
-            placeholder="Age"
+            {...registerInputProps('age')}
+            placeholder=""
+            label="Age"
             options={AGE_OPTIONS}
-            className={`select-button ${errors.age ? 'select-error' : ''}`}
+            errorValue={errors.age ? errors.age[0] : undefined}
             selectLabelClassName='mr-1'
             selectPopupClassName='z-20'
-            extraLabelClassName='whitespace-nowrap'
           />
           {lookingForVisible && (
             <SelectDropdown
-              {...registerFormInput('looking_for')}
-              placeholder="Looking for"
+              {...registerInputProps('looking_for')}
+              label="Looking for"
               options={LOOKING_FOR_OPTIONS}
-              className={`select-button ${errors.looking_for ? 'select-error' : ''}`}
+              errorValue={errors.looking_for ? errors.looking_for[0] : undefined}
               selectPopupClassName='z-20'
-              extraLabelClassName='whitespace-nowrap'
+              PlaceHolderX={-5}
+              LabelX={-1}
+              className="w-[550px]"
             />
           )}
-          {errors.profile_for && <p id='profile-for-error' className="row-start-2 error-text" role='alert'>{errors.profile_for[0]}</p>}
-          {errors.age && <p id='age-error' className="col-start-2 error-text" role='alert'>{errors.age[0]}</p>}
-          {lookingForVisible && errors.looking_for && <p id='looking_for-error' className="col-start-3 error-text" role='alert'>{errors.looking_for[0]}</p>}
         </div>
 
         <div className="flex gap-3 items-start">
@@ -114,34 +108,25 @@ export default function RegisterForm() {
           {/* 🔹 Country Code */}
           <div className="flex flex-col shrink-0">
             <SelectDropdown
-              {...registerFormInput('country_code')}
-              placeholder="Country code"
+              {...registerInputProps('country_code')}
+              label="Country code"
               options={COUNTRY_CODES_OPTIONS}
-              className={`select-button max-w-[200px] ${errors.country_code ? 'select-error' : ''}`}
+              errorValue={errors.country_code ? errors.country_code[0] : undefined}
               showButtonValue={true}
               extraLabelClassName="whitespace-nowrap"
               selectPopupClassName='z-10'
+              LabelX={-10}
             />
-            {errors.country_code && (
-              <p className="error-text mt-1" role="alert">
-                {errors.country_code[0]}
-              </p>
-            )}
           </div>
 
           {/* 🔹 Phone Input */}
           <div className="flex flex-col flex-1 min-w-0">
-            <input
-              {...registerFormInput('phone')}
-              placeholder="Phone no."
+            <TextField
+              {...registerInputProps('phone')}
+              label="Phone number"
               type="tel"
-              className={`input w-full ${errors.phone ? 'input-error' : ''}`}
+              errorValue={errors.phone ? errors.phone[0] : undefined}
             />
-            {errors.phone && (
-              <p className="error-text mt-1" role="alert">
-                {errors.phone[0]}
-              </p>
-            )}
           </div>
 
         </div>
