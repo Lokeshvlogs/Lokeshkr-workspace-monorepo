@@ -22,7 +22,7 @@ export function useZodForm<T extends Record<string, any>>(
       placeholder: placeholder ?? '',
       value: (values[name] ?? '') as any,
       name: name as string,
-      ...(isSelectdropdown && { zIndex: 9999 - Object.keys(values).length}), // ensure dropdowns are above other elements
+      ...((!isSelectdropdown)? {focuseValue: focused === name} : {}), ...(isSelectdropdown ? { zIndex: 9999 - Object.keys(values).length} : {}), // ensure dropdowns are above other elements
       onChange: (e: any) => {
         // support both native events and direct value calls from custom components
         let val: any;

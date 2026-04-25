@@ -126,11 +126,15 @@ export default function RegisterForm() {
         </div>
 
         <div className="relative">
-          <input {...passwordProps} name="password" placeholder="Password" type={showPassword ? 'text' : 'password'} className="p-3 border border-pink-200 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400 pr-10" aria-label="Password" />
-          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-2 flex items-center text-gray-500" aria-label={showPassword ? 'Hide password' : 'Show password'}>
-            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-          </button>
-          {errors.password && <p id='password-error' className="text-red-500 text-sm mt-1" role='alert'>{errors.password[0]}</p>}
+          <PasswordInput
+            {...registerInputProps('password')}
+            label="Password"
+            errorValue={errors.password ? errors.password[0] : undefined}
+            LabelX={15}
+            LabelY={-12}
+            PlaceholderX={10}
+            PlaceholderY={10}
+          />
         </div>
 
         <div className="flex items-center justify-center">
