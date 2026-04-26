@@ -15,14 +15,15 @@ export function useZodForm<T extends Record<string, any>>(
   const [focused, setFocused] = useState<string | null>(null)
 
   // returns handlers and value for wiring inputs
-  function register(name: keyof T, isSelectdropdown = false, placeholder?: string) {
+  function register(name: keyof T, hasPopup = false, placeholder?: string) {
     return {
 
       id: name as string,
       placeholder: placeholder ?? '',
       value: (values[name] ?? '') as any,
       name: name as string,
-      ...((!isSelectdropdown) ? { focuseValue: focused === name } : {}), ...(isSelectdropdown ? { zIndex: 9999 - Object.keys(values).length } : {}), // ensure dropdowns are above other elements
+      ...((!hasPopup) ? { focuseValue: focused === name } : {}),
+      ...(hasPopup ? { zIndex: 9999 - Object.keys(values).length } : {}), // ensure dropdowns are above other elements
       onChange: (e: any) => {
         // support both native events and direct value calls from custom components
         let val: any;
@@ -57,6 +58,7 @@ export function useZodForm<T extends Record<string, any>>(
       [name]: value,
     }))
   }
+
   // 🔥 Validate single field
   function validateField(name: keyof T, value: any) {
     const fieldSchema = schema.shape[name as string];
@@ -81,6 +83,25 @@ export function useZodForm<T extends Record<string, any>>(
       return newErrors
     })
   }
+
+  function getFieldErrors(error: z.ZodError) : Record<string, string[]>  {
+    const tree = z.treeifyError(error)
+
+    const output: Record<string, string[]> = {}
+
+  const properties =
+    "properties" in tree
+      ? (tree.properties as Record<string, { errors: string[] }>)
+      : {}
+ 
+  for (const key in properties) {
+    if (properties[key].errors.length) {
+      output[key] = properties[key].errors
+    }
+  }
+    return output
+  }
+
   async function action(formData: FormData) {
 
     const rawData = Object.fromEntries(formData.entries())
@@ -89,10 +110,9 @@ export function useZodForm<T extends Record<string, any>>(
     const result = schema.safeParse(values)
 
     if (!result.success) {
-      console.log("Validation failed with errors:", result.error.flatten().fieldErrors);
-      const fieldErrors = result.error.flatten().fieldErrors
-      setErrors(fieldErrors as Record<string, string[]>)
-
+      const fieldErrors = getFieldErrors(result.error);
+      console.log("Validation failed with errors", fieldErrors);
+      setErrors(fieldErrors);
       return
     }
 
@@ -104,9 +124,9 @@ export function useZodForm<T extends Record<string, any>>(
     }
 
     if (res?.success) {
-       console.log("User created: ", res.success);
+      console.log("User created: ", res.success);
     }
-     
+
   }
 
   function clearFieldError(name: keyof T) {
