@@ -2,12 +2,12 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import HorizontalFormSlider from "@/components/slider/HorizontalFormSlider";
-import ScrollableDropdown from "@/components/input/dropdown/ScrollableDropdown";
+import ScrollableDropdown from "@/components/common/input/dropdown/ScrollableDropdown";
 import TimePicker from "@/components/timepicker/TimePicker";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
-import DaySelector from "@/components/input/dateselectors/DaySelector";
-import MonthSelector from "@/components/input/dateselectors/MonthSelector";
-import YearSelector from "@/components/input/dateselectors/YearSelector";
+import DaySelector from "@/components/common/input/dateselectors/DaySelector";
+import MonthSelector from "@/components/common/input/dateselectors/MonthSelector";
+import YearSelector from "@/components/common/input/dateselectors/YearSelector";
 import { communitiesByReligion, motherTongueOptions } from "src/constants/selectOptions/social";
 import {placesByCountry, COUNTRY_OPTIONS, COUNTRY_OPTIONS } from 'src/constants/selectOptions/places';
 
@@ -16,8 +16,8 @@ import {familyIncomeOptions} from "src/constants/selectOptions/people";
 import {physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions} from "src/constants/selectOptions/person";
 import {currentYear} from "src/constants/selectOptions/timeDate";
 import { feetOptions, inchOptions } from "src/constants/selectOptions/person";
-import DatePicker from "@/components/input/dateselectors/DatePicker";
-import DateRangeSlider from "@/components/input/dateselectors/daterange/DateRangeSlider";
+import DatePicker from "@/components/common/input/dateselectors/DatePicker";
+import DateRangeSlider from "@/components/common/input/dateselectors/daterange/DateRangeSlider";
 
 export default function ProfileRegisterPage() {
 

@@ -205,7 +205,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
       </button>
 
       {open && (
-        <div ref={popupRef} className={`select-popup ${selectPopupClassName}`} style={{ width: 'max-content', zIndex: zIndex }}>
+        <div ref={popupRef} className={`select-popup divide-y divide-pink-50  ${selectPopupClassName}`} style={{ width: 'max-content', zIndex: zIndex }}>
           {options.map((option) => {
             const isSelected = value === option.value;
             return (
@@ -215,9 +215,9 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
                 onClick={() => doSelect(option)}
               >
                 {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
-                {option.label && <label className={`${isSelected ? 'text-white/90' : ''} ${optionsLabelClassName}`}>{option.label}</label>}
+                {option.label && <label className={`${optionsLabelClassName}`}>{option.label}</label>}
                 <div className={`flex-auto flex items-center ${extraLabelJustify} gap-2`}>
-                  {option.extra_label && <label className={`whitespace-nowrap ${isSelected ? 'text-white/90' : ''} ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
+                  {option.extra_label && <label className={`whitespace-nowrap ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
                 </div>
               </div>
             )

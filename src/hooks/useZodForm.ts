@@ -59,7 +59,7 @@ export function useZodForm<T extends Record<string, any>>(
     }))
   }
 
-  // 🔥 Validate single field
+  //Validate single field
   function validateField(name: keyof T, value: any) {
     const fieldSchema = schema.shape[name as string];
 

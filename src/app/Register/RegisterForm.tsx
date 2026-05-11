@@ -1,9 +1,9 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '../../components/authProvider'
-import { TextField } from '@/components/input/text/TextField'
-import { PasswordInput } from '@/components/input/text/Password'
-import SelectDropdown from '@/components/input/dropdown/SelectDropdown'
+import { TextField } from '@/components/common/input/text/TextField'
+import { PasswordInput } from '@/components/common/input/text/Password'
+import SelectDropdown from '@/components/common/input/dropdown/SelectDropdown'
 import { COUNTRY_CODES_OPTIONS } from 'src/constants/selectOptions/places'
 import { registerSchema } from '@/lib/validation/schemas/registerUserSchema'
 import { useZodForm, blockEnterKeySubmit } from '@/hooks/useZodForm'
@@ -124,7 +124,6 @@ export default function RegisterForm() {
           </div>
 
         </div>
-
         <div className="relative">
           <PasswordInput
             {...registerInputProps('password')}
