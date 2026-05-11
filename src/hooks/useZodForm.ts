@@ -2,12 +2,12 @@
 
 import { Console } from "console"
 import React, { useState } from "react"
-import { string, ZodSchema } from "zod"
+import { z } from "zod"
 
 export function useZodForm<T extends Record<string, any>>(
-  schema: ZodSchema<T>,
+  schema: z.ZodObject<any>,
   actionFn: any,
-  initialValues: Partial<T> = {},
+  initialValues: Partial<T> = {}
 ) {
 
   const [errors, setErrors] = useState<Record<string, string[]>>({})
@@ -15,10 +15,15 @@ export function useZodForm<T extends Record<string, any>>(
   const [focused, setFocused] = useState<string | null>(null)
 
   // returns handlers and value for wiring inputs
-  function register(name: keyof T) {
+  function register(name: keyof T, hasPopup = false, placeholder?: string) {
     return {
+
+      id: name as string,
+      placeholder: placeholder ?? '',
       value: (values[name] ?? '') as any,
       name: name as string,
+      ...((!hasPopup) ? { focuseValue: focused === name } : {}),
+      ...(hasPopup ? { zIndex: 9999 - Object.keys(values).length } : {}), // ensure dropdowns are above other elements
       onChange: (e: any) => {
         // support both native events and direct value calls from custom components
         let val: any;
@@ -27,7 +32,6 @@ export function useZodForm<T extends Record<string, any>>(
         } else {
           val = e;
         }
-        console.log('changed', name, val);
         setField(name, val);
         clearFieldError(name);
       },
@@ -39,15 +43,11 @@ export function useZodForm<T extends Record<string, any>>(
       },
       onFocus: () => setFocused(name as string),
       onBlur: (e: any) => {
-        console.log('blurred', values[name])
-        setFocused(null)
-        let val: any;
-        if (e && typeof e === 'object' && 'target' in e && e.target && 'value' in e.target) {
-          val = e.target.value;
-        } else {
-          val = e;
-        }
+
+        const val = values[name];
+        console.log("Blur event for field:", name, "Value:", val);
         validateField(name, val)
+        setFocused(null)
       },
     }
   }
@@ -58,9 +58,10 @@ export function useZodForm<T extends Record<string, any>>(
       [name]: value,
     }))
   }
-    // 🔥 Validate single field
+
+  //Validate single field
   function validateField(name: keyof T, value: any) {
-    const fieldSchema = (schema as any).shape?.[name]
+    const fieldSchema = schema.shape[name as string];
 
     if (!fieldSchema) return
 
@@ -69,38 +70,63 @@ export function useZodForm<T extends Record<string, any>>(
     setErrors((prev) => {
       const newErrors = { ...prev }
 
-    if (!result.success) {
-      const message = result.error.issues?.[0]?.message
+      if (!result.success) {
+        const message = result.error.issues?.[0]?.message
 
-      if (message) {
-        newErrors[name as string] = [message]
+        if (message) {
+          newErrors[name as string] = [message]
+        }
+      } else {
+        delete newErrors[name as string]
       }
-    } else {
-      delete newErrors[name as string]
-    }
 
-    return newErrors
+      return newErrors
     })
   }
+
+  function getFieldErrors(error: z.ZodError) : Record<string, string[]>  {
+    const tree = z.treeifyError(error)
+
+    const output: Record<string, string[]> = {}
+
+  const properties =
+    "properties" in tree
+      ? (tree.properties as Record<string, { errors: string[] }>)
+      : {}
+ 
+  for (const key in properties) {
+    if (properties[key].errors.length) {
+      output[key] = properties[key].errors
+    }
+  }
+    return output
+  }
+
   async function action(formData: FormData) {
 
     const rawData = Object.fromEntries(formData.entries())
 
-    const result = schema.safeParse(rawData)
+    console.log("Validing at client side:", values, "Raw form data:", rawData);
+    const result = schema.safeParse(values)
 
     if (!result.success) {
-
-      const fieldErrors = result.error.flatten().fieldErrors
-      setErrors(fieldErrors as Record<string, string[]>)
-
+      const fieldErrors = getFieldErrors(result.error);
+      console.log("Validation failed with errors", fieldErrors);
+      setErrors(fieldErrors);
       return
     }
 
+    // If validation passes, call the server action
     const res = await actionFn(formData)
 
     if (res?.errors) {
       setErrors(res.errors)
     }
+
+    if (res?.success) {
+      console.log("User created: ", res.success);
+    }
+
   }
 
   function clearFieldError(name: keyof T) {
@@ -112,4 +138,10 @@ export function useZodForm<T extends Record<string, any>>(
   }
 
   return { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register }
+}
+
+export const blockEnterKeySubmit = (e: React.KeyboardEvent<HTMLFormElement>) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+  }
 }

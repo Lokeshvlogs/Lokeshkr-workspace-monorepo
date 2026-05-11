@@ -5,9 +5,8 @@ import Link from 'next/link'
 import ProfileCard from '../components/profile/ProfileCard'
 import { useAuth } from '../components/authProvider';
 import RegisterForm from './Register/RegisterForm'
-import ScrollableDropdown from '@/components/dropdown/ScrollableDropdown';
-import SelectDropdown from '@/components/dropdown/SelectDropdown';
-import { CountryCodes } from 'src/constants/selectOptions/places';
+import ScrollableDropdown from '@/components/common/input/dropdown/ScrollableDropdown';
+import SelectDropdown from '@/components/common/input/dropdown/SelectDropdown';
  
 
 const sampleProfiles = [

@@ -4,12 +4,8 @@ import { registerSchema } from "@/lib/validation/schemas/registerUserSchema"
 
 export async function registerUser(formData: FormData) {
 
-  const data = {
-    name: formData.get("name"),
-    email: formData.get("email"),
-    country: formData.get("country"),
-  }
-
+  const data = Object.fromEntries(formData.entries())
+   console.log("Form submitted with data:", data);
   const result = registerSchema.safeParse(data)
 
   if (!result.success) {

@@ -5,10 +5,9 @@
 :root{
   --radius: 8px;
     /* Brand */
-  --color-primary-50: #fff6fb;
-  --color-primary-300: #ffeef6;
   --color-primary: #ec4899;
-  --color-primary-light: #f9a8d4;
+  --color-primary-light: #f96cba;
+  --color-primary-extra-light: #fab2dd;
 
   /* UI */
   --color-border: #fbcfe8;
@@ -19,7 +18,9 @@
   --color-success: #22c55e;
 
   /* Text */
-  --color-text: #111827;
+  /*--color-text: #111827;*/
+  --color-placeholder-text: #6B7280;
+  --color-primary-text: #111827;
 }
 
 html,body,#root {
@@ -46,11 +47,11 @@ html,body,#root {
   }
 
   .btn-primary {
-    @apply btn bg-primary text-white hover:opacity-90;
+    @apply btn bg-color-primary text-white hover:opacity-90;
   }
 
   .link {
-    @apply text-primary hover:underline;
+    @apply text-color-primary hover:underline;
   }
 }
 
@@ -88,10 +89,14 @@ html,body,#root {
     100% { transform: translateY(0) rotate(-1deg); }
   }
 
+  .input-wrapper {
+    @apply relative items-stretch w-full;
+  }
+
   .input {
-    @apply w-full p-3 text-lg border border-pink-200 rounded-md 
-           focus:outline-none focus:ring-2 focus:ring-pink-300 
-           placeholder-gray-400;
+    @apply w-full p-3 h-[54px] text-lg border border-pink-200 rounded-md 
+           focus:outline-none focus:ring-2 focus:ring-color-primary-light 
+           placeholder-color-placeholder-text;
   }
 
   /* Error state */
@@ -102,6 +107,19 @@ html,body,#root {
   .error-text {
     @apply text-red-500 text-sm mt-1;
   }
+
+  .text-field-label {
+    @apply absolute left-3 top-2 -translate-y-4 scale-75 bg-color-bg px-1 text-xl text-color-placeholder-text transition-all pointer-events-none
+               peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 
+               peer-focus:-translate-y-5 peer-focus:scale-75 peer-focus:text-color-primary;
+  }
+
+  .text-field-label-error {
+    @apply absolute left-3 top-2 -translate-y-4 scale-75 bg-color-bg px-1 text-xl text-color-error transition-all pointer-events-none
+               peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 
+               peer-focus:-translate-y-5 peer-focus:scale-75 peer-focus:text-color-error;
+  }
+
 }
 
 /* =========================
@@ -109,18 +127,39 @@ html,body,#root {
 ========================= */
 @layer components {
   .select-wrapper {
-    @apply w-full p-3 text-lg border border-pink-200 rounded-md 
-           flex items-center justify-between cursor-pointer
-           focus-within:ring-2 focus-within:ring-pink-300;
+    @apply relative w-full items-stretch;
   }
 
   .select-button {
-    @apply w-full text-sm text-left;
+    @apply w-full text-left p-3 h-[54px] text-lg text-gray-500 whitespace-nowrap border border-color-border rounded-md 
+           flex items-center justify-between cursor-pointer placeholder-color-placeholder-text focus:outline-none focus:ring-2
+           focus:ring-color-primary-light;
   }
   .select-error {
-    @apply border-2 border-red-500;
+    @apply border-2 border-color-error;
   }
 
+  .select-popup {
+    @apply absolute bg-color-bg w-full mt-1 border border-color-border rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar;
+  } 
+
+  .select-option {
+    @apply flex items-center gap-2 w-full text-left p-2 rounded-md first:rounded-t-md last:rounded-b-md bg-white text-lg text-color-primary-text hover:bg-pink-100;
+  }
+
+  .select-selected-option {
+    @apply flex items-center  gap-2 w-full text-left p-2 first:rounded-t-md last:rounded-b-md bg-color-primary text-color-bg hover:bg-color-primary-light;
+  }
+  .select-label {
+    @apply text-lg text-color-primary-text;
+  }
+  .select-placeholder {
+    @apply text-lg text-color-placeholder-text;
+  }
+  .select-icon {
+    @apply w-5 h-4 object-contain mr-1;
+
+  }
 }
 
 /* =========================
@@ -128,7 +167,7 @@ html,body,#root {
 ========================= */
 @layer utilities {
   .border-primary {
-    @apply border border-primary;
+    @apply border border-color-primary;
   }
 }
 
