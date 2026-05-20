@@ -1,0 +1,85 @@
+@import "@lokesh-workspace/ui/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 8px;
+  --color-primary: #ec4899;
+  --color-primary-light: #f96cba;
+  --color-primary-extra-light: #fab2dd;
+  --color-border: #fbcfe8;
+  --color-bg: #ffffff;
+  --color-error: #ef4444;
+  --color-success: #22c55e;
+  --color-placeholder-text: #6b7280;
+  --color-primary-text: #111827;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@layer base {
+  body {
+    @apply text-gray-900 font-sans;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition;
+  }
+
+  .btn-primary {
+    @apply btn bg-color-primary text-white hover:opacity-90;
+  }
+
+  .link {
+    @apply text-color-primary hover:underline;
+  }
+
+  .hero-bg {
+    background:
+      radial-gradient(1200px 400px at 10% 20%, rgba(236, 72, 153, 0.10), transparent 12%),
+      radial-gradient(900px 300px at 90% 80%, rgba(255, 184, 199, 0.06), transparent 12%),
+      linear-gradient(180deg, #fff 0%, #fff6fb 100%);
+  }
+
+  .glow {
+    box-shadow: 0 8px 36px rgba(236, 72, 153, 0.10), 0 3px 10px rgba(255, 184, 199, 0.06);
+  }
+
+  .card-flashy {
+    @apply bg-white rounded-2xl overflow-hidden shadow-lg transform transition-all duration-300;
+  }
+
+  .card-flashy:hover {
+    transform: translateY(-6px) scale(1.02);
+  }
+
+  .img-collage > img {
+    @apply rounded-lg shadow-md object-cover;
+  }
+
+  .pulse {
+    animation: pulse-tilt 6s ease-in-out infinite;
+  }
+
+  @keyframes pulse-tilt {
+    0% {
+      transform: translateY(0) rotate(-1deg);
+    }
+
+    50% {
+      transform: translateY(-6px) rotate(1deg);
+    }
+
+    100% {
+      transform: translateY(0) rotate(-1deg);
+    }
+  }
+}

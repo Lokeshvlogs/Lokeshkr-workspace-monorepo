@@ -1,31 +1,19 @@
 {
-  "name": "vivaah4you-frontend",
+  "name": "lokesh-workspace",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.11.0",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
-  },
-  "dependencies": {
-    "lucide-react": "^0.268.0",
-    "next": "^16.1.6",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "swr": "^2.3.7",
-    "zod": "^4.3.6"
+    "dev:vivaah4you": "nx dev vivaah4you-web",
+    "build:vivaah4you": "nx build vivaah4you-web",
+    "lint:vivaah4you": "nx lint vivaah4you-web",
+    "type-check:vivaah4you": "nx type-check vivaah4you-web",
+    "nx": "nx"
   },
   "devDependencies": {
-    "@types/node": "24.10.1",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "autoprefixer": "10.4.14",
-    "eslint": "8.43.0",
-    "eslint-config-next": "^16.1.6",
-    "postcss": "8.4.24",
-    "tailwindcss": "3.4.0",
-    "typescript": "5.6.2"
+    "@nx/next": "^22.7.2",
+    "@nx/js": "^22.7.2",
+    "@nx/workspace": "^22.7.2",
+    "nx": "^22.7.2"
   }
 }

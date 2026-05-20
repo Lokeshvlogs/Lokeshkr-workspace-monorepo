@@ -1,0 +1,38 @@
+{
+  "name": "vivaah4you-web",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/vivaah4you-web/src",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/vivaah4you-web dev"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/vivaah4you-web build"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/vivaah4you-web start"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/vivaah4you-web lint"
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/vivaah4you-web type-check"
+      }
+    }
+  }
+}

@@ -1,13 +1,22 @@
-# Vivah4U - Next.js Frontend (Scaffold)
+# lokesh-workspace
 
-This workspace contains a small Next.js (App Router) scaffold with TypeScript, Tailwind CSS, ESLint, and a few shadcn-style components.
+Nx and pnpm monorepo for Next.js apps, shared frontend packages, and Django services.
 
-Quick start (from project root):
+## Layout
+
+- `apps/vivaah4you-web` - migrated Vivaah4You Next.js app.
+- `packages/ui` - reusable React/Tailwind UI package extracted from `components/common`.
+- `services` - reserved for Django backends.
+
+## Common Commands
+
+Use Corepack to run pnpm in this environment:
 
 ```powershell
-Set-Location -Path 'D:\Lokesh\projects\vivah4u-nextjs-frontend'
-npm install
-npm run dev
+corepack pnpm install
+corepack pnpm nx type-check ui
+corepack pnpm nx type-check vivaah4you-web
+corepack pnpm nx build vivaah4you-web
 ```
 
-Open http://localhost:3000 after the dev server starts.
+The shared UI package is consumed as `@lokesh-workspace/ui`.

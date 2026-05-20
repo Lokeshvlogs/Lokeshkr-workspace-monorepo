@@ -1,0 +1,809 @@
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import {
+  DatePicker,
+  DateRangeSlider,
+  DaySelector,
+  HorizontalFormSlider,
+  MonthSelector,
+  ScrollableDropdown,
+  TimePicker,
+  YearSelector,
+  currentYear
+} from "@lokesh-workspace/ui";
+import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
+import { communitiesByReligion, motherTongueOptions } from "@/constants/selectOptions/social";
+import { placesByCountry, COUNTRY_OPTIONS } from '@/constants/selectOptions/places';
+
+import { professionOptions, educationOptions, fieldOfStudyOptions, collegeOptions, employedAsOptions, employedInOptions } from '@/constants/selectOptions/career';
+import { familyIncomeOptions } from "@/constants/selectOptions/people";
+import { physiqueOptions, smokingOptions, drinkingOptions, dietOptions, routineOptions } from "@/constants/selectOptions/person";
+import { feetOptions, inchOptions } from "@/constants/selectOptions/person";
+
+export default function ProfileRegisterPage() {
+
+  //const [selectedReligion, setSelectedReligion] = useState('');
+  const [selectedCommunity, setSelectedCommunity] = useState<Array<{ value: string; label: string }>>([{ value: 'other', label: 'Other' }]);
+  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [rangeFrom, setRangeFrom] = useState<string | null>(null);
+  const [rangeTo, setRangeTo] = useState<string | null>(null);
+
+  const stepIcons = [
+    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" /></svg>),
+    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20a4 4 0 00-8 0" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 8a4 4 0 110-8 4 4 0 010 8zM21 12a4 4 0 10-8 0 4 4 0 008 0z" /></svg>),
+    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a4 4 0 018 0v2" /></svg>),
+    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z" /></svg>),
+    (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h3l2-3h6l2 3h3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><circle cx="12" cy="13" r="3" /></svg>)
+  ];
+
+  // When no country is selected, provide an aggregated city list with "City, State, Country" labels
+  const cityOptionsExtended: { value: string; label: string }[] = (() => {
+    const opts: { value: string; label: string }[] = [];
+    Object.entries(placesByCountry).forEach(([countryKey, states]: [string, any[]]) => {
+      const countryLabel = (COUNTRY_OPTIONS.find(c => c.value === countryKey) || { label: '' }).label;
+      states.forEach((st: any) => {
+        const stateLabel = st.label || '';
+        st.cities.forEach((c: any) => {
+          const label = `${c.label}, ${stateLabel}${countryLabel ? `, ${countryLabel}` : ''}`;
+          opts.push({ value: label, label });
+        });
+      });
+    });
+    // dedupe by label
+    const seen = new Set<string>();
+    return opts.filter(o => (seen.has(o.label) ? false : seen.add(o.label)));
+  })();
+  // form state
+  const [form, setForm] = useState({
+    //basic details
+    firstName: "",
+    surname: "",
+    dob: "",
+    gender: "",
+    heightFeet: "",
+    heightInches: "",
+    bodyPhysique: "",
+    maritalStatus: "",
+    manglikLevel: 0,
+
+    //social background
+    religion: "",
+    community: "",
+    mothertongue: "",
+    currentCountry: "",
+    currentCity: "",
+    placeOfBirthCountry: "",
+    placeOfBirthCity: "",
+    familyLivingInCountry: "",
+    familyLivingInCity: "",
+    familyIncome: "",
+    familyType: 0,
+    livesWithFamily: false,
+    
+    //Education details
+    educationLevel: "",
+    fieldOfStudy: "",
+    collegeUniversity: "",
+    profession: "",
+    employedIn: "",
+    employedAs: "",
+    salaryAmount: "",
+
+    //lifestyle details
+    smoking: "",
+    drinking: "",
+    diet: "",
+    routine: "",
+    exercise: 0,
+    religiousness: 1,
+    astrologyBelief: 1,
+
+    //If divorced or married before family details
+    hasChildren: false,
+    wantsChildren: true,
+    //profile photo
+    photo: "",
+  });
+  const [step, setStep] = useState<number | undefined>(undefined);
+
+  // Keep form.dob in sync when selected date/time parts change
+  useEffect(() => {
+    const date = selectedYear && selectedMonth && selectedDay ? `${selectedYear}-${selectedMonth}-${selectedDay}` : '';
+    const combined = date ? (selectedTime ? `${date}T${selectedTime}` : date) : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
+    setForm(prev => ({ ...prev, dob: combined }));
+  }, [selectedDay, selectedMonth, selectedYear, selectedTime]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('profileRegisterStep');
+      setStep(saved ? Number(saved) : 0);
+    }
+  }, []);
+
+  async function submit(): Promise<void> {
+    console.log(form);
+  }
+
+  function handleReligionChange(v: string) {
+    setForm({ ...form, religion: v });
+    //setSelectedReligion(v);
+    const comms = (communitiesByReligion as any)[v] || [{ value: 'other', label: 'Other' }];
+    setSelectedCommunity(comms);
+  }
+
+  // Called when user clicks Continue; saves current step data to server
+  const handleSaveStep = async (currentStep: number) => {
+    try {
+      let stepDataPayload;
+      switch (currentStep) {
+        case 0:
+               stepDataPayload = { "step": currentStep,
+                                "firstName": form.firstName,
+                                "surname": form.surname,
+                                "dob": form.dob,
+                                "gender": form.gender, 
+                                "heightFeet": form.heightFeet,
+                                "heightInches": form.heightInches,
+                                "bodyPhysique": form.bodyPhysique,
+                                "maritalStatus": form.maritalStatus,
+                                "manglikLevel": form.manglikLevel,
+               };
+                break;
+        case 1:
+                stepDataPayload = { "step": currentStep,
+                                "religion": form.religion,
+                                "community": form.community,
+                                "mothertongue": form.mothertongue,
+                                "currentCountry": form.currentCountry,
+                                "currentCity": form.currentCity,
+                                "placeOfBirthCountry": form.placeOfBirthCountry,
+                                "placeOfBirthCity": form.placeOfBirthCity,
+                                "familyLivingInCountry": form.familyLivingInCountry,
+                                "familyLivingInCity": form.familyLivingInCity,
+                                "livesWithFamily": form.livesWithFamily,
+                                "familyIncome": form.familyIncome,
+                };
+                break;
+        case 2:
+                  stepDataPayload = { "step": currentStep,
+
+                                "educationLevel": form.educationLevel,
+                                "fieldOfStudy": form.fieldOfStudy,
+                                "collegeUniversity": form.collegeUniversity,
+                                "profession": form.profession,
+                                "employedIn": form.employedIn,
+                                "employedAs": form.employedAs,
+                                "salaryAmount": form.salaryAmount,
+                  };
+                  break;
+        case 3:
+                  stepDataPayload = { "step": currentStep,
+                                "diet": form.diet,
+                                "smoking": form.smoking,
+                                "drinking": form.drinking,
+                                "routine": form.routine,
+                                "exercise": form.exercise,
+                                "religiousness": form.religiousness,
+                                "astrologyBelief": form.astrologyBelief,
+                                "hasChildren": form.hasChildren,
+                                "wantsChildren": form.wantsChildren,
+                                "photo": form.photo
+                              };
+                  break;
+        default:
+                  console.warn('No data to save for step', currentStep);
+      }
+
+       console.log('Saving step', stepDataPayload); 
+
+      // TODO: integrate with API proxy; for now just noop
+      const response = await fetch('/api/profile/save-step', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(stepDataPayload),
+      });
+      return;
+    } catch (err) {
+      console.error('Error saving step:', err);
+      throw err;
+    }
+  };
+
+  // Jump to a specific step when top icon is clicked.
+  const handleJumpToStep = async (targetStep: number) => {
+    if (typeof step !== 'number') return;
+    if (targetStep === step) return;
+    try {
+      handleStepChange(targetStep);
+    } catch (err) {
+      console.error('Failed to jump to step', targetStep, err);
+    }
+  };
+
+  const canProceed = (s: number): boolean => {
+    if (s === 0) {
+      return (
+        form.firstName.trim() !== "" &&
+        form.surname.trim() !== "" &&
+        form.dob !== "" &&
+        form.gender !== ""
+      );
+    }
+    if (s === 1) {
+      return form.religion !== "" && form.community !== "";
+    }
+    if (s === 2) {
+      return form.profession.trim() !== "" && form.salaryAmount.trim() !== "";
+    }
+    if (s === 3) {
+      return true;
+    }
+    if (s === 4) {
+      return form.photo !== "";
+    }
+    return true;
+  };
+
+  const canSubmit = (s: number): boolean => {
+    return s === 4 ? canProceed(s) : false;
+  };
+
+  // Step change logic: just update the step
+  const handleStepChange = (newStep: number) => {
+    setStep(newStep);
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && step !== undefined) {
+      window.localStorage.setItem('profileRegisterStep', String(step));
+    }
+  }, [step]);
+  // Restore form data from localStorage on initial render
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedForm = window.localStorage.getItem('profileRegisterForm');
+      if (savedForm) {
+        setForm((prev) => ({ ...prev, ...JSON.parse(savedForm) }));
+      }
+    }
+  }, []);
+
+  // Save form data to localStorage on every change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && form) {
+      window.localStorage.setItem('profileRegisterForm', JSON.stringify(form));
+    }
+  }, [form]);
+  return (
+    <div className="min-h-screen bg-white flex items-start justify-center py-40">
+      <div
+        className="bg-white rounded-xl p-6 border border-pink-100"
+        style={{ width: 760, boxShadow: '0 20px 40px rgba(219,39,119,0.12)' }}
+      >
+        {step !== undefined && (
+          <>
+            <div className="flex flex-col items-center mb-8">
+              <div className="flex items-center w-full max-w-xl">
+                {[0, 1, 2, 3, 4].map((s, idx) => (
+                  <React.Fragment key={s}>
+                    <button
+                      type="button"
+                      onClick={() => handleJumpToStep(s)}
+                      aria-label={["Basic Details","Socio Personal Background","Educational and Professional Background","Lifestyle & Habits","Profile Photo"][s]}
+                      aria-current={step === s ? 'step' : undefined}
+                      className={`flex items-center justify-center rounded-full border-2 w-8 h-8 text-sm font-bold transition-colors duration-200 
+                      ${step === s ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-pink-300 text-pink-500'} focus:outline-none`}
+                    >
+                      <span className="flex items-center justify-center">
+                        {stepIcons[s]}
+                      </span>
+                    </button>
+                    {idx < 4 && (
+                      <div className="flex-1 h-1 bg-pink-200 mx-1" />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            <HorizontalFormSlider
+              onSubmit={submit}
+              onNext={handleSaveStep}
+              canProceed={canProceed}
+              canSubmit={canSubmit}
+              steps={[
+                // Step 1 - Name, DOB, Gender (progressive rows)
+                <div>
+                  <div className="flex flex-col gap-4 p-4">
+                    <h2 className="text-xl font-semibold text-pink-700">Basic Details</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      <input
+                        className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+                        placeholder="First Name"
+                        value={form.firstName}
+                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                      />
+                      <input
+                        className="p-3 border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300 placeholder-gray-400"
+                        placeholder="Surname"
+                        value={form.surname}
+                        onChange={(e) => setForm({ ...form, surname: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4 p-4">
+                    <div className="grid grid-cols-3 gap-4 items-end">
+                      <div className="flex flex-col col-span-2">
+                        <div className="flex justify-between items-start">
+                          <label className="mb-2 font-medium text-pink-700">Date of Birth</label>
+                          <label className="mb-2 font-medium text-pink-700">Time of Birth</label>
+                        </div>
+                        <div className="flex gap-2 items-center relative">
+                            <DatePicker 
+                              value={form.dob ? form.dob.split('T')[0] : ''}
+                              onDateChange={(y, m, d) => {
+                                setSelectedYear(y);
+                                setSelectedMonth(m);
+                                setSelectedDay(d);
+                                const date = y && m && d ? `${y}-${m}-${d}` : '';
+                                const combined = date ? `${date}T${selectedTime}` : (selectedTime ? `${new Date().toISOString().slice(0,10)}T${selectedTime}` : '');
+                                setForm({ ...form, dob: combined });
+                              }}
+                            />
+                          {/* Time inline with date pickers */}
+                          <div className="ml-10 flex items-center gap-4" style={{ height: '3.25rem' }}>
+                            <TimePicker
+                              value={selectedTime}
+                              onChange={(t) => {
+                                setSelectedTime(t);
+                                const date = selectedYear && selectedMonth && selectedDay ? `${selectedYear}-${selectedMonth}-${selectedDay}` : '';
+                                const combined = date ? `${date}T${t}` : (t ? `${new Date().toISOString().slice(0,10)}T${t}` : '');
+                                setForm({ ...form, dob: combined });
+                              }}
+                              inputClassName="p-3 w-10 h-13"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                      {/* -- Sample of how a date range slider could look like.
+                        <div className="mt-4 px-4">
+                          <label className="mb-2 font-medium text-pink-700">Date Range (example)</label>
+                          <div className="mt-2">
+                            <DateRangeSlider onRangeChange={(f, t) => { setRangeFrom(f); setRangeTo(t); }} />
+                            <div className="text-sm text-gray-600 mt-2">Selected range: {rangeFrom || '-'} — {rangeTo || '-'}</div>
+                          </div>
+                        </div>
+                   */}
+                  <div className="flex gap-4 pl-4">
+                    <div>
+                      <label className="mb-2 font-medium text-pink-700">Gender</label>
+                      <div className="flex gap-4 items-center mt-4">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="male"
+                            className="accent-pink-500"
+                            checked={form.gender === 'male'}
+                            onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                          />
+                          Male
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="female"
+                            className="accent-pink-500"
+                            checked={form.gender === 'female'}
+                            onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                          />
+                          Female
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col ml-10">
+                      <label className="mb-2 font-medium text-pink-700">Height</label>
+                      <div className="flex gap-2 items-center ml-2">
+                        <ScrollableDropdown
+                          label="Feet"
+                          options={feetOptions}
+                          initialValue={form.heightFeet}
+                          onChange={(v) => setForm({ ...form, heightFeet: v })}
+                          className="w-20"
+                        />
+                        <ScrollableDropdown
+                          label="Inches"
+                          options={inchOptions}
+                          initialValue={form.heightInches}
+                          onChange={(v) => setForm({ ...form, heightInches: v })}
+                          className="w-20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-pink-100 my-4 mx-5" />
+                  <div className="flex flex-col pl-4">
+                    <label className="mb-2 font-medium text-pink-700">Body Physique</label>
+                    <div className="flex gap-2 items-center">
+                      {physiqueOptions.map((p) => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => setForm({ ...form, bodyPhysique: p.value })}
+                          className={`px-3 py-1 rounded-md border ${form.bodyPhysique === p.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-gray-700 border-pink-100'}`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-4 p-4">
+                    <div className="mt-3">
+                      <label className="mb-1 font-medium text-pink-700">Marital Status</label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {[
+                          { value: 'never_married', label: 'Never Married' },
+                          { value: 'married', label: 'Married' },
+                          { value: 'divorced', label: 'Divorced' },
+                          { value: 'widowed', label: 'Widowed' },
+                          { value: 'annulled', label: 'Annulled' },
+                          { value: 'awaiting_divorce', label: 'Awaiting Divorce' },
+                        ].map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, maritalStatus: m.value })}
+                            className={`px-3 py-1 rounded-md border ${form.maritalStatus === m.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-gray-700 border-pink-100'}`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="mb-1 font-medium text-pink-700">Are you Manglik?</label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {[
+                          { value: 0, label: "I don't know" },
+                          { value: 1, label: 'No' },
+                          { value: 2, label: 'Anshik/Partial' },
+                          { value: 3, label: 'Yes' },
+                        ].map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, manglikLevel: m.value })}
+                            className={`px-3 py-1 rounded-md border ${form.manglikLevel === m.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-gray-700 border-pink-100'}`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>,
+
+                // Step 2 - Religion and Community
+                <div className="flex flex-col gap-4 p-4">
+                  <h2 className="text-xl font-semibold text-pink-700">Social Background</h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    <ScrollableDropdown
+                      label="Religion"
+                      options={[
+                        { value: 'hindu', label: 'Hindu' },
+                        { value: 'muslim', label: 'Muslim' },
+                        { value: 'sikh', label: 'Sikh' },
+                        { value: 'christian', label: 'Christian' },
+                        { value: 'jain', label: 'Jain' },
+                        { value: 'other', label: 'Other' },
+                      ]}
+                      initialValue={form.religion}
+                      onChange={(v) => handleReligionChange(v)}
+                    />
+                    <ScrollableDropdown
+                      label="Caste / Community"
+                      options={selectedCommunity}
+                      initialValue={form.community}
+                      onChange={(v) => setForm({ ...form, community: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Mother Tongue"
+                      options={motherTongueOptions}
+                      initialValue={form.mothertongue}
+                      onChange={(v) => setForm({ ...form, mothertongue: v })}
+                    />
+                    <div className="border-t border-pink-100 my-4 mx-5" />
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <label className="mb-3 font-medium text-lg text-pink-700">Currently living in</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <ScrollableDropdown
+                            label="Country"
+                            options={COUNTRY_OPTIONS}
+                            initialValue={form.currentCountry}
+                            onChange={(v) => setForm({ ...form, currentCountry: v })}
+                          />
+                          <ScrollableDropdown
+                            label="City"
+                            options={
+                              form.currentCountry
+                                ? (placesByCountry[form.currentCountry] || []).flatMap((st: any) => {
+                                    const countryLabel = (COUNTRY_OPTIONS.find(c => c.value === form.currentCountry) || { label: '' }).label;
+                                    return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
+                                  })
+                                : cityOptionsExtended
+                            }
+                            initialValue={form.currentCity}
+                            onChange={(v) => setForm({ ...form, currentCity: v })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="mb-3 font-medium text-lg text-pink-700">Place of Birth</label>
+                          <div className="grid grid-cols-2 gap-3">
+                          <ScrollableDropdown
+                            label="Country"
+                            options={COUNTRY_OPTIONS}
+                            initialValue={form.placeOfBirthCountry}
+                            onChange={(v) => setForm({ ...form, placeOfBirthCountry: v })}
+                          />
+                          <ScrollableDropdown
+                            label="City"
+                            options={
+                              form.placeOfBirthCountry
+                                ? (placesByCountry[form.placeOfBirthCountry] || []).flatMap((st: any) => {
+                                    const countryLabel = (COUNTRY_OPTIONS.find(c => c.value === form.placeOfBirthCountry) || { label: '' }).label;
+                                    return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
+                                  })
+                                : cityOptionsExtended
+                            }
+                            initialValue={form.placeOfBirthCity}
+                            onChange={(v) => setForm({ ...form, placeOfBirthCity: v })}
+                          />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="mb-3 font-medium text-lg text-pink-700">Family living in</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <ScrollableDropdown
+                              label="Country"
+                              options={COUNTRY_OPTIONS}
+                              initialValue={form.familyLivingInCountry}
+                              onChange={(v) => setForm({ ...form, familyLivingInCountry: v })}
+                            />
+                            <ScrollableDropdown
+                              label="City"
+                              options={
+                                form.familyLivingInCountry
+                                  ? (placesByCountry[form.familyLivingInCountry] || []).flatMap((st: any) => {
+                                      const countryLabel = (COUNTRY_OPTIONS.find(c => c.value === form.familyLivingInCountry) || { label: '' }).label;
+                                      return st.cities.map((c: any) => ({ value: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}`, label: `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ''}` }));
+                                    })
+                                  : cityOptionsExtended
+                              }
+                              initialValue={form.familyLivingInCity}
+                              onChange={(v) => setForm({ ...form, familyLivingInCity: v })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 items-end mt-3">
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Family Income</label>
+                        <div className="flex items-center gap-2">
+                          <div className="w-full">
+                            <ScrollableDropdown
+                              label="Family Income"
+                              options={familyIncomeOptions}
+                              initialValue={form.familyIncome}
+                              onChange={(v) => setForm({ ...form, familyIncome: v })}
+                            />
+                          </div>
+                          <div className="text-sm text-gray-500">per annum</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <label className="mb-1 font-medium text-pink-700 mr-3">Lives With Family</label>
+                        <input type="checkbox" checked={!!form.livesWithFamily} onChange={(e) => setForm({ ...form, livesWithFamily: e.target.checked })} /> 
+                      </div>
+
+                      <div className="mt-3">
+                      <label className="mb-1 font-medium text-pink-700">Family Type</label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {[
+                          { value: 0, label: "Joint" },
+                          { value: 1, label: 'Nuclear' },
+                          { value: 2, label: 'Extended' },
+                        ].map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, familyType: m.value })}
+                            className={`px-3 py-1 rounded-md border ${form.familyType === m.value ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-gray-700 border-pink-100'}`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    </div>
+                  </div>
+                </div>,
+
+                // Step 3 - Profession & Salary
+                <div className="flex flex-col gap-4 p-4">
+                  <h2 className="text-xl font-semibold text-pink-700">Educational Career</h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    <ScrollableDropdown
+                      label="Highest Education Level"
+                      options={educationOptions}
+                      initialValue={form.educationLevel}
+                      onChange={(v) => setForm({ ...form, educationLevel: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Field of Study"
+                      options={fieldOfStudyOptions}
+                      initialValue={form.fieldOfStudy}
+                      onChange={(v) => setForm({ ...form, fieldOfStudy: v })}
+                    />
+                    <ScrollableDropdown
+                      label="College / School"
+                      options={collegeOptions}
+                      initialValue={form.collegeUniversity}
+                      onChange={(v) => setForm({ ...form, collegeUniversity: v })}
+                    />
+                  </div>
+
+                  <div className="border-t border-pink-100 my-4 mx-5" />
+                  <h2 className="text-xl font-semibold text-pink-700">Professional Career</h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    <ScrollableDropdown
+                      label="Profession"
+                      options={professionOptions}
+                      initialValue={form.profession}
+                      onChange={(v) => setForm({ ...form, profession: v })}
+                    />
+
+                    <ScrollableDropdown
+                      label="Employed In"
+                      options={employedInOptions}
+                      initialValue={form.employedIn}
+                      onChange={(v) => setForm({ ...form, employedIn: v })}
+                    />
+
+                    <ScrollableDropdown
+                      label="Employed As"
+                      options={employedAsOptions}
+                      initialValue={form.employedAs}
+                      onChange={(v) => setForm({ ...form, employedAs: v })}
+                    />
+
+                    <div className="grid grid-cols-5 gap-3 items-center">
+                      <div className="col-span-5">
+                        <label className="mt-2 font-medium text-pink-700 block">Salary/Package</label>
+                      </div>
+                      <ScrollableDropdown
+                        label="Salary Amount"
+                        className="col-span-2 height-60"
+                        options={familyIncomeOptions}
+                        initialValue={form.salaryAmount}
+                        onChange={(v) => setForm({ ...form, salaryAmount: v })}
+                      />
+                      <div className="text-sm text-gray-500">per <br />annum</div>
+                </div>
+              </div>
+            </div>,
+                // Step 4 - Lifestyle & Habits
+                <div className="flex flex-col gap-4 p-4">
+                  <h2 className="text-xl font-semibold text-pink-700">Lifestyle & Habits</h2>
+                  <div className="grid grid-cols-1 gap-3">
+                    <ScrollableDropdown
+                      label="Smoking"
+                      options={smokingOptions}
+                      initialValue={form.smoking}
+                      onChange={(v) => setForm({ ...form, smoking: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Drinking"
+                      options={drinkingOptions}
+                      initialValue={form.drinking}
+                      onChange={(v) => setForm({ ...form, drinking: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Diet"
+                      options={dietOptions}
+                      initialValue={form.diet}
+                      onChange={(v) => setForm({ ...form, diet: v })}
+                    />
+                    <ScrollableDropdown
+                      label="Daily Routine"
+                      options={routineOptions}
+                      initialValue={form.routine}
+                      onChange={(v) => setForm({ ...form, routine: v })}
+                    />
+                    <div className="grid grid-cols-1 gap-3 mt-2">
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Exercise (0-10)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={0}
+                            max={10}
+                            value={form.exercise}
+                            onChange={(e) => setForm({ ...form, exercise: Number(e.target.value) })}
+                            className="pink-range w-full"
+                          />
+                          <div className="w-12 text-right text-sm text-gray-700">{form.exercise}</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Do you believe in God? (1-10)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={1}
+                            max={10}
+                            value={form.astrologyBelief}
+                            onChange={(e) => setForm({ ...form, astrologyBelief: Number(e.target.value) })}
+                            className="pink-range w-full"
+                          />
+                          <div className="w-12 text-right text-sm text-gray-700">{form.astrologyBelief}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-1 font-medium text-pink-700">Religiosity (1-10)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={1}
+                            max={10}
+                            value={form.religiousness}
+                            onChange={(e) => setForm({ ...form, religiousness: Number(e.target.value) })}
+                            className="pink-range w-full"
+                          />
+                          <div className="w-12 text-right text-sm text-gray-700">{form.religiousness}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>,
+
+                // Step 5 - Profile Photo
+                <div className="flex flex-col gap-4 p-4 items-center">
+                  <h2 className="text-xl font-semibold text-pink-700">Profile Photo</h2>
+                  <p className="text-sm text-gray-500">Add a friendly face — helps matches notice you.</p>
+                  <div className="mt-4">
+                    <ProfilePhotoUpload
+                      value={form.photo}
+                      onChange={(dataUrl) => setForm({ ...form, photo: dataUrl })}
+                    />
+                  </div>
+                </div>,
+          ]}
+          step={step}
+          setStep={handleStepChange}
+        />
+      </>
+    )}
+      </div>
+    </div>
+  );
+}
