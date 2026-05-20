@@ -5,6 +5,10 @@
   "packageManager": "pnpm@10.11.0",
   "scripts": {
     "dev:vivaah4you": "nx dev vivaah4you-web",
+    "dev:vivaah4u-api": "nx serve vivaah4u-api",
+    "migrate:vivaah4u-api": "nx run vivaah4u-api:migrate",
+    "test:vivaah4u-api": "nx test vivaah4u-api",
+    "check:vivaah4u-api": "nx check vivaah4u-api",
     "build:vivaah4you": "nx build vivaah4you-web",
     "lint:vivaah4you": "nx lint vivaah4you-web",
     "type-check:vivaah4you": "nx type-check vivaah4you-web",

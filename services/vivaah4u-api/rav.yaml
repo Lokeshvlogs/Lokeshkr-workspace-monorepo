@@ -1,0 +1,13 @@
+scripts:
+  server:
+    - python manage.py runserver 8001
+  makemigrations:
+    - python manage.py makemigrations
+  migrate:
+    - python manage.py migrate
+  shell:
+    - python manage.py shell
+  curl_auth: |
+    curl -X POST -H "Content-Type: application/json" -d "{\"username\": \"lokeshkr\", \"password\": \"temp1234\" }" http://127.0.0.1:8001/api/token/pair
+  curl_protect: |
+    curl -X GET -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYzNDE5ODAzLCJpYXQiOjE3NjM0MTk1MDMsImp0aSI6IjQxZDYxYjVhYmE1ZTRiMGY5YzYxMjQ5YTgxNGM5NjEyIiwidXNlcl9pZCI6MX0.D-5XNcvuUanBYFdLk8sTMQgw5WDSqL3kBe0T-PzJ290" http://127.0.0.1:8001/api/me

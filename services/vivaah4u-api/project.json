@@ -1,0 +1,43 @@
+{
+  "name": "vivaah4u-api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "services/vivaah4u-api",
+  "projectType": "application",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/vivaah4u-api",
+        "command": ".\\.venv\\Scripts\\python manage.py runserver 8001"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/vivaah4u-api",
+        "command": ".\\.venv\\Scripts\\python manage.py migrate"
+      }
+    },
+    "makemigrations": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/vivaah4u-api",
+        "command": ".\\.venv\\Scripts\\python manage.py makemigrations"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/vivaah4u-api",
+        "command": ".\\.venv\\Scripts\\python manage.py test"
+      }
+    },
+    "check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/vivaah4u-api",
+        "command": ".\\.venv\\Scripts\\python manage.py check"
+      }
+    }
+  }
+}
