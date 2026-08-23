@@ -1,35 +1,66 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { useAuth } from '../../components/authProvider'
+import { useRouter } from 'next/navigation'
 import { PasswordInput, SelectDropdown, TextField } from '@lokesh-workspace/ui'
 import { COUNTRY_CODES_OPTIONS } from '@/constants/selectOptions/places'
-import { registerSchema } from '@/lib/validation/schemas/registerUserSchema'
+import { registerFieldSchema, registerSchema } from '@/lib/validation/schemas/registerUserSchema'
 import { useZodForm, blockEnterKeySubmit } from '@/hooks/useZodForm'
-import { registerUser } from '@/actions/registerUser'
-import { Eye, EyeOff } from "lucide-react";
 import { PROFILE_FOR_OPTIONS, LOOKING_FOR_OPTIONS, AGE_OPTIONS } from './constants/RegisterUserOptions'
 
 export default function RegisterForm() {
-  const REGISTER_URL = '/api/register/'
-  const auth = useAuth()
-
-  const { errors, action, validateField, clearFieldError, values, setField, focused, setFocused, register: registerInputProps } = useZodForm(registerSchema, registerUser, {
-    email: "",
-    first_name: "",
-    surname: "",
-    profile_for: undefined,
-    age: undefined,
-    looking_for: undefined,
-    country_code: "IN",
-    phone: undefined,
-    password: undefined,
-  })
-
-  const passwordProps = registerInputProps('password')
+  const REGISTER_URL = '/api/register'
+  const router = useRouter()
 
   const [regMessage, setRegMessage] = useState<string>('')
   const [regLoading, setRegLoading] = useState<boolean>(false)
-  const [showPassword, setShowPassword] = useState<boolean>(false)
+
+  // Receives the values already parsed by registerSchema (see useZodForm).
+  async function submitRegistration(data: Record<string, unknown>) {
+    setRegLoading(true)
+    setRegMessage('')
+
+    try {
+      const response = await fetch(REGISTER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok && result.registered) {
+        // Registration does not sign the user in - send them to log in, and let
+        // the login flow decide between the profile wizard and the home page.
+        router.push('/login?registered=1')
+        return { success: true }
+      }
+
+      setRegMessage(result.detail ?? 'Registration failed. Please check your details.')
+      return {}
+    } catch {
+      setRegMessage('Network error. Please try again.')
+      return {}
+    } finally {
+      setRegLoading(false)
+    }
+  }
+
+  const { errors, action, clearFieldError, values, setField, register: registerInputProps } = useZodForm(
+    registerFieldSchema,
+    submitRegistration,
+    {
+      email: "",
+      first_name: "",
+      surname: "",
+      profile_for: undefined,
+      age: undefined,
+      looking_for: undefined,
+      country_code: "IN",
+      phone: undefined,
+      password: undefined,
+    },
+    registerSchema,
+  )
+
   const [lookingForVisible, setLookingForVisible] = useState<boolean>(false)
 
   useEffect(() => {
@@ -137,7 +168,9 @@ export default function RegisterForm() {
         <div className="flex items-center justify-center">
           <button type="submit" className="btn-primary" disabled={regLoading}>{regLoading ? 'Registering...' : 'Register'}</button>
         </div>
-        {regMessage && <div className="text-sm text-red-600">{regMessage}</div>}
+        {regMessage && (
+          <div className="text-sm text-red-600 text-center" role="alert">{regMessage}</div>
+        )}
       </div>
     </form>
   )

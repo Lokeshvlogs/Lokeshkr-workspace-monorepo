@@ -2,38 +2,12 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
-import ProfileCard from '../components/profile/ProfileCard'
+import MatchesSection from '../components/profile/MatchesSection'
 import { useAuth } from '../components/authProvider';
 import RegisterForm from './Register/RegisterForm'
 import { ScrollableDropdown, SelectDropdown } from '@lokesh-workspace/ui';
  
 
-const sampleProfiles = [
-  {
-    name: 'Ananya',
-    age: 27,
-    location: 'Bengaluru, India',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=1'
-  },
-  {
-    name: 'Rohit',
-    age: 30,
-    location: 'Mumbai, India',
-    image: 'https://easy-peasy.ai/cdn-cgi/image/quality=95,format=auto,width=800/https://media.easy-peasy.ai/27feb2bb-aeb4-4a83-9fb6-8f3f2a15885e/98cef342-430c-4522-8fa6-106d93297351.png'
-  },
-  {
-    name: 'Priya',
-    age: 26,
-    location: 'Delhi, India',
-    image: 'https://shoutoutla.s3.us-west-1.amazonaws.com/wp-content/uploads/2021/05/c-PersonalAvniBarman__IMG5900_1616723337432.jpg'
-  },
-  {
-    name: 'Amit',
-    age: 32,
-    location: 'Chennai, India',
-    image: 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4'
-  }
-]
 
 export default function Home() {
     const REGISTER_URL = "/api/register/"; 
@@ -90,7 +64,7 @@ export default function Home() {
               <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight">Vivah4U — Where Traditions Meet</h1>
               <p className="mt-4 text-lg text-gray-600">Find curated, verified profiles with family-friendly matchmaking tools and a modern, secure experience. Beautifully designed for meaningful connections.</p>
               <div className="mt-6 flex flex-wrap gap-4">
-                <Link href="#profiles" className="btn bg-primary text-white">Explore Profiles</Link>
+                <Link href="#profiles" className="btn bg-color-primary text-white">Explore Profiles</Link>
                 <Link href="#features" className="btn border border-gray-200">Learn More</Link>
               </div>
               <div className="mt-4 text-sm text-gray-500">Join thousands of happy families. Your privacy is our priority.</div>
@@ -100,8 +74,25 @@ export default function Home() {
               <div className="h-px bg-gray-200 flex-1"></div>
             </div>
 
-            <div className="pt-6">
-              <RegisterForm />
+            <div className="pt-6" id="register">
+              {auth.isAuthenticated ? (
+                <div className="rounded-lg border border-color-border bg-white p-6 text-center">
+                  <p className="font-semibold text-gray-900">Welcome back{auth.username ? `, ${auth.username.split('@')[0]}` : ''}!</p>
+                  <p className="mt-1 text-sm text-color-placeholder-text">
+                    {auth.isProfileComplete
+                      ? 'Your profile is live. Browse your matches below.'
+                      : 'Finish your profile to start appearing in match results.'}
+                  </p>
+                  <Link
+                    href={auth.isProfileComplete ? '/profile/me' : '/profile/register'}
+                    className="btn-primary mt-4 inline-flex"
+                  >
+                    {auth.isProfileComplete ? 'View my profile' : 'Complete my profile'}
+                  </Link>
+                </div>
+              ) : (
+                <RegisterForm />
+              )}
             </div>
           </div>
           <div className="img-collage grid grid-cols-2 gap-1 pulse relative top-[100px]">
@@ -114,14 +105,7 @@ export default function Home() {
         </section>
 
 
-        <section id="profiles" className="mt-16">
-          <h2 className="text-2xl font-bold">Featured Profiles</h2>
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sampleProfiles.map((p) => (
-              <ProfileCard key={p.name} name={p.name} age={p.age} location={p.location} image={p.image} />
-            ))}
-          </div>
-        </section>
+        <MatchesSection />
 
         <section id="features" className="mt-16">
           <h2 className="text-2xl font-bold">Why Vivah4U</h2>
@@ -144,7 +128,7 @@ export default function Home() {
         <footer className="mt-24 text-center text-sm text-gray-500">
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
             <div>© {new Date().getFullYear()} Vivah4U — Built with ❤️</div>
-            <Link href="/contact" className="btn bg-brand-500 text-white px-4 py-2 rounded-md">Contact Us</Link>
+            <Link href="/contact" className="btn bg-color-primary text-white px-4 py-2 rounded-md">Contact Us</Link>
           </div>
         </footer>
       </div>

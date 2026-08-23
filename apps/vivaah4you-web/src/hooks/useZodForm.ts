@@ -1,13 +1,15 @@
 "use client"
 
-import { Console } from "console"
 import React, { useState } from "react"
 import { z } from "zod"
 
 export function useZodForm<T extends Record<string, any>>(
   schema: z.ZodObject<any>,
   actionFn: any,
-  initialValues: Partial<T> = {}
+  initialValues: Partial<T> = {},
+  // Optional schema used only on submit - carries cross-field rules that cannot
+  // live on a single field. Defaults to the field schema.
+  submitSchema?: z.ZodType<any>
 ) {
 
   const [errors, setErrors] = useState<Record<string, string[]>>({})
@@ -106,8 +108,7 @@ export function useZodForm<T extends Record<string, any>>(
 
     const rawData = Object.fromEntries(formData.entries())
 
-    console.log("Validing at client side:", values, "Raw form data:", rawData);
-    const result = schema.safeParse(values)
+    const result = (submitSchema ?? schema).safeParse(values)
 
     if (!result.success) {
       const fieldErrors = getFieldErrors(result.error);
@@ -116,16 +117,15 @@ export function useZodForm<T extends Record<string, any>>(
       return
     }
 
-    // If validation passes, call the server action
-    const res = await actionFn(formData)
+    // Validation passed - hand the parsed values to the caller. The raw FormData
+    // is passed along too, but custom dropdowns never reach the DOM form, so
+    // `result.data` is the authoritative payload.
+    const res = await actionFn(result.data, formData)
 
     if (res?.errors) {
       setErrors(res.errors)
     }
 
-    if (res?.success) {
-      console.log("User created: ", res.success);
-    }
 
   }
 

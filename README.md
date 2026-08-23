@@ -40,7 +40,7 @@ corepack pnpm nx serve vivaah4u-api
 Or use the root service helper:
 
 ```powershell
-.\service.bat vivaah4u-api serve
+.\service.bat vivaah4u-api server
 .\service.bat vivaah4u-api migrate
 .\service.bat vivaah4u-api makemigrations
 .\service.bat vivaah4u-api test

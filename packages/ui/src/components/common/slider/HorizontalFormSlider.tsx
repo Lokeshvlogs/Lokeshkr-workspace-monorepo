@@ -6,23 +6,23 @@ import SliderNavigation from "./SliderNavigation";
 interface HorizontalFormSliderProps {
   steps: ReactNode[];          // forms / sections
   onSubmit: () => Promise<void> | void;
-  width?: number;              // optional customization
-  height?: number;             // optional customization
+  /** Fixed pixel width. Omit for a fluid slider that fills its container. */
+  width?: number;
   /** called with current step -> should return whether Next is enabled */
   canProceed?: (step: number) => boolean;
   /** called with current step -> should return whether Submit is enabled */
   canSubmit?: (step: number) => boolean;
   step?: number;
   setStep?: (step: number) => void;
-  /** optional callback invoked before moving to next step - can be async */
+  /** optional callback invoked before moving to next step - can be async.
+   *  Throwing from it keeps the slider on the current step. */
   onNext?: (step: number) => Promise<void> | void;
 }
 
 export default function HorizontalFormSlider({
   steps,
   onSubmit,
-  width = 700,
-  height = 800,
+  width,
   canProceed,
   canSubmit,
   step: controlledStep,
@@ -30,19 +30,23 @@ export default function HorizontalFormSlider({
   onNext,
 }: HorizontalFormSliderProps): ReactElement {
   const [internalStep, internalSetStep] = useState<number>(0);
+  const [busy, setBusy] = useState<boolean>(false);
   const step = controlledStep !== undefined ? controlledStep : internalStep;
   const setStep = controlledSetStep || internalSetStep;
   const totalSteps = steps.length;
 
   async function next(): Promise<void> {
+    setBusy(true);
     try {
       if (onNext) {
         await onNext(step);
       }
       if (step < totalSteps - 1) setStep(step + 1);
-    } catch (err) {
-      console.error('Failed to run onNext handler:', err);
-      // swallow error so the UI can decide what to do - do not advance
+    } catch {
+      // onNext rejected (e.g. the save failed) - stay put and let the caller
+      // surface the reason.
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -50,8 +54,17 @@ export default function HorizontalFormSlider({
     if (step > 0) setStep(step - 1);
   }
 
+  async function submit(): Promise<void> {
+    setBusy(true);
+    try {
+      await onSubmit();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div style={{ width, overflow: "hidden" }}>
+    <div style={width ? { width, overflow: "hidden" } : { width: "100%", overflow: "hidden" }}>
       {/* Sliding container */}
       <div
         style={{
@@ -62,7 +75,11 @@ export default function HorizontalFormSlider({
         }}
       >
         {steps.map((content, index) => (
-          <div key={index} style={{ width }}>
+          <div
+            key={index}
+            style={width ? { width } : { width: `${100 / totalSteps}%` }}
+            aria-hidden={index !== step}
+          >
             {content}
           </div>
         ))}
@@ -73,7 +90,8 @@ export default function HorizontalFormSlider({
         total={totalSteps}
         onNext={next}
         onBack={back}
-        onSubmit={onSubmit}
+        onSubmit={submit}
+        busy={busy}
         nextEnabled={canProceed ? canProceed(step) : true}
         submitEnabled={canSubmit ? canSubmit(step) : (step === totalSteps - 1)}
       />

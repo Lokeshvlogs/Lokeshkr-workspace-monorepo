@@ -1,103 +1,92 @@
 from typing import List
+
 from django.shortcuts import get_object_or_404
-from ninja import Router, File
-from ninja.files import UploadedFile
+from ninja import File, Router
 from ninja.errors import HttpError
-from .models import Profile
-from .schemas import ProfileOut, MyProfileOut, ProfileUpdateSchema
+from ninja.files import UploadedFile
 from ninja_jwt.authentication import JWTAuth
 
-router = Router(tags=['profiles'])
-DEBUG = True
+from .mapping import apply_payload, profile_to_api
+from .models import Profile
+from .schemas import ProfileUpdateSchema
 
-@router.get("/profiles", response=List[ProfileOut], auth=JWTAuth())
+router = Router(tags=["profiles"])
+
+# A profile below this is still considered "in setup" and is bounced back into
+# the registration wizard after login.
+PROFILE_COMPLETE_THRESHOLD = 95
+
+
+@router.get("/profiles", auth=JWTAuth())
 def profiles_list(request):
-    qs = Profile.objects.all()
-    return qs
+    qs = Profile.objects.exclude(user=request.user).exclude(hide=True).exclude(
+        hide_profile_from_search=True
+    )
+    return [profile_to_api(p, request, public=True) for p in qs]
 
-@router.get("/me", response=MyProfileOut, auth=JWTAuth())
+
+@router.get("/me", auth=JWTAuth())
 def my_profile(request):
-    user = request.user
-    try:
-        profile = user.profile
-    except Profile.DoesNotExist:
+    profile = get_object_or_404(Profile, user=request.user)
+    data = profile_to_api(profile, request)
+    data["is_complete"] = profile.profile_completeness >= PROFILE_COMPLETE_THRESHOLD
+    return data
+
+
+@router.get("/public/{profile_id}")
+def public_profile(request, profile_id: str):
+    """Publicly viewable subset of a profile - no contact details, no exact DOB."""
+    profile = get_object_or_404(Profile, profile_id=profile_id)
+    if profile.hide or profile.hide_profile_from_search:
         raise HttpError(404, "Profile not found")
 
-    # build display_picture URL if present
-    dp = None
-    if profile.display_picture:
-        try:
-            dp = request.build_absolute_uri(profile.display_picture.url)
-        except Exception:
-            dp = profile.display_picture.url
+    data = profile_to_api(profile, request, public=True)
+    if profile.hide_display_picture_from_search:
+        data["photo"] = None
+    return data
 
-    # convert to dict matching ProfileOut
-    return {
-        'profile_id': str(profile.profile_id),
-        'firstName': profile.first_name,
-        'surname': profile.surname,
-        'dob': profile.dob.isoformat() if profile.dob else None,
-        'gender': profile.gender,
-        'heightFeet': profile.height_feet,
-        'heightInches': profile.height_inches,
-        'bodyPhysique': profile.body_physique,
-        'maritalStatus': profile.marital_status,
-        'manglikLevel': profile.manglik_level,
-        'religion': profile.religion,
-        'community': profile.community,
-        'motherTongue': profile.mother_tongue,
-        'currentCountry': profile.current_country,
-        'currentCity': profile.current_city,
-        'placeOfBirthCountry': profile.place_of_birth_country,
-        'placeOfBirthCity': profile.place_of_birth_city,
-        'familyLivingInCountry': profile.family_living_in_country,
-        'familyLivingInCity': profile.family_living_in_city,
-        'familyIncome': profile.family_income,
-        'livesWithFamily': profile.lives_with_family,
-        'educationLevel': profile.education_level,
-        'fieldOfStudy': profile.field_of_study,
-        'collegeUniversity': profile.college_university,
-        'profession': profile.profession,
-        'employedIn': profile.employed_in,
-        'employedAs': profile.employed_as,
-        'salaryAmount': profile.annual_income,
-        'diet': profile.diet,
-        'smoking': profile.smoking_habits,
-        'drinking': profile.drinking_habits,
-        'routine': profile.daily_routine,
-        'exercise': profile.exercise_habits,
-        'religiousness': profile.religiousness,
-        'astrologyBelief': profile.astrology_belief,
-        
-        'display_picture': dp,
-        'created_at': profile.created_at.isoformat(),
-        'updated_at': profile.updated_at.isoformat(),
-        'profile_completeness': profile.profile_completeness,
-    }
 
+@router.get("/matches", auth=JWTAuth())
+def matches(request):
+    """Suggested matches.
+
+    Placeholder ranking: opposite gender, visible profiles, most complete first.
+    A real compatibility algorithm replaces the ordering here later.
+    """
+    profile = get_object_or_404(Profile, user=request.user)
+    opposite = {"M": "F", "F": "M"}.get(profile.gender)
+
+    qs = Profile.objects.exclude(user=request.user).exclude(hide=True).exclude(
+        hide_profile_from_search=True
+    )
+    if opposite:
+        qs = qs.filter(gender=opposite)
+    qs = qs.order_by("-profile_completeness", "-created_at")[:12]
+
+    return [profile_to_api(p, request, public=True) for p in qs]
 
 
 @router.patch("/save-step", auth=JWTAuth())
 def update_profile_step(request, data: ProfileUpdateSchema):
+    payload = data.dict(exclude_unset=True)
+    step = payload.pop("step", None)
 
-    step = data.step
-    data.pop("step")
-    data = data.dict(exclude_unset=True)
-    if DEBUG:
-        print("DEBUG: Registration data received: ", data.items())
-    profile = get_object_or_404(Profile, user=request.user)
-    # STEP-BASED VALIDATION
-    if step not in [0, 1, 2, 3]:
+    if step not in (0, 1, 2, 3, 4):
         raise HttpError(400, "Invalid step value")
 
-    # PARTIAL UPDATE (🔥 IMPORTANT)
-    for field, value in data.items():
-        if value is not None:
-            setattr(profile, field, value)
-
+    profile = get_object_or_404(Profile, user=request.user)
+    apply_payload(profile, payload)
+    # Profile.save() recomputes completeness and mints profile_id when possible.
     profile.save()
 
-    return {"success": True, "step": step}
+    return {
+        "success": True,
+        "step": step,
+        "profile_id": profile.profile_id or "",
+        "profile_completeness": profile.profile_completeness,
+        "is_complete": profile.profile_completeness >= PROFILE_COMPLETE_THRESHOLD,
+    }
+
 
 @router.post("/me/photo", auth=JWTAuth())
 def upload_profile_photo(request, file: UploadedFile = File(...)):
@@ -105,29 +94,24 @@ def upload_profile_photo(request, file: UploadedFile = File(...)):
 
     Validates image content type and size (max 5MB), saves to `display_picture`.
     """
-    user = request.user
-    try:
-        profile = user.profile
-    except Profile.DoesNotExist:
-        raise HttpError(404, "Profile not found")
+    profile = get_object_or_404(Profile, user=request.user)
 
-    # Basic validations
-    content_type = getattr(file, 'content_type', '')
-    if not content_type or not content_type.startswith('image/'):
+    content_type = getattr(file, "content_type", "")
+    if not content_type or not content_type.startswith("image/"):
         raise HttpError(400, "Uploaded file must be an image")
 
     max_size = 5 * 1024 * 1024  # 5 MB
     if file.size > max_size:
         raise HttpError(400, "Image size must be <= 5MB")
 
-    # Save file to ImageField
-    # Use original filename; Django will handle name collisions
     profile.display_picture.save(file.name, file, save=True)
 
-    # return updated profile data (only photo url)
     try:
         photo_url = request.build_absolute_uri(profile.display_picture.url)
-    except Exception:
+    except ValueError:
         photo_url = profile.display_picture.url
 
-    return {"display_picture": photo_url}
+    return {
+        "display_picture": photo_url,
+        "profile_completeness": profile.profile_completeness,
+    }

@@ -3,6 +3,9 @@ export { default as DaySelector } from './components/common/input/dateselectors/
 export { default as MonthSelector } from './components/common/input/dateselectors/MonthSelector';
 export { default as YearSelector } from './components/common/input/dateselectors/YearSelector';
 export { default as DateRangeSlider } from './components/common/input/dateselectors/daterange/DateRangeSlider';
+export { default as ChipGroup } from './components/common/input/choice/ChipGroup';
+export type { ChipOption } from './components/common/input/choice/ChipGroup';
+export { default as RangeSlider } from './components/common/input/slider/RangeSlider';
 export { default as AgeDropdown } from './components/common/input/dropdown/AgeDropdown';
 export { default as DropdownInput } from './components/common/input/dropdown/DropdownInput';
 export { default as ScrollableDropdown } from './components/common/input/dropdown/ScrollableDropdown';

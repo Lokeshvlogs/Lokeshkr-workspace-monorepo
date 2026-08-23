@@ -16,15 +16,27 @@ const LOGIN_REQUIRED_URL = "/login";
 const PROFILE_REQUIRED_URL = "/profile/register";
 const LOCAL_STORAGE_KEY = "is-logged-in";
 const LOCAL_USERNAME_KEY = "username";
+const LOCAL_PROFILE_COMPLETE_KEY = "profile-completed";
+const LOCAL_PROFILE_ID_KEY = "profile-id";
 
 /* ---------- Types ---------- */
+
+export interface LoginDetails {
+  username?: string;
+  /** Server-side verdict: profile completeness >= 95%. */
+  isProfileComplete?: boolean;
+  profileId?: string;
+}
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   username: string;
-  login: (username?: string) => void;
+  profileId: string;
+  isProfileComplete: boolean;
+  login: (details?: LoginDetails) => void;
   logout: () => void;
   loginRequiredRedirect: () => void;
+  setProfileComplete: (complete: boolean) => void;
 }
 
 /* ---------- Context ---------- */
@@ -37,9 +49,10 @@ interface AuthProviderProps {
 /* ---------- Provider ---------- */
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
+  const [profileId, setProfileId] = useState<string>("");
 
   const router = useRouter();
   const pathname = usePathname();
@@ -54,18 +67,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (storedUn) {
       setUsername(storedUn);
     }
+
+    const storedProfileId = localStorage.getItem(LOCAL_PROFILE_ID_KEY);
+    if (storedProfileId) {
+      setProfileId(storedProfileId);
+    }
+
+    const storedComplete = localStorage.getItem(LOCAL_PROFILE_COMPLETE_KEY);
+    setIsProfileComplete(storedComplete === "1" || storedComplete === "true");
   }, []);
 
-  const login = (username?: string) => {
+  const login = (details: LoginDetails = {}) => {
+    const { username: loggedInUser, isProfileComplete: complete = false, profileId: id } = details;
+
     setIsAuthenticated(true);
     localStorage.setItem(LOCAL_STORAGE_KEY, "1");
 
-    if (username) {
-      localStorage.setItem(LOCAL_USERNAME_KEY, username);
-      setUsername(username);
+    if (loggedInUser) {
+      localStorage.setItem(LOCAL_USERNAME_KEY, loggedInUser);
+      setUsername(loggedInUser);
     } else {
       localStorage.removeItem(LOCAL_USERNAME_KEY);
     }
+
+    if (id) {
+      localStorage.setItem(LOCAL_PROFILE_ID_KEY, id);
+      setProfileId(id);
+    }
+
+    localStorage.setItem(LOCAL_PROFILE_COMPLETE_KEY, complete ? "1" : "0");
+    setIsProfileComplete(complete);
 
     const searchParams = new URLSearchParams(window.location.search);
     const nextUrl = searchParams.get("next");
@@ -76,28 +107,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       !invalidNextUrl.includes(nextUrl);
 
     if (nextUrlValid) {
-      console.log("Redirecting to nextUrl:", nextUrl);
       router.replace(nextUrl);
-    } else {
-      console.log("Redirecting to LOGIN_REDIRECT_URL");
-
-    const profileCompleted = localStorage.getItem("profile-completed");
-    const profile = profileCompleted === "1" || profileCompleted === "true" ? true : false;
-
-      if (profile) {
-        console.log("Profile completed, redirecting to LOGIN_REDIRECT_URL");
-        router.replace(LOGIN_REDIRECT_URL);
-      } else {
-        console
-        router.replace(PROFILE_REQUIRED_URL);
-      }
+      return;
     }
+
+    // An incomplete profile goes back into the registration wizard; a complete
+    // one lands on the home page, where matches are shown.
+    router.replace(complete ? LOGIN_REDIRECT_URL : PROFILE_REQUIRED_URL);
   };
 
   const logout = () => {
     setIsAuthenticated(false);
+    setIsProfileComplete(false);
+    setUsername("");
+    setProfileId("");
     localStorage.setItem(LOCAL_STORAGE_KEY, "0");
+    localStorage.removeItem(LOCAL_USERNAME_KEY);
+    localStorage.removeItem(LOCAL_PROFILE_ID_KEY);
+    localStorage.removeItem(LOCAL_PROFILE_COMPLETE_KEY);
     router.replace(LOGOUT_REDIRECT_URL);
+  };
+
+  const setProfileComplete = (complete: boolean) => {
+    setIsProfileComplete(complete);
+    localStorage.setItem(LOCAL_PROFILE_COMPLETE_KEY, complete ? "1" : "0");
   };
 
   const loginRequiredRedirect = () => {
@@ -117,9 +150,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     <AuthContext.Provider
       value={{
         isAuthenticated,
+        isProfileComplete,
+        profileId,
         login,
         logout,
         loginRequiredRedirect,
+        setProfileComplete,
         username,
       }}
     >

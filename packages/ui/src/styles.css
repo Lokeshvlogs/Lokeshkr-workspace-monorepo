@@ -1,3 +1,26 @@
+/*
+ * Default theme tokens.
+ *
+ * Every component in this package styles itself through these variables, so the
+ * package renders correctly on its own, with no theme setup required by the
+ * consumer. A consuming app overrides any subset by declaring its own :root
+ * block AFTER importing this file (as apps/vivaah4you-web/src/globals.css does).
+ * Declarations below also repeat a literal fallback - var(--x, #hex) - so a
+ * consumer that defines only some of these still gets a usable component.
+ */
+:root {
+  --color-primary: #ec4899;
+  --color-primary-light: #f96cba;
+  --color-primary-extra-light: #fab2dd;
+  --color-primary-surface: #fdf2f8;
+  --color-bg: #ffffff;
+  --color-border: #fbcfe8;
+  --color-error: #ef4444;
+  --color-success: #22c55e;
+  --color-placeholder-text: #6b7280;
+  --color-primary-text: #111827;
+}
+
 .input-wrapper {
   @apply relative items-stretch w-full;
 }
@@ -36,6 +59,11 @@
   @apply w-full text-left p-3 h-[54px] text-lg text-gray-500 whitespace-nowrap border border-color-border rounded-md
     flex items-center justify-between cursor-pointer placeholder-color-placeholder-text focus:outline-none focus:ring-2
     focus:ring-color-primary-light;
+}
+
+button.select-button,
+.select-button.select-button {
+  background-color: var(--color-bg, #ffffff);
 }
 
 .select-error {
@@ -135,4 +163,201 @@
   border-radius: 9999px;
   background: #ec4899;
   border: none;
+}
+
+/* --- Chip group (single-select pills) --- */
+.chip-group {
+  @apply w-full border-0 p-0 m-0;
+}
+
+.chip-group-label {
+  @apply mb-2 block text-sm font-semibold text-color-primary-text;
+}
+
+.chip-group-options {
+  @apply flex flex-wrap gap-2;
+}
+
+/*
+ * Chips are <button type="button">, and Tailwind preflight resets
+ * `[type="button"] { background-color: transparent }`. That selector has the
+ * same specificity as a single class AND is emitted after this file (globals.css
+ * imports it before @tailwind base), so a plain `.chip-selected` loses the tie
+ * and renders white-on-white. Every background below is therefore qualified to
+ * out-rank the reset - do not simplify these selectors back to one class.
+ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+  border: 1px solid var(--color-border, #fbcfe8);
+  color: #374151;
+  border-radius: 9999px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button.chip,
+.chip.chip {
+  background-color: var(--color-bg, #ffffff);
+}
+
+button.chip:hover,
+.chip.chip:hover {
+  border-color: var(--color-primary-light, #f96cba);
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--color-primary, #ec4899);
+  outline-offset: 2px;
+}
+
+.chip.chip-selected,
+.chip.chip-selected:hover,
+button.chip-selected,
+button.chip-selected:hover {
+  background-color: var(--color-primary, #ec4899);
+  border-color: var(--color-primary, #ec4899);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.30);
+}
+
+.chip-check {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* --- Range slider --- */
+.range-slider {
+  @apply w-full;
+}
+
+.range-slider-header {
+  @apply mb-2 flex items-center justify-between gap-3;
+}
+
+.range-slider-label {
+  @apply text-sm font-semibold text-color-primary-text;
+}
+
+.range-slider-value {
+  @apply rounded-full px-3 py-0.5 text-sm font-semibold;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary, #ec4899);
+  border: 1px solid var(--color-border, #fbcfe8);
+}
+
+.range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  /* Filled portion is driven by --range-progress, set inline by the component. */
+  background: linear-gradient(
+    to right,
+    var(--color-primary, #ec4899) 0%,
+    var(--color-primary, #ec4899) var(--range-progress, 0%),
+    #fce7f3 var(--range-progress, 0%),
+    #fce7f3 100%
+  );
+}
+
+.range-input:focus {
+  outline: none;
+}
+
+.range-input:focus-visible {
+  outline: 2px solid var(--color-primary, #ec4899);
+  outline-offset: 4px;
+}
+
+.range-input::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -6px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid var(--color-primary, #ec4899);
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.35);
+  transition: transform 0.12s ease;
+}
+
+.range-input:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.range-input::-moz-range-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.range-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid var(--color-primary, #ec4899);
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.35);
+}
+
+.range-slider-ticks {
+  @apply mt-2 flex justify-between px-0.5;
+}
+
+.range-tick {
+  width: 2px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: var(--color-border, #fbcfe8);
+}
+
+.range-tick-active {
+  background-color: var(--color-primary-light, #f96cba);
+}
+
+.range-slider-ends {
+  @apply mt-1 flex items-center justify-between text-xs text-color-placeholder-text;
+}
+
+.range-slider-caption {
+  @apply text-center text-sm font-medium;
+  color: var(--color-primary, #ec4899);
+}
+
+/* --- Form layout helpers --- */
+.form-section {
+  @apply rounded-xl border border-color-border bg-white p-5;
+}
+
+.form-section-title {
+  @apply text-base font-semibold text-color-primary;
+}
+
+.form-section-hint {
+  @apply mt-0.5 text-sm text-color-placeholder-text;
+}
+
+.form-grid-2 {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+}
+
+.field-label {
+  @apply mb-2 block text-sm font-semibold text-color-primary-text;
 }
