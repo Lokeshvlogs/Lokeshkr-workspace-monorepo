@@ -34,8 +34,8 @@ shift
 goto collect_args
 :args_done
 
-if /I "%COMMAND%"=="serve" goto serve
-if /I "%COMMAND%"=="runserver" goto serve
+if /I "%COMMAND%"=="server" goto server
+if /I "%COMMAND%"=="runserver" goto server
 if /I "%COMMAND%"=="migrate" goto migrate
 if /I "%COMMAND%"=="makemigrations" goto makemigrations
 if /I "%COMMAND%"=="test" goto test
@@ -46,7 +46,7 @@ echo Unknown command: %COMMAND%
 echo.
 goto usage
 
-:serve
+:server
 pushd "%SERVICE_DIR%"
 if defined ARGS (
   "%PYTHON%" manage.py runserver %ARGS%
@@ -97,7 +97,7 @@ echo Usage:
 echo   service.bat ^<django-service^> ^<command^> [args...]
 echo.
 echo Examples:
-echo   service.bat vivaah4u-api serve
+echo   service.bat vivaah4u-api server
 echo   service.bat vivaah4u-api runserver 8002
 echo   service.bat vivaah4u-api migrate
 echo   service.bat vivaah4u-api makemigrations
@@ -106,5 +106,5 @@ echo   service.bat vivaah4u-api check
 echo   service.bat vivaah4u-api shell
 echo.
 echo Commands:
-echo   serve, runserver, migrate, makemigrations, test, check, shell
+echo   server, runserver, migrate, makemigrations, test, check, shell
 exit /b 1

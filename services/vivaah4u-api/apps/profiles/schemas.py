@@ -1,26 +1,34 @@
 # schemas.py
-from ast import If
-from ninja import Schema
-from typing import Optional, Literal
+from typing import Optional, Union
 
-from apps.profiles import models
+from ninja import Schema
+
+# The wizard sends dropdown values as strings and slider values as numbers, so
+# the numeric fields accept both and are normalised in apps.profiles.mapping.
+Number = Union[int, str]
+
 
 class ProfileUpdateSchema(Schema):
-    step: Literal[0, 1, 2, 3, 4]
-    # Step 0: Basic Information
+    """One step of the profile-registration wizard.
+
+    Every field is optional: each step PATCHes only the keys it owns, and
+    `exclude_unset` keeps untouched columns untouched.
+    """
+
+    step: int
+
+    # Step 0 - basic details
     firstName: Optional[str] = None
     surname: Optional[str] = None
     dob: Optional[str] = None
     gender: Optional[str] = None
-    heightFeet: Optional[str] = None
-    heightInches: Optional[str] = None
+    heightFeet: Optional[Number] = None
+    heightInches: Optional[Number] = None
     bodyPhysique: Optional[str] = None
     maritalStatus: Optional[str] = None
-    #manglikLevel: Optional[Literal["Manglik", "Partial Manglik", "Non-Manglik", "I don't know"]] = None
-    manglikLevel: Optional[Literal[0, 1, 2, 3]] = None
+    manglikLevel: Optional[Number] = None
 
-    
-    ## Step 1: Religious and Social Background
+    # Step 1 - religious and social background
     religion: Optional[str] = None
     community: Optional[str] = None
     mothertongue: Optional[str] = None
@@ -31,9 +39,10 @@ class ProfileUpdateSchema(Schema):
     familyLivingInCountry: Optional[str] = None
     familyLivingInCity: Optional[str] = None
     familyIncome: Optional[str] = None
+    familyType: Optional[Number] = None
     livesWithFamily: Optional[bool] = None
 
-    # Step 2: Education and Profession
+    # Step 2 - education and profession
     educationLevel: Optional[str] = None
     fieldOfStudy: Optional[str] = None
     collegeUniversity: Optional[str] = None
@@ -42,33 +51,16 @@ class ProfileUpdateSchema(Schema):
     employedAs: Optional[str] = None
     salaryAmount: Optional[str] = None
 
-    # Step 3: Your lifestyle and preferences
+    # Step 3 - lifestyle and preferences
     diet: Optional[str] = None
     smoking: Optional[str] = None
     drinking: Optional[str] = None
     routine: Optional[str] = None
-    exercise: Optional[Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]] = None
-    religiousness: Optional[Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]] = None
-    astrologyBelief: Optional[Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]] = None
-
-    #If divorced or married before family details
+    exercise: Optional[Number] = None
+    religiousness: Optional[Number] = None
+    astrologyBelief: Optional[Number] = None
     hasChildren: Optional[bool] = None
     wantsChildren: Optional[bool] = None
-    
+
+    # Step 4 - photo, sent as a base64 data URL
     photo: Optional[str] = None
-
-
-class MyProfileOut(ProfileUpdateSchema):
-    profile_id: str
-    created_at: str
-    updated_at: str
-    profile_completeness: Optional[int] = None
-
-class ProfileOut(ProfileUpdateSchema):
-    profile_id: str
-    created_at: str
-    updated_at: str
-    hide: Optional[bool] = None
-    hide_profile_from_search: Optional[bool] = None
-    hide_display_picture_from_search: Optional[bool] = None
-

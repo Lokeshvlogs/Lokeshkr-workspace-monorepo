@@ -1,49 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { DJANGO_API_ENDPOINT } from '@/config/defaults'
-import { getToken } from '@/lib/auth'
+import { NextRequest, NextResponse } from "next/server"
 
-const DJANGO_SAVE_STEP_URL = `${DJANGO_API_ENDPOINT}/profiles/save-step`;
+import { djangoFetch } from '@/lib/djangoFetch'
 
-export async function POST(request: NextRequest) {
-  try {
-    const data = await request.json();
-    const token = await getToken();
-
-    const res = await fetch(DJANGO_SAVE_STEP_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(data),
-    });
-
-    const responseData = await res.json().catch(() => ({}));
-    if (!res.ok) return NextResponse.json({ success: false, ...responseData }, { status: res.status });
-    return NextResponse.json({ success: true, ...responseData }, { status: 200 });
-  } catch (err) {
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
-  }
-}
-
+// The wizard PATCHes one step at a time; Django exposes PATCH only.
 export async function PATCH(request: NextRequest) {
-  try {
-    const data = await request.json();
-    const token = await getToken();
-
-    const res = await fetch(DJANGO_SAVE_STEP_URL, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(data),
-    });
-
-    const responseData = await res.json().catch(() => ({}));
-    if (!res.ok) return NextResponse.json({ success: false, ...responseData }, { status: res.status });
-    return NextResponse.json({ success: true, ...responseData }, { status: 200 });
-  } catch (err) {
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+  const body = await request.json().catch(() => null)
+  if (!body) {
+    return NextResponse.json({ success: false, detail: 'Invalid request body' }, { status: 400 })
   }
+
+  const { ok, status, data } = await djangoFetch('/profiles/save-step', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+
+  return NextResponse.json(
+    ok ? { success: true, ...data } : { success: false, detail: data.detail ?? 'Could not save this step' },
+    { status },
+  )
 }
