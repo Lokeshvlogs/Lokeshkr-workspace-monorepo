@@ -8,6 +8,8 @@ interface HorizontalFormSliderProps {
   onSubmit: () => Promise<void> | void;
   /** Fixed pixel width. Omit for a fluid slider that fills its container. */
   width?: number;
+  /** Text shown on the action button while a step is being persisted. */
+  busyLabel?: string;
   /** called with current step -> should return whether Next is enabled */
   canProceed?: (step: number) => boolean;
   /** called with current step -> should return whether Submit is enabled */
@@ -23,6 +25,7 @@ export default function HorizontalFormSlider({
   steps,
   onSubmit,
   width,
+  busyLabel,
   canProceed,
   canSubmit,
   step: controlledStep,
@@ -92,6 +95,7 @@ export default function HorizontalFormSlider({
         onBack={back}
         onSubmit={submit}
         busy={busy}
+        busyLabel={busyLabel}
         nextEnabled={canProceed ? canProceed(step) : true}
         submitEnabled={canSubmit ? canSubmit(step) : (step === totalSteps - 1)}
       />

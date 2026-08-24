@@ -10,6 +10,8 @@ import React, {
 
 import { usePathname, useRouter } from "next/navigation";
 
+import { clearProfileDraft } from "@/lib/profileDraft";
+
 const LOGIN_REDIRECT_URL = "/";
 const LOGOUT_REDIRECT_URL = "/";
 const LOGIN_REQUIRED_URL = "/login";
@@ -125,6 +127,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem(LOCAL_USERNAME_KEY);
     localStorage.removeItem(LOCAL_PROFILE_ID_KEY);
     localStorage.removeItem(LOCAL_PROFILE_COMPLETE_KEY);
+    // An unfinished wizard must not survive into the next session on this
+    // device. The draft is owner-stamped as well, so this is belt-and-braces
+    // for the case where logout does run.
+    clearProfileDraft();
     router.replace(LOGOUT_REDIRECT_URL);
   };
 

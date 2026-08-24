@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import ProfileHeader from '@/components/profile/ProfileHeader'
+import PhotoStrip from '@/components/profile/PhotoStrip'
+import { fullName } from '@/lib/profileDisplay'
 import { useAuth } from '@/components/authProvider'
 import type { MyProfile } from '@/types/profile'
 
@@ -143,6 +145,8 @@ export default function MyProfilePage() {
               ))}
           </dl>
         </section>
+
+        <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || "this member"} />
 
         <ProfileDetails profile={profile} />
       </div>

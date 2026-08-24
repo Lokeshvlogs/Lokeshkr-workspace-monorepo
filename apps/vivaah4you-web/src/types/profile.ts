@@ -39,6 +39,8 @@ export interface PublicProfile {
   hasChildren: boolean
   wantsChildren: boolean
   photo: string | null
+  /** Extra gallery photos, ordered. */
+  photos: string[]
   profile_completeness: number
 }
 

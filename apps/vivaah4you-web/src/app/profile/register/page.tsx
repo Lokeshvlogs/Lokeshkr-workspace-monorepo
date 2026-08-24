@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AvatarCropper,
   ChipGroup,
   DatePicker,
   HorizontalFormSlider,
@@ -12,8 +13,14 @@ import {
   TimePicker,
 } from "@lokesh-workspace/ui";
 
-import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
+import PhotoGallery from "@/components/profile/PhotoGallery";
 import { useAuth } from "@/components/authProvider";
+import {
+  clearProfileDraft,
+  draftOwnerKey,
+  readProfileDraft,
+  saveProfileDraft,
+} from "@/lib/profileDraft";
 import { communitiesFor, RELIGION_OPTIONS } from "@/lib/profileDisplay";
 import { motherTongueOptions } from "@/constants/selectOptions/social";
 import { placesByCountry, COUNTRY_OPTIONS } from "@/constants/selectOptions/places";
@@ -132,9 +139,14 @@ const INITIAL_FORM = {
   wantsChildren: true,
 
   photo: "",
+  photos: [] as string[],
 };
 
 type FormState = typeof INITIAL_FORM;
+
+// How long the green confirmation stays on the step that was just saved,
+// before the wizard slides on.
+const SAVE_CONFIRM_MS = 1100;
 
 // Which keys belong to which wizard step - drives both saving and validation.
 const STEP_FIELDS: (keyof FormState)[][] = [
@@ -142,11 +154,8 @@ const STEP_FIELDS: (keyof FormState)[][] = [
   ["religion", "community", "mothertongue", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity", "familyLivingInCountry", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily"],
   ["educationLevel", "fieldOfStudy", "collegeUniversity", "profession", "employedIn", "employedAs", "salaryAmount"],
   ["diet", "smoking", "drinking", "routine", "exercise", "religiousness", "astrologyBelief", "hasChildren", "wantsChildren"],
-  ["photo"],
+  ["photo", "photos"],
 ];
-
-const FORM_STORAGE_KEY = "profileRegisterForm";
-const STEP_STORAGE_KEY = "profileRegisterStep";
 
 /** SelectDropdown with the wizard's shared look, so every picker matches. */
 function PickerField({
@@ -189,6 +198,10 @@ export default function ProfileRegisterPage() {
   const [step, setStep] = useState<number | undefined>(undefined);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState<string>("");
+  // Names the step that was saved, so the confirmation stays truthful after
+  // the wizard advances. Cleared on a timer.
+  const [savedNotice, setSavedNotice] = useState<string>("");
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [completeness, setCompleteness] = useState<number>(0);
 
   const [selectedDay, setSelectedDay] = useState<string>("");
@@ -200,6 +213,9 @@ export default function ProfileRegisterPage() {
   // written to localStorage on first render and then read back over the values
   // fetched from the server, wiping the name captured at sign-up.
   const hydrated = useRef(false);
+  // Identifies whose draft this is; empty until /me answers, which keeps a
+  // signed-out visitor from ever reading or writing one.
+  const draftOwner = useRef<string>("");
 
   const setField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -243,11 +259,13 @@ export default function ProfileRegisterPage() {
 
     async function hydrate() {
       let restored: Partial<FormState> = {};
+      let owner = "";
 
       try {
         const response = await fetch("/api/profile/me");
         if (response.ok) {
           const data = await response.json();
+          owner = draftOwnerKey(data);
           setCompleteness(Number(data.profile_completeness ?? 0));
           // Name and gender were captured during registration - prefill them,
           // along with anything already saved by a previous visit.
@@ -259,24 +277,26 @@ export default function ProfileRegisterPage() {
           });
         }
       } catch {
-        // Offline - fall through to the local draft.
+        // Offline - show whatever the server last gave us, never a draft we
+        // cannot attribute to this account.
       }
 
-      // A local draft is newer than the server, but only for keys the user
-      // actually filled in; blank draft values must not erase prefilled ones.
-      try {
-        const saved = window.localStorage.getItem(FORM_STORAGE_KEY);
-        if (saved) {
-          const draft = JSON.parse(saved) as Partial<FormState>;
-          (Object.keys(draft) as (keyof FormState)[]).forEach((key) => {
-            const value = draft[key];
-            if (value !== null && value !== undefined && value !== "") {
-              (restored as any)[key] = value;
-            }
-          });
-        }
-      } catch {
-        // Ignore an unparseable draft.
+      draftOwner.current = owner;
+
+      // A local draft wins over the server, but only for keys the user actually
+      // filled in, and only when it is stamped with this profile. An unowned or
+      // foreign draft is dropped by readProfileDraft.
+      const draft = readProfileDraft<FormState>(owner);
+      let draftStep: number | null = null;
+
+      if (draft) {
+        draftStep = draft.step;
+        (Object.keys(draft.form) as (keyof FormState)[]).forEach((key) => {
+          const value = draft.form[key];
+          if (value !== null && value !== undefined && value !== "") {
+            (restored as any)[key] = value;
+          }
+        });
       }
 
       if (cancelled) return;
@@ -294,8 +314,7 @@ export default function ProfileRegisterPage() {
         if (timePart) setSelectedTime(timePart.slice(0, 5));
       }
 
-      const savedStep = window.localStorage.getItem(STEP_STORAGE_KEY);
-      setStep(savedStep ? Number(savedStep) : 0);
+      setStep(draftStep ?? 0);
       hydrated.current = true;
     }
 
@@ -303,6 +322,23 @@ export default function ProfileRegisterPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // The save status describes the step it happened on. Landing on a new step -
+  // forwards after a save, or backwards - must not inherit it, otherwise a
+  // freshly opened step claims "Saved" before anything was sent.
+  useEffect(() => {
+    setSaveState("idle");
+    setSaveError("");
+  }, [step]);
+
+  // Editing after a save makes that confirmation stale too.
+  useEffect(() => {
+    setSaveState((prev) => (prev === "saved" ? "idle" : prev));
+  }, [form]);
+
+  useEffect(() => () => {
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
   }, []);
 
   // Keep dob in sync with the date/time pickers.
@@ -313,13 +349,9 @@ export default function ProfileRegisterPage() {
   }, [selectedDay, selectedMonth, selectedYear, selectedTime, setField]);
 
   useEffect(() => {
-    if (step !== undefined) window.localStorage.setItem(STEP_STORAGE_KEY, String(step));
-  }, [step]);
-
-  useEffect(() => {
-    if (!hydrated.current) return;
-    window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(form));
-  }, [form]);
+    if (!hydrated.current || step === undefined) return;
+    saveProfileDraft(draftOwner.current, form, step);
+  }, [form, step]);
 
   /* ---------- Saving ---------- */
 
@@ -359,6 +391,10 @@ export default function ProfileRegisterPage() {
         setCompleteness(Number(result.profile_completeness ?? 0));
         if (typeof result.is_complete === "boolean") auth.setProfileComplete(result.is_complete);
         setSaveState("saved");
+
+        setSavedNotice(`${STEPS[currentStep]?.title ?? "Step"} saved`);
+        if (noticeTimer.current) clearTimeout(noticeTimer.current);
+        noticeTimer.current = setTimeout(() => setSavedNotice(""), 2500);
         return true;
       } catch {
         setSaveState("error");
@@ -369,17 +405,28 @@ export default function ProfileRegisterPage() {
     [form, auth],
   );
 
-  // HorizontalFormSlider advances only when onNext resolves without throwing.
+  // HorizontalFormSlider advances only when onNext resolves without throwing,
+  // so holding here keeps the green confirmation on the step it belongs to
+  // before the slide begins.
   const handleNext = async (currentStep: number) => {
     const saved = await saveStep(currentStep);
     if (!saved) throw new Error("save-failed");
+
+    await new Promise((resolve) => setTimeout(resolve, SAVE_CONFIRM_MS));
+
+    // Clear it as we move, so the incoming step never inherits the message.
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    setSavedNotice("");
   };
 
   const handleSubmit = async () => {
     const saved = await saveStep(4);
     if (!saved) return;
-    window.localStorage.removeItem(FORM_STORAGE_KEY);
-    window.localStorage.removeItem(STEP_STORAGE_KEY);
+
+    // Let the confirmation register before navigating away.
+    await new Promise((resolve) => setTimeout(resolve, SAVE_CONFIRM_MS));
+
+    clearProfileDraft();
     router.push("/profile/me");
   };
 
@@ -491,11 +538,19 @@ export default function ProfileRegisterPage() {
           {/* Save status */}
           <div className="mb-4 min-h-[1.25rem] text-sm" aria-live="polite">
             {saveState === "saving" && <span className="text-color-placeholder-text">Saving…</span>}
-            {saveState === "saved" && <span className="text-green-600">Saved</span>}
             {saveState === "error" && <span className="text-red-600">{saveError}</span>}
+            {saveState !== "saving" && saveState !== "error" && savedNotice && (
+              <span className="inline-flex items-center gap-1.5 text-green-600">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                {savedNotice}
+              </span>
+            )}
           </div>
 
           <HorizontalFormSlider
+            busyLabel={saveState === "saving" ? "Saving…" : "Saved"}
             onSubmit={handleSubmit}
             onNext={handleNext}
             canProceed={canProceed}
@@ -842,15 +897,37 @@ export default function ProfileRegisterPage() {
                 </div>
               </div>,
 
-              /* ---------- Step 4: Photo ---------- */
-              <div key="photo" className="flex flex-col items-center gap-4 py-4">
-                <p className="text-sm text-color-placeholder-text">
-                  Profiles with a photo receive far more interest. You can change it any time.
-                </p>
-                <ProfilePhotoUpload
-                  value={form.photo}
-                  onChange={(dataUrl) => setField("photo", dataUrl)}
-                />
+              /* ---------- Step 4: Photos ---------- */
+              <div key="photo" className="flex flex-col gap-6 px-1">
+                <div className="form-section flex flex-col items-center">
+                  <p className="form-section-title">Display photo</p>
+                  <p className="form-section-hint mb-4 text-center">
+                    Drag the photo to reposition it, and zoom until your face fills the circle.
+                  </p>
+
+                  <AvatarCropper
+                    value={form.photo}
+                    onChange={(dataUrl) => setField("photo", dataUrl)}
+                    size={224}
+                  />
+
+                  {form.photo && (
+                    <p className="avatar-hint mt-3">
+                      This is how you appear in search results and to your matches.
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">More photos</p>
+                  <p className="form-section-hint mb-4">
+                    Optional. Add a few more so families can get a fuller picture of you.
+                  </p>
+                  <PhotoGallery
+                    value={form.photos}
+                    onChange={(photos) => setField("photos", photos)}
+                  />
+                </div>
               </div>,
             ]}
           />
