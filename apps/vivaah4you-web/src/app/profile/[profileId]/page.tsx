@@ -5,6 +5,8 @@ import Link from 'next/link'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import ProfileHeader from '@/components/profile/ProfileHeader'
+import PhotoStrip from '@/components/profile/PhotoStrip'
+import { fullName } from '@/lib/profileDisplay'
 import { useAuth } from '@/components/authProvider'
 import type { PublicProfile } from '@/types/profile'
 
@@ -82,6 +84,8 @@ export default function PublicProfilePage({
             )
           }
         />
+
+        <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || "this member"} />
 
         <ProfileDetails profile={profile} />
 

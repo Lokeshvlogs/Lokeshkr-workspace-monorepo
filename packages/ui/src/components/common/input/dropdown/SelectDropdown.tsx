@@ -41,9 +41,18 @@ interface Props {
   searchable?: boolean;
   /** Shown when the filter matches nothing. */
   emptyText?: string;
+  /**
+   * Native-select style type-ahead: typing "sw" jumps to the first option
+   * starting with "sw". Matches label, extra label and value, so it works
+   * for lists whose label is not the human-readable part (country dial codes
+   * are labelled "+46" with the country name in extra_label).
+   */
+  typeahead?: boolean;
+  /** Milliseconds before the typed prefix resets. */
+  typeaheadTimeout?: number;
 }
 
-export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName, zIndex = 10, searchable = false, emptyText = 'No options found' }: Props) {
+export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName, zIndex = 10, searchable = false, emptyText = 'No options found', typeahead = true, typeaheadTimeout = 800 }: Props) {
   
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -51,6 +60,9 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
+  const typedRef = useRef<string>('');
+  const typedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -136,7 +148,20 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
     if (!open) {
       setSearch('');
       setPopupStyle(null);
+      setActiveIndex(-1);
+      typedRef.current = '';
     }
+  }, [open]);
+
+  useEffect(() => () => {
+    if (typedTimer.current) clearTimeout(typedTimer.current);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const selectedIdx = options.findIndex(o => o.value === value);
+    setActiveIndex(selectedIdx);
+    if (selectedIdx >= 0) requestAnimationFrame(() => scrollOptionIntoView(selectedIdx));
   }, [open]);
 
   function doSelect(option: any) {
@@ -155,6 +180,118 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
     ? options.filter(o =>
         `${o.label ?? ''} ${o.extra_label ?? ''}`.toLowerCase().includes(search.toLowerCase()))
     : options;
+
+  /** Text a typed prefix is matched against, most human-readable first. */
+  function searchableTextsFor(option: any): string[] {
+    return [option?.label, option?.extra_label, option?.value]
+      .filter(Boolean)
+      .map((t: any) => String(t).toLowerCase());
+  }
+
+  function findByPrefix(prefix: string, from = 0): number {
+    if (!prefix) return -1;
+    const list = visibleOptions;
+    // Wrap around so repeated searches keep cycling through the list.
+    for (let i = 0; i < list.length; i += 1) {
+      const idx = (from + i) % list.length;
+      if (searchableTextsFor(list[idx]).some(t => t.startsWith(prefix))) return idx;
+    }
+    return -1;
+  }
+
+  function scrollOptionIntoView(index: number) {
+    const node = popupRef.current?.querySelector(`[data-option-index="${index}"]`);
+    if (node && 'scrollIntoView' in node) {
+      (node as HTMLElement).scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function moveActive(delta: number) {
+    if (visibleOptions.length === 0) return;
+    setActiveIndex(prev => {
+      const start = prev < 0
+        ? visibleOptions.findIndex(o => o.value === value)
+        : prev;
+      const base = start < 0 ? (delta > 0 ? -1 : 0) : start;
+      const next = Math.min(visibleOptions.length - 1, Math.max(0, base + delta));
+      scrollOptionIntoView(next);
+      return next;
+    });
+  }
+
+  function handleTypeahead(char: string): boolean {
+    if (!typeahead) return false;
+
+    if (typedTimer.current) clearTimeout(typedTimer.current);
+    typedTimer.current = setTimeout(() => { typedRef.current = ''; }, typeaheadTimeout);
+
+    const buffer = typedRef.current + char.toLowerCase();
+    typedRef.current = buffer;
+
+    let match = findByPrefix(buffer);
+    // Nothing matches the accumulated prefix - treat this key as a fresh start,
+    // which is how a native <select> behaves.
+    if (match === -1 && buffer.length > 1) {
+      typedRef.current = char.toLowerCase();
+      match = findByPrefix(typedRef.current);
+    }
+
+    if (match === -1) return false;
+
+    setOpen(true);
+    setActiveIndex(match);
+    // The popup may not be mounted yet on the first keystroke.
+    requestAnimationFrame(() => scrollOptionIntoView(match));
+    return true;
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (disabled) return;
+
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      moveActive(e.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
+    if (e.key === 'Home' || e.key === 'End') {
+      if (!open) return;
+      e.preventDefault();
+      const idx = e.key === 'Home' ? 0 : visibleOptions.length - 1;
+      setActiveIndex(idx);
+      scrollOptionIntoView(idx);
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      // A space mid-search belongs to the typed prefix ("united st..."), not to
+      // activating the button.
+      if (e.key === ' ' && typeahead && typedRef.current) {
+        if (handleTypeahead(' ')) e.preventDefault();
+        return;
+      }
+      if (!open) {
+        e.preventDefault();
+        setOpen(true);
+        return;
+      }
+      if (activeIndex >= 0 && activeIndex < visibleOptions.length) {
+        e.preventDefault();
+        doSelect(visibleOptions[activeIndex]);
+      }
+      return;
+    }
+    // Printable single characters drive the type-ahead.
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (handleTypeahead(e.key)) e.preventDefault();
+    }
+  }
 
   const selectedOption = options.find(o => o.value === value);
   const displayLabel = selectedOption?.label || "";
@@ -183,7 +320,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
         ref={btnRef}
         className={`select-button order-2 peer ${errorValue ? 'select-error' : ''}`}
         onClick={() => { if (!disabled) setOpen(v => !v); }}
-        onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
+        onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
@@ -220,7 +357,13 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
       </button>
 
       {open && popupStyle && typeof document !== 'undefined' && createPortal(
-        <div ref={popupRef} className={`select-popup divide-y divide-pink-50 ${selectPopupClassName}`} style={popupStyle}>
+        <div
+          ref={popupRef}
+          role="listbox"
+          aria-label={label}
+          className={`select-popup divide-y divide-pink-50 ${selectPopupClassName}`}
+          style={popupStyle}
+        >
           {searchable && (
             <input
               type="text"
@@ -230,10 +373,18 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') setOpen(false);
+                if (e.key === 'Escape') {
+                  setOpen(false);
+                  return;
+                }
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  moveActive(e.key === 'ArrowDown' ? 1 : -1);
+                  return;
+                }
                 if (e.key === 'Enter' && visibleOptions.length > 0) {
                   e.preventDefault();
-                  doSelect(visibleOptions[0]);
+                  doSelect(visibleOptions[activeIndex >= 0 ? activeIndex : 0]);
                 }
               }}
             />
@@ -241,12 +392,16 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
           {visibleOptions.length === 0 && (
             <div className="p-2 text-color-placeholder-text">{emptyText}</div>
           )}
-          {visibleOptions.map((option) => {
+          {visibleOptions.map((option, index) => {
             const isSelected = value === option.value;
             return (
               <div
                 key={`${option.value}`}
-                className={`select-option ${isSelected ? 'select-selected-option' : ''}`}
+                data-option-index={index}
+                role="option"
+                aria-selected={isSelected}
+                className={`select-option ${isSelected ? 'select-selected-option' : ''} ${index === activeIndex ? 'select-option-active' : ''}`}
+                onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => doSelect(option)}
               >
                 {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}

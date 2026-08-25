@@ -208,3 +208,24 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} {self.surname} ({self.dob_time.strftime('%Y-%m-%d') if self.dob_time else 'DOB not set'})"
+
+
+class ProfilePhoto(models.Model):
+    """Extra gallery photos beyond `Profile.display_picture`.
+
+    The display picture stays on Profile so existing code and the matches feed
+    keep working unchanged; these are purely additional and always optional.
+    """
+
+    MAX_PER_PROFILE = 6
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField(upload_to="profile_photos/")
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position", "id"]
+
+    def __str__(self):
+        return f"{self.profile.profile_id or self.profile_id} photo {self.position}"

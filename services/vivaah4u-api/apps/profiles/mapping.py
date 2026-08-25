@@ -131,11 +131,56 @@ def decode_data_url(data_url: str):
     return ContentFile(raw, name=f"{uuid.uuid4().hex}.{extension}")
 
 
+def sync_gallery(profile, entries) -> None:
+    """Reconcile the gallery against the full list the client sent.
+
+    Entries are either data URLs (newly added) or URLs of photos already stored.
+    Anything omitted from the list is deleted, so the client can express adds,
+    removes and reordering with one payload and no photo ids.
+    """
+    from .models import ProfilePhoto
+
+    if entries is None:
+        return
+    if not isinstance(entries, (list, tuple)):
+        return
+
+    existing = list(profile.photos.all())
+    by_url = {p.image.url: p for p in existing if p.image}
+    keep = []
+
+    for position, entry in enumerate(entries[: ProfilePhoto.MAX_PER_PROFILE]):
+        if not isinstance(entry, str) or not entry:
+            continue
+
+        image = decode_data_url(entry)
+        if image is not None:
+            photo = ProfilePhoto(profile=profile, position=position)
+            photo.image.save(image.name, image, save=True)
+            keep.append(photo.pk)
+            continue
+
+        # Not a data URL - an already-stored photo coming back unchanged.
+        match = next((p for url, p in by_url.items() if entry.endswith(url)), None)
+        if match is not None:
+            if match.position != position:
+                match.position = position
+                match.save(update_fields=["position"])
+            keep.append(match.pk)
+
+    profile.photos.exclude(pk__in=keep).delete()
+
+
 def apply_payload(profile, payload: dict) -> list:
     """Write camelCase wizard values onto the profile. Returns fields touched."""
     touched = []
 
     for camel_key, value in payload.items():
+        if camel_key == "photos":
+            sync_gallery(profile, value)
+            touched.append("photos")
+            continue
+
         if camel_key == "photo":
             image = decode_data_url(value)
             if image is not None:
@@ -182,6 +227,17 @@ def profile_to_api(profile, request=None, public: bool = False) -> dict:
         except ValueError:
             picture = None
 
+    gallery = []
+    for photo in profile.photos.all():
+        if not photo.image:
+            continue
+        try:
+            gallery.append(
+                request.build_absolute_uri(photo.image.url) if request else photo.image.url
+            )
+        except ValueError:
+            continue
+
     data = {
         "profile_id": profile.profile_id or "",
         "firstName": profile.first_name,
@@ -222,6 +278,7 @@ def profile_to_api(profile, request=None, public: bool = False) -> dict:
         "hasChildren": profile.has_children,
         "wantsChildren": profile.wants_children,
         "photo": picture,
+        "photos": gallery,
         "profile_completeness": profile.profile_completeness,
     }
 

@@ -1,5 +1,5 @@
 # schemas.py
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from ninja import Schema
 
@@ -62,5 +62,7 @@ class ProfileUpdateSchema(Schema):
     hasChildren: Optional[bool] = None
     wantsChildren: Optional[bool] = None
 
-    # Step 4 - photo, sent as a base64 data URL
+    # Step 4 - photos, sent as base64 data URLs (or the URLs of ones already
+    # stored, which are kept as-is). The list is the complete desired gallery.
     photo: Optional[str] = None
+    photos: Optional[List[str]] = None
