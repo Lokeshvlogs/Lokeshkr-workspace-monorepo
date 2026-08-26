@@ -159,8 +159,12 @@ export default function EditableField({ def, profile, onSave }: Props) {
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-sm font-semibold text-color-primary-text">{def.label}</span>
         <div className="flex gap-2">
-          <button type="button" onClick={cancel} className="avatar-action" disabled={saving}>Cancel</button>
-          <button type="button" onClick={commit} className="field-save-btn" disabled={saving}>
+          {/* Same visual language as ChipGroup: Save reads as the selected
+              option, Cancel as an unselected one. */}
+          <button type="button" onClick={cancel} className="chip chip-square" disabled={saving}>
+            Cancel
+          </button>
+          <button type="button" onClick={commit} className="chip chip-selected chip-square" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
@@ -242,24 +246,32 @@ export default function EditableField({ def, profile, onSave }: Props) {
         </div>
       )}
 
+      {/* Date and time stay on one row; the panel scrolls rather than wrapping. */}
       {def.editor === 'date' && (
-        <div className="flex flex-wrap items-center gap-3">
-          <DatePicker
-            value={String(value ?? '').split('T')[0]}
-            onDateChange={(y, m, d) => {
-              if (!y || !m || !d) return
-              const time = String(value ?? '').split('T')[1]?.slice(0, 5)
-              setDraft({ [def.key]: time ? `${y}-${m}-${d}T${time}` : `${y}-${m}-${d}` })
-            }}
-          />
-          <TimePicker
-            value={String(value ?? '').split('T')[1]?.slice(0, 5) ?? ''}
-            onChange={(t) => {
-              const date = String(value ?? '').split('T')[0]
-              if (date) setDraft({ [def.key]: `${date}T${t}` })
-            }}
-            inputClassName="p-3 w-12"
-          />
+        <div className="flex flex-nowrap items-end gap-4 overflow-x-auto pb-1">
+          <div className="shrink-0">
+            <span className="mb-1 block text-xs font-medium text-color-placeholder-text">Date of birth</span>
+            <DatePicker
+              value={String(value ?? '').split('T')[0]}
+              onDateChange={(y, m, d) => {
+                if (!y || !m || !d) return
+                const time = String(value ?? '').split('T')[1]?.slice(0, 5)
+                setDraft({ [def.key]: time ? `${y}-${m}-${d}T${time}` : `${y}-${m}-${d}` })
+              }}
+            />
+          </div>
+          <div className="mb-2 hidden h-8 w-px shrink-0 bg-color-border sm:block" />
+          <div className="shrink-0">
+            <span className="mb-1 block text-xs font-medium text-color-placeholder-text">Time of birth</span>
+            <TimePicker
+              value={String(value ?? '').split('T')[1]?.slice(0, 5) ?? ''}
+              onChange={(t) => {
+                const date = String(value ?? '').split('T')[0]
+                if (date) setDraft({ [def.key]: `${date}T${t}` })
+              }}
+              inputClassName="p-3 w-12"
+            />
+          </div>
         </div>
       )}
 

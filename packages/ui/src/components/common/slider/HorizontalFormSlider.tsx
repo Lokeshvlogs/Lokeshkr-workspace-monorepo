@@ -10,6 +10,9 @@ interface HorizontalFormSliderProps {
   width?: number;
   /** Text shown on the action button while a step is being persisted. */
   busyLabel?: string;
+  /** Rendered between the step content and the navigation row - the natural
+   *  place for a save status, so it sits with the button that triggered it. */
+  statusSlot?: ReactNode;
   /** called with current step -> should return whether Next is enabled */
   canProceed?: (step: number) => boolean;
   /** called with current step -> should return whether Submit is enabled */
@@ -26,6 +29,7 @@ export default function HorizontalFormSlider({
   onSubmit,
   width,
   busyLabel,
+  statusSlot,
   canProceed,
   canSubmit,
   step: controlledStep,
@@ -87,6 +91,8 @@ export default function HorizontalFormSlider({
           </div>
         ))}
       </div>
+
+      {statusSlot}
 
       <SliderNavigation
         step={step}

@@ -535,22 +535,22 @@ export default function ProfileRegisterPage() {
             </div>
           </div>
 
-          {/* Save status */}
-          <div className="mb-4 min-h-[1.25rem] text-sm" aria-live="polite">
-            {saveState === "saving" && <span className="text-color-placeholder-text">Saving…</span>}
-            {saveState === "error" && <span className="text-red-600">{saveError}</span>}
-            {saveState !== "saving" && saveState !== "error" && savedNotice && (
-              <span className="inline-flex items-center gap-1.5 text-green-600">
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-                {savedNotice}
-              </span>
-            )}
-          </div>
-
           <HorizontalFormSlider
             busyLabel={saveState === "saving" ? "Saving…" : "Saved"}
+            statusSlot={
+              <div className="mt-4 min-h-[1.25rem] text-right text-sm" aria-live="polite">
+                {saveState === "saving" && <span className="text-color-placeholder-text">Saving…</span>}
+                {saveState === "error" && <span className="text-red-600">{saveError}</span>}
+                {saveState !== "saving" && saveState !== "error" && savedNotice && (
+                  <span className="inline-flex items-center gap-1.5 text-green-600">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    {savedNotice}
+                  </span>
+                )}
+              </div>
+            }
             onSubmit={handleSubmit}
             onNext={handleNext}
             canProceed={canProceed}

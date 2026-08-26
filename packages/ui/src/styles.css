@@ -19,6 +19,7 @@
   --color-success: #22c55e;
   --color-placeholder-text: #6b7280;
   --color-primary-text: #111827;
+  --radius: 8px;
 }
 
 .input-wrapper {
@@ -236,6 +237,18 @@ button.chip-selected:hover {
   border-color: var(--color-primary, #ec4899);
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(236, 72, 153, 0.30);
+}
+
+/* Chips are pills by default. This squares them off to the standard button
+   radius, for chip-styled action buttons (Save / Cancel) that should match a
+   regular button rather than a filter pill. */
+.chip-square {
+  border-radius: var(--radius, 8px);
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .chip-check {
@@ -536,21 +549,37 @@ button.chip-selected:hover {
   border-color: var(--color-primary, #ec4899);
 }
 
+/* White panel with a pink frame - Save/Cancel reuse the chip styles, so the
+   action pair matches the selected/unselected chips used elsewhere. */
 .field-editor {
   @apply rounded-lg border p-3;
   border-color: var(--color-primary-light, #f96cba);
-  background-color: var(--color-primary-surface, #fdf2f8);
 }
 
-.field-save-btn {
-  @apply rounded-md px-3 py-1.5 text-xs font-medium text-white transition;
-  background-color: var(--color-primary, #ec4899);
+.field-editor.field-editor {
+  background-color: var(--color-bg, #ffffff);
 }
 
-.field-save-btn:hover:not(:disabled) {
-  opacity: 0.9;
+/* Specificity bumps: these classes sit on <button>, and Tailwind preflight's
+   `[type="button"] { background-color: transparent }` is emitted after this
+   file with the same specificity, so a single class loses the tie. */
+.avatar-zoom-btn.avatar-zoom-btn {
+  background-color: var(--color-bg, #ffffff);
 }
 
-.field-save-btn:disabled {
-  @apply cursor-not-allowed opacity-50;
+.avatar-action.avatar-action {
+  background-color: var(--color-bg, #ffffff);
 }
+
+.photo-add.photo-add {
+  background-color: var(--color-bg, #ffffff);
+}
+
+.photo-tile-remove.photo-tile-remove {
+  background-color: rgba(17, 24, 39, 0.6);
+}
+
+.field-edit-btn.field-edit-btn {
+  background-color: var(--color-bg, #ffffff);
+}
+
