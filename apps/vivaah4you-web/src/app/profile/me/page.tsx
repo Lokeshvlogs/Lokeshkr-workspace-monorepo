@@ -53,6 +53,37 @@ export default function MyProfilePage() {
     }
   }, [])
 
+  /** Saves a single inline edit and reflects the new completeness. */
+  const saveField = async (step: number, patch: Record<string, unknown>): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/profile/save-step', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step, ...patch }),
+      })
+
+      if (response.status === 401) {
+        auth.loginRequiredRedirect()
+        return false
+      }
+
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok || !result.success) return false
+
+      // Re-read rather than trusting the local patch: the server normalises
+      // values (marital status, gender, dates) on the way in.
+      const fresh = await fetch('/api/profile/me')
+      if (fresh.ok) {
+        const data = await fresh.json()
+        setProfile(data)
+        auth.setProfileComplete(Boolean(data.is_complete))
+      }
+      return true
+    } catch {
+      return false
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -146,9 +177,13 @@ export default function MyProfilePage() {
           </dl>
         </section>
 
+        <p className="text-sm text-color-placeholder-text">
+          Tap the pencil beside any field to edit it here — no need to run through the wizard again.
+        </p>
+
         <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || "this member"} />
 
-        <ProfileDetails profile={profile} />
+        <ProfileDetails profile={profile} editable onSave={saveField} />
       </div>
     </div>
   )
