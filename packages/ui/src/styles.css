@@ -510,3 +510,47 @@ button.chip-selected:hover {
   border-color: var(--color-primary, #ec4899);
   background-color: var(--color-primary-surface, #fdf2f8);
 }
+
+/* --- Inline field editing --- */
+.field-edit-btn {
+  @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full border opacity-0 transition;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary, #ec4899);
+}
+
+/* Revealed on hover, but always present for keyboard and touch users. */
+.group:hover .field-edit-btn,
+.field-edit-btn:focus-visible {
+  @apply opacity-100;
+}
+
+@media (hover: none) {
+  .field-edit-btn {
+    @apply opacity-100;
+  }
+}
+
+.field-edit-btn:hover {
+  background-color: var(--color-primary-surface, #fdf2f8);
+  border-color: var(--color-primary, #ec4899);
+}
+
+.field-editor {
+  @apply rounded-lg border p-3;
+  border-color: var(--color-primary-light, #f96cba);
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.field-save-btn {
+  @apply rounded-md px-3 py-1.5 text-xs font-medium text-white transition;
+  background-color: var(--color-primary, #ec4899);
+}
+
+.field-save-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.field-save-btn:disabled {
+  @apply cursor-not-allowed opacity-50;
+}

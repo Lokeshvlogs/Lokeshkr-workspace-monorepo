@@ -16,7 +16,7 @@ import {
   routineOptions,
   smokingOptions,
 } from '@/constants/selectOptions/person'
-import { COUNTRY_OPTIONS } from '@/constants/selectOptions/places'
+import { COUNTRY_OPTIONS, placesByCountry } from '@/constants/selectOptions/places'
 import { communitiesByReligion, motherTongueOptions } from '@/constants/selectOptions/social'
 import type { PublicProfile } from '@/types/profile'
 
@@ -121,4 +121,23 @@ export function locationLabel(profile: Pick<PublicProfile, 'currentCity' | 'curr
 /** Communities for a religion, falling back to a single "Other" entry. */
 export function communitiesFor(religion: string): SelectOption[] {
   return communitiesByReligion[religion] ?? [{ value: 'other', label: 'Other' }]
+}
+
+/** "City, State, Country" options for one country, or every city when unset. */
+export function citiesForCountry(country: string): SelectOption[] {
+  const build = (countryKey: string) => {
+    const countryLabel = COUNTRY_OPTIONS.find((c) => c.value === countryKey)?.label ?? ''
+    return (placesByCountry[countryKey] ?? []).flatMap((state) =>
+      state.cities.map((city) => {
+        const label = `${city.label}, ${state.label}${countryLabel ? `, ${countryLabel}` : ''}`
+        return { value: label, label }
+      }),
+    )
+  }
+
+  if (country) return build(country)
+
+  const all = Object.keys(placesByCountry).flatMap(build)
+  const seen = new Set<string>()
+  return all.filter((o) => (seen.has(o.label) ? false : seen.add(o.label)))
 }
