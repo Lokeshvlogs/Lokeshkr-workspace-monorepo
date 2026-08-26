@@ -1,3 +1,4 @@
+export { default as BirthDateTimePicker } from './components/common/input/dateselectors/BirthDateTimePicker';
 export { default as DatePicker } from './components/common/input/dateselectors/DatePicker';
 export { default as DaySelector } from './components/common/input/dateselectors/DaySelector';
 export { default as MonthSelector } from './components/common/input/dateselectors/MonthSelector';

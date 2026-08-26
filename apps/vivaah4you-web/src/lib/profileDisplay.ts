@@ -13,11 +13,15 @@ import {
   dietOptions,
   drinkingOptions,
   physiqueOptions,
-  routineOptions,
   smokingOptions,
 } from '@/constants/selectOptions/person'
 import { COUNTRY_OPTIONS, placesByCountry } from '@/constants/selectOptions/places'
 import { communitiesByReligion, motherTongueOptions } from '@/constants/selectOptions/social'
+import {
+  PARENT_OCCUPATION_OPTIONS,
+  RELIGIOSITY_OPTIONS,
+  religiosityDetailOptions,
+} from '@/constants/selectOptions/beliefs'
 import type { PublicProfile } from '@/types/profile'
 
 /** The DB stores option values; these turn them back into display labels. */
@@ -27,12 +31,20 @@ const toLabelMap = (options: SelectOption[]) =>
     return acc
   }, {})
 
+const MARITAL_STATUS_LABELS_RAW: Record<string, string> = {
+  never_married: 'Never Married',
+  married: 'Married',
+  divorced: 'Divorced',
+  widowed: 'Widowed',
+  annulled: 'Annulled',
+  awaiting_divorce: 'Awaiting Divorce',
+}
+
 const LABEL_MAPS: Record<string, Record<string, string>> = {
   bodyPhysique: toLabelMap(physiqueOptions),
   diet: toLabelMap(dietOptions),
   smoking: toLabelMap(smokingOptions),
   drinking: toLabelMap(drinkingOptions),
-  routine: toLabelMap(routineOptions),
   educationLevel: toLabelMap(educationOptions),
   fieldOfStudy: toLabelMap(fieldOfStudyOptions),
   collegeUniversity: toLabelMap(collegeOptions),
@@ -45,16 +57,18 @@ const LABEL_MAPS: Record<string, Record<string, string>> = {
   placeOfBirthCountry: toLabelMap(COUNTRY_OPTIONS),
   familyLivingInCountry: toLabelMap(COUNTRY_OPTIONS),
   mothertongue: toLabelMap(motherTongueOptions as SelectOption[]),
+  religiosity: toLabelMap(RELIGIOSITY_OPTIONS),
+  fatherOccupation: toLabelMap(PARENT_OCCUPATION_OPTIONS),
+  motherOccupation: toLabelMap(PARENT_OCCUPATION_OPTIONS),
+  partnerMaritalStatus: { any: 'No preference', ...MARITAL_STATUS_LABELS_RAW },
+  partnerCountry: { any: 'No preference', ...toLabelMap(COUNTRY_OPTIONS) },
+  partnerMotherTongue: { any: 'No preference', ...toLabelMap(motherTongueOptions as SelectOption[]) },
+  partnerEducation: { any: 'No preference', ...toLabelMap(educationOptions) },
+  partnerProfession: { any: 'No preference', ...toLabelMap(professionOptions) },
+  partnerDiet: { any: 'No preference', ...toLabelMap(dietOptions) },
 }
 
-export const MARITAL_STATUS_LABELS: Record<string, string> = {
-  never_married: 'Never Married',
-  married: 'Married',
-  divorced: 'Divorced',
-  widowed: 'Widowed',
-  annulled: 'Annulled',
-  awaiting_divorce: 'Awaiting Divorce',
-}
+export const MARITAL_STATUS_LABELS = MARITAL_STATUS_LABELS_RAW
 
 export const MANGLIK_LABELS = ["Don't know", 'No', 'Anshik / Partial', 'Yes']
 
@@ -83,11 +97,25 @@ const titleCase = (value: string) =>
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase())
 
+/** Detail labels are namespaced per stance, so search each list. */
+export function religiosityDetailLabel(value: string): string {
+  for (const primary of RELIGIOSITY_OPTIONS) {
+    const hit = religiosityDetailOptions(primary.value).find((o) => o.value === value)
+    if (hit) return hit.label
+  }
+  return ''
+}
+
 export function labelFor(field: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return ''
   const raw = String(value)
 
   if (field === 'maritalStatus') return MARITAL_STATUS_LABELS[raw] ?? titleCase(raw)
+  if (field === 'religiosityDetail') return religiosityDetailLabel(raw) || titleCase(raw)
+  if (field === 'partnerReligion' || field === 'partnerCommunity') {
+    if (raw === 'any') return 'No preference'
+    return labelFor(field === 'partnerReligion' ? 'religion' : 'community', raw)
+  }
   if (field === 'religion') return RELIGION_LABELS[raw] ?? titleCase(raw)
   if (field === 'community') {
     // Community values are namespaced per religion, so search every list.

@@ -127,6 +127,41 @@ class Profile(models.Model):
     wants_children = models.BooleanField(default=True)
       
 
+    # Free-text intro shown at the top of the profile.
+    about_me = models.TextField(blank=True)
+
+    # Religious outlook, replacing the old 0-10 `religiousness` slider: a broad
+    # stance plus a qualifier, which reads far better on a profile than a number.
+    # `religiousness` and `astrology_belief` are retained as columns so existing
+    # rows keep their data, but nothing collects or displays them any more.
+    religiosity = models.CharField(max_length=30, blank=True)
+    religiosity_detail = models.CharField(max_length=40, blank=True)
+
+    # --- Family background (all optional) ---
+    father_occupation = models.CharField(max_length=40, blank=True)
+    mother_occupation = models.CharField(max_length=40, blank=True)
+    brothers = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(10)])
+    brothers_married = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(10)])
+    sisters = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(10)])
+    sisters_married = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(10)])
+    family_about = models.TextField(blank=True)
+
+    # --- Partner preference ---
+    partner_age_min = models.PositiveIntegerField(null=True, blank=True)
+    partner_age_max = models.PositiveIntegerField(null=True, blank=True)
+    # Stored in total inches so ranges compare with a single integer.
+    partner_height_min = models.PositiveIntegerField(null=True, blank=True)
+    partner_height_max = models.PositiveIntegerField(null=True, blank=True)
+    partner_marital_status = models.CharField(max_length=30, blank=True)
+    partner_religion = models.CharField(max_length=60, blank=True)
+    partner_community = models.CharField(max_length=100, blank=True)
+    partner_mother_tongue = models.CharField(max_length=100, blank=True)
+    partner_country = models.CharField(max_length=60, blank=True)
+    partner_education = models.CharField(max_length=200, blank=True)
+    partner_profession = models.CharField(max_length=150, blank=True)
+    partner_diet = models.CharField(max_length=100, blank=True)
+    partner_about = models.TextField(blank=True)
+
     # Display Picture (DP)
     display_picture = models.ImageField(upload_to="profile_pics/", null=True, blank=True)
 
@@ -139,7 +174,10 @@ class Profile(models.Model):
     hide_display_picture_from_search = models.BooleanField(default=False)
     profile_completeness = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
 
-    # Fields scored for `profile_completeness`. Deliberately excludes fields whose
+    # Fields scored for `profile_completeness`. Optional sections (family
+    # background, partner preference, the free-text intros) are excluded so a
+    # member who skips them can still reach 100%.
+    # Also excludes fields whose
     # zero value is a real answer (marital_status, manglik_level, family_type,
     # exercise_habits) - there is no way to tell "Never Married" from "unanswered",
     # so counting them would make 100% unreachable or inflate every new profile.
@@ -151,12 +189,12 @@ class Profile(models.Model):
         "family_living_in_country", "family_living_in_city", "family_income",
         "education_level", "field_of_study", "college_university",
         "profession", "employed_in", "employed_as", "annual_income",
-        "diet", "smoking_habits", "drinking_habits", "daily_routine",
-        "body_physique",
+        "diet", "smoking_habits", "drinking_habits",
+        "body_physique", "religiosity",
     ]
     # 0 means "not set yet" for these (nobody is 0 feet tall / physique is a 1-10 scale).
     COMPLETENESS_POSITIVE_FIELDS = [
-        "height_feet", "religiousness", "astrology_belief",
+        "height_feet",
     ]
 
     def compute_completeness(self) -> int:

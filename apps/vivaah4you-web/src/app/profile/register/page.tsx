@@ -4,13 +4,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation";
 import {
   AvatarCropper,
+  BirthDateTimePicker,
   ChipGroup,
-  DatePicker,
   HorizontalFormSlider,
-  RangeSlider,
   SelectDropdown,
   TextField,
-  TimePicker,
 } from "@lokesh-workspace/ui";
 
 import PhotoGallery from "@/components/profile/PhotoGallery";
@@ -21,9 +19,9 @@ import {
   readProfileDraft,
   saveProfileDraft,
 } from "@/lib/profileDraft";
-import { communitiesFor, RELIGION_OPTIONS } from "@/lib/profileDisplay";
+import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from "@/lib/profileDisplay";
 import { motherTongueOptions } from "@/constants/selectOptions/social";
-import { placesByCountry, COUNTRY_OPTIONS } from "@/constants/selectOptions/places";
+import { COUNTRY_OPTIONS } from "@/constants/selectOptions/places";
 import {
   professionOptions,
   educationOptions,
@@ -38,25 +36,50 @@ import {
   smokingOptions,
   drinkingOptions,
   dietOptions,
-  routineOptions,
   feetOptions,
   inchOptions,
 } from "@/constants/selectOptions/person";
+import {
+  PARENT_OCCUPATION_OPTIONS,
+  RELIGIOSITY_OPTIONS,
+  SIBLING_COUNT_OPTIONS,
+  religiosityDetailOptions,
+} from "@/constants/selectOptions/beliefs";
+import {
+  ANY_OPTION,
+  PARTNER_AGE_OPTIONS,
+  PARTNER_COUNTRY_OPTIONS,
+  PARTNER_DIET_OPTIONS,
+  PARTNER_EDUCATION_OPTIONS,
+  PARTNER_HEIGHT_OPTIONS,
+  PARTNER_MARITAL_OPTIONS,
+  PARTNER_MOTHER_TONGUE_OPTIONS,
+  PARTNER_PROFESSION_OPTIONS,
+  PARTNER_RELIGION_OPTIONS,
+} from "@/constants/selectOptions/partner";
 
 const STEPS = [
   { title: "Basic Details", hint: "How you appear to other families." },
   { title: "Social Background", hint: "Religion, community and where you live." },
   { title: "Education & Career", hint: "Your studies and what you do." },
-  { title: "Lifestyle & Habits", hint: "Day-to-day preferences and beliefs." },
-  { title: "Profile Photo", hint: "A friendly face gets far more interest." },
+  { title: "Family Background", hint: "About your family. Most of this is optional." },
+  { title: "Lifestyle & Habits", hint: "Day-to-day preferences." },
+  { title: "Partner Preference", hint: "What you are looking for. All optional." },
+  { title: "Photos", hint: "A friendly face gets far more interest." },
 ];
 
+const icon = (path: React.ReactNode) => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}>{path}</svg>
+);
+
 const STEP_ICONS = [
-  (<svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" /></svg>),
-  (<svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20a4 4 0 00-8 0" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 8a4 4 0 110-8 4 4 0 010 8zM21 12a4 4 0 10-8 0 4 4 0 008 0z" /></svg>),
-  (<svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a4 4 0 018 0v2" /></svg>),
-  (<svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z" /></svg>),
-  (<svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h3l2-3h6l2 3h3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><circle cx="12" cy="13" r="3" /></svg>),
+  icon(<><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 21a6.5 6.5 0 00-15 0" /></>),
+  icon(<><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M5 8h14M7 21h10" /></>),
+  icon(<><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V5a4 4 0 018 0v2" /></>),
+  icon(<><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2" /><path strokeLinecap="round" d="M3 20a6 6 0 0112 0M15 20a5 5 0 016-4.6" /></>),
+  icon(<><path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z" /></>),
+  icon(<><circle cx="11" cy="11" r="7" /><path strokeLinecap="round" d="M20 20l-3.5-3.5" /></>),
+  icon(<><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h3l2-3h6l2 3h3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><circle cx="12" cy="13" r="3" /></>),
 ];
 
 const GENDER_OPTIONS = [
@@ -92,10 +115,10 @@ const YES_NO_OPTIONS = [
   { value: "no", label: "No" },
 ];
 
-// Marital statuses where questions about existing children are relevant.
 const WAS_MARRIED = new Set(["married", "divorced", "widowed", "annulled", "awaiting_divorce"]);
 
 const INITIAL_FORM = {
+  // Step 0
   firstName: "",
   surname: "",
   dob: "",
@@ -105,20 +128,20 @@ const INITIAL_FORM = {
   bodyPhysique: "",
   maritalStatus: "",
   manglikLevel: 0,
+  aboutMe: "",
 
+  // Step 1
   religion: "",
   community: "",
   mothertongue: "",
+  religiosity: "",
+  religiosityDetail: "",
   currentCountry: "",
   currentCity: "",
   placeOfBirthCountry: "",
   placeOfBirthCity: "",
-  familyLivingInCountry: "",
-  familyLivingInCity: "",
-  familyIncome: "",
-  familyType: 0,
-  livesWithFamily: false,
 
+  // Step 2
   educationLevel: "",
   fieldOfStudy: "",
   collegeUniversity: "",
@@ -127,35 +150,61 @@ const INITIAL_FORM = {
   employedAs: "",
   salaryAmount: "",
 
+  // Step 3
+  familyLivingInCountry: "",
+  familyLivingInCity: "",
+  familyIncome: "",
+  familyType: 0,
+  livesWithFamily: false,
+  fatherOccupation: "",
+  motherOccupation: "",
+  brothers: "0",
+  brothersMarried: "0",
+  sisters: "0",
+  sistersMarried: "0",
+  familyAbout: "",
+
+  // Step 4
+  diet: "",
   smoking: "",
   drinking: "",
-  diet: "",
-  routine: "",
-  exercise: 0,
-  religiousness: 5,
-  astrologyBelief: 5,
-
   hasChildren: false,
-  wantsChildren: true,
 
+  // Step 5
+  partnerAgeMin: "",
+  partnerAgeMax: "",
+  partnerHeightMin: "",
+  partnerHeightMax: "",
+  partnerMaritalStatus: "",
+  partnerReligion: "",
+  partnerCommunity: "",
+  partnerMotherTongue: "",
+  partnerCountry: "",
+  partnerEducation: "",
+  partnerProfession: "",
+  partnerDiet: "",
+  partnerAbout: "",
+
+  // Step 6
   photo: "",
   photos: [] as string[],
 };
 
 type FormState = typeof INITIAL_FORM;
 
-// How long the green confirmation stays on the step that was just saved,
-// before the wizard slides on.
-const SAVE_CONFIRM_MS = 1100;
-
 // Which keys belong to which wizard step - drives both saving and validation.
 const STEP_FIELDS: (keyof FormState)[][] = [
-  ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel"],
-  ["religion", "community", "mothertongue", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity", "familyLivingInCountry", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily"],
+  ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel", "aboutMe"],
+  ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity"],
   ["educationLevel", "fieldOfStudy", "collegeUniversity", "profession", "employedIn", "employedAs", "salaryAmount"],
-  ["diet", "smoking", "drinking", "routine", "exercise", "religiousness", "astrologyBelief", "hasChildren", "wantsChildren"],
+  ["familyLivingInCountry", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily", "fatherOccupation", "motherOccupation", "brothers", "brothersMarried", "sisters", "sistersMarried", "familyAbout"],
+  ["diet", "smoking", "drinking", "hasChildren"],
+  ["partnerAgeMin", "partnerAgeMax", "partnerHeightMin", "partnerHeightMax", "partnerMaritalStatus", "partnerReligion", "partnerCommunity", "partnerMotherTongue", "partnerCountry", "partnerEducation", "partnerProfession", "partnerDiet", "partnerAbout"],
   ["photo", "photos"],
 ];
+
+const SAVE_CONFIRM_MS = 1100;
+const PHOTO_STEP = 6;
 
 /** SelectDropdown with the wizard's shared look, so every picker matches. */
 function PickerField({
@@ -190,6 +239,37 @@ function PickerField({
   );
 }
 
+function LongText({
+  id,
+  label,
+  hint,
+  value,
+  onChange,
+  maxLength = 600,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+  maxLength?: number;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="field-label">{label}</label>
+      {hint && <p className="mb-2 text-xs text-color-placeholder-text">{hint}</p>}
+      <textarea
+        id={id}
+        className="textarea-field"
+        value={value}
+        maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <p className="textarea-count">{value.length} / {maxLength}</p>
+    </div>
+  );
+}
+
 export default function ProfileRegisterPage() {
   const router = useRouter();
   const auth = useAuth();
@@ -198,62 +278,28 @@ export default function ProfileRegisterPage() {
   const [step, setStep] = useState<number | undefined>(undefined);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState<string>("");
-  // Names the step that was saved, so the confirmation stays truthful after
-  // the wizard advances. Cleared on a timer.
   const [savedNotice, setSavedNotice] = useState<string>("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [completeness, setCompleteness] = useState<number>(0);
 
-  const [selectedDay, setSelectedDay] = useState<string>("");
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedTime, setSelectedTime] = useState<string>("");
-
-  // Guards the draft-persisting effect. Without it the empty INITIAL_FORM is
-  // written to localStorage on first render and then read back over the values
-  // fetched from the server, wiping the name captured at sign-up.
   const hydrated = useRef(false);
-  // Identifies whose draft this is; empty until /me answers, which keeps a
-  // signed-out visitor from ever reading or writing one.
   const draftOwner = useRef<string>("");
 
   const setField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  // Aggregated "City, State, Country" list used when no country is chosen yet.
-  const cityOptionsExtended = useMemo(() => {
-    const opts: { value: string; label: string }[] = [];
-    Object.entries(placesByCountry).forEach(([countryKey, states]) => {
-      const countryLabel = COUNTRY_OPTIONS.find((c) => c.value === countryKey)?.label ?? "";
-      states.forEach((st) => {
-        st.cities.forEach((c) => {
-          const label = `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ""}`;
-          opts.push({ value: label, label });
-        });
-      });
-    });
-    const seen = new Set<string>();
-    return opts.filter((o) => (seen.has(o.label) ? false : seen.add(o.label)));
-  }, []);
-
-  const citiesFor = useCallback(
-    (country: string) => {
-      if (!country) return cityOptionsExtended;
-      const countryLabel = COUNTRY_OPTIONS.find((c) => c.value === country)?.label ?? "";
-      return (placesByCountry[country] ?? []).flatMap((st) =>
-        st.cities.map((c) => {
-          const label = `${c.label}, ${st.label}${countryLabel ? `, ${countryLabel}` : ""}`;
-          return { value: label, label };
-        }),
-      );
-    },
-    [cityOptionsExtended],
+  const communityOptions = useMemo(() => communitiesFor(form.religion), [form.religion]);
+  const partnerCommunityOptions = useMemo(
+    () => [ANY_OPTION, ...communitiesFor(form.partnerReligion)],
+    [form.partnerReligion],
+  );
+  const religiosityDetails = useMemo(
+    () => religiosityDetailOptions(form.religiosity),
+    [form.religiosity],
   );
 
-  const communityOptions = useMemo(() => communitiesFor(form.religion), [form.religion]);
-
-  /* ---------- Hydration: sign-up details first, local draft on top ---------- */
+  /* ---------- Hydration ---------- */
   useEffect(() => {
     let cancelled = false;
 
@@ -267,28 +313,24 @@ export default function ProfileRegisterPage() {
           const data = await response.json();
           owner = draftOwnerKey(data);
           setCompleteness(Number(data.profile_completeness ?? 0));
-          // Name and gender were captured during registration - prefill them,
-          // along with anything already saved by a previous visit.
           (Object.keys(INITIAL_FORM) as (keyof FormState)[]).forEach((key) => {
             const value = data[key];
-            if (value !== null && value !== undefined && value !== "") {
-              (restored as any)[key] = value;
-            }
+            if (value === null || value === undefined || value === "") return;
+            // Numeric columns come back as numbers; the dropdowns bind strings.
+            (restored as any)[key] =
+              typeof INITIAL_FORM[key] === "string" && typeof value === "number"
+                ? String(value)
+                : value;
           });
         }
       } catch {
-        // Offline - show whatever the server last gave us, never a draft we
-        // cannot attribute to this account.
+        // Offline - never apply a draft we cannot attribute.
       }
 
       draftOwner.current = owner;
 
-      // A local draft wins over the server, but only for keys the user actually
-      // filled in, and only when it is stamped with this profile. An unowned or
-      // foreign draft is dropped by readProfileDraft.
       const draft = readProfileDraft<FormState>(owner);
       let draftStep: number | null = null;
-
       if (draft) {
         draftStep = draft.step;
         (Object.keys(draft.form) as (keyof FormState)[]).forEach((key) => {
@@ -302,37 +344,20 @@ export default function ProfileRegisterPage() {
       if (cancelled) return;
 
       setForm((prev) => ({ ...prev, ...restored }));
-
-      if (restored.dob) {
-        const [datePart, timePart] = String(restored.dob).split("T");
-        const [y, m, d] = datePart.split("-");
-        if (y && m && d) {
-          setSelectedYear(y);
-          setSelectedMonth(m);
-          setSelectedDay(d);
-        }
-        if (timePart) setSelectedTime(timePart.slice(0, 5));
-      }
-
       setStep(draftStep ?? 0);
       hydrated.current = true;
     }
 
     hydrate();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // The save status describes the step it happened on. Landing on a new step -
-  // forwards after a save, or backwards - must not inherit it, otherwise a
-  // freshly opened step claims "Saved" before anything was sent.
+  // The save status belongs to the step it happened on.
   useEffect(() => {
     setSaveState("idle");
     setSaveError("");
   }, [step]);
 
-  // Editing after a save makes that confirmation stale too.
   useEffect(() => {
     setSaveState((prev) => (prev === "saved" ? "idle" : prev));
   }, [form]);
@@ -340,13 +365,6 @@ export default function ProfileRegisterPage() {
   useEffect(() => () => {
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
   }, []);
-
-  // Keep dob in sync with the date/time pickers.
-  useEffect(() => {
-    if (!selectedYear || !selectedMonth || !selectedDay) return;
-    const date = `${selectedYear}-${selectedMonth}-${selectedDay}`;
-    setField("dob", selectedTime ? `${date}T${selectedTime}` : date);
-  }, [selectedDay, selectedMonth, selectedYear, selectedTime, setField]);
 
   useEffect(() => {
     if (!hydrated.current || step === undefined) return;
@@ -375,13 +393,11 @@ export default function ProfileRegisterPage() {
         });
 
         if (response.status === 401) {
-          // Refresh token expired too - the session is genuinely over.
           auth.loginRequiredRedirect();
           return false;
         }
 
         const result = await response.json().catch(() => ({}));
-
         if (!response.ok || !result.success) {
           setSaveState("error");
           setSaveError(result.detail ?? "Could not save. Please try again.");
@@ -405,27 +421,18 @@ export default function ProfileRegisterPage() {
     [form, auth],
   );
 
-  // HorizontalFormSlider advances only when onNext resolves without throwing,
-  // so holding here keeps the green confirmation on the step it belongs to
-  // before the slide begins.
   const handleNext = async (currentStep: number) => {
     const saved = await saveStep(currentStep);
     if (!saved) throw new Error("save-failed");
-
     await new Promise((resolve) => setTimeout(resolve, SAVE_CONFIRM_MS));
-
-    // Clear it as we move, so the incoming step never inherits the message.
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
     setSavedNotice("");
   };
 
   const handleSubmit = async () => {
-    const saved = await saveStep(4);
+    const saved = await saveStep(PHOTO_STEP);
     if (!saved) return;
-
-    // Let the confirmation register before navigating away.
     await new Promise((resolve) => setTimeout(resolve, SAVE_CONFIRM_MS));
-
     clearProfileDraft();
     router.push("/profile/me");
   };
@@ -444,22 +451,31 @@ export default function ProfileRegisterPage() {
       );
     }
     if (s === 1) {
-      return form.religion !== "" && form.community !== "" && form.currentCountry !== "";
+      return (
+        form.religion !== "" &&
+        form.community !== "" &&
+        form.religiosity !== "" &&
+        form.currentCountry !== ""
+      );
     }
     if (s === 2) {
       return form.educationLevel !== "" && form.profession !== "" && form.salaryAmount !== "";
     }
     if (s === 3) {
-      return form.diet !== "" && form.routine !== "";
+      // Parents, siblings and the family note are optional; location and income
+      // are not, because profile completeness counts them.
+      return form.familyLivingInCountry !== "" && form.familyIncome !== "";
     }
-    return true;
+    if (s === 4) {
+      return form.diet !== "" && form.smoking !== "" && form.drinking !== "";
+    }
+    return true; // partner preference is entirely optional
   };
 
-  const canSubmit = (s: number): boolean => s === 4 && form.photo !== "";
+  const canSubmit = (s: number): boolean => s === PHOTO_STEP && form.photo !== "";
 
   const handleJumpToStep = (target: number) => {
     if (step === undefined || target === step) return;
-    // Only allow jumping back, or forward through steps already satisfied.
     if (target < step) {
       setStep(target);
       return;
@@ -485,7 +501,6 @@ export default function ProfileRegisterPage() {
       <div className="mx-auto w-full max-w-3xl">
         <div className="rounded-2xl border border-color-border bg-white p-5 shadow-[0_20px_40px_rgba(219,39,119,0.10)] sm:p-8">
 
-          {/* Header */}
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-gray-900">Complete your profile</h1>
             <p className="mt-1 text-sm text-color-placeholder-text">
@@ -502,7 +517,6 @@ export default function ProfileRegisterPage() {
             </div>
           </div>
 
-          {/* Stepper */}
           <div className="mb-6">
             <div className="flex items-center">
               {STEPS.map((s, idx) => (
@@ -558,363 +572,231 @@ export default function ProfileRegisterPage() {
             step={step}
             setStep={setStep}
             steps={[
-              /* ---------- Step 0: Basic details ---------- */
+              /* ---------- 0: Basic details ---------- */
               <div key="basic" className="flex flex-col gap-5 px-1">
                 <div className="form-grid-2">
-                  <TextField
-                    id="firstName"
-                    label="First Name"
-                    value={form.firstName}
-                    onChange={(e) => setField("firstName", e.target.value)}
-                  />
-                  <TextField
-                    id="surname"
-                    label="Surname"
-                    value={form.surname}
-                    onChange={(e) => setField("surname", e.target.value)}
-                  />
+                  <TextField id="firstName" label="First Name" value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
+                  <TextField id="surname" label="Surname" value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
                 </div>
 
-                {/* Date and time of birth share one row. */}
-                <div className="form-section">
-                  <p className="form-section-title">Date &amp; time of birth</p>
-                  <p className="form-section-hint">Time of birth is optional — it is only used for horoscope matching.</p>
-                  <div className="mt-3 flex flex-nowrap items-center gap-4 overflow-x-auto pb-1">
-                    <div className="shrink-0">
-                      <span className="mb-1 block text-xs font-medium text-color-placeholder-text">Date of birth</span>
-                      <DatePicker
-                        value={form.dob ? form.dob.split("T")[0] : ""}
-                        onDateChange={(y, m, d) => {
-                          setSelectedYear(y);
-                          setSelectedMonth(m);
-                          setSelectedDay(d);
-                        }}
-                      />
-                    </div>
-                    <div className="mt-5 hidden h-8 w-px shrink-0 bg-color-border sm:block" />
-                    <div className="shrink-0">
-                      <span className="mb-1 block text-xs font-medium text-color-placeholder-text">Time of birth</span>
-                      <TimePicker
-                        value={selectedTime}
-                        onChange={setSelectedTime}
-                        inputClassName="p-3 w-12"
-                      />
-                    </div>
-                  </div>
+                <div>
+                  <span className="field-label">Date &amp; time of birth</span>
+                  <BirthDateTimePicker value={form.dob} onChange={(v) => setField("dob", v)} />
                 </div>
 
                 <div className="form-grid-2">
-                  <ChipGroup
-                    label="Gender"
-                    options={GENDER_OPTIONS}
-                    value={form.gender}
-                    onChange={(v) => setField("gender", v)}
-                  />
+                  <ChipGroup label="Gender" options={GENDER_OPTIONS} value={form.gender} onChange={(v) => setField("gender", v)} />
                   <div>
                     <span className="field-label">Height</span>
                     <div className="flex gap-3">
-                      <PickerField
-                        label="Feet"
-                        options={feetOptions}
-                        value={form.heightFeet}
-                        onChange={(v) => setField("heightFeet", v)}
-                        className="w-28"
-                      />
-                      <PickerField
-                        label="Inches"
-                        options={inchOptions}
-                        value={form.heightInches}
-                        onChange={(v) => setField("heightInches", v)}
-                        className="w-28"
-                      />
+                      <PickerField label="Feet" options={feetOptions} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" />
+                      <PickerField label="Inches" options={inchOptions} value={form.heightInches} onChange={(v) => setField("heightInches", v)} className="w-28" />
                     </div>
                   </div>
                 </div>
 
-                <ChipGroup
-                  label="Body Physique"
-                  options={physiqueOptions}
-                  value={form.bodyPhysique}
-                  onChange={(v) => setField("bodyPhysique", v)}
-                />
+                <ChipGroup label="Body Physique" options={physiqueOptions} value={form.bodyPhysique} onChange={(v) => setField("bodyPhysique", v)} />
+                <ChipGroup label="Marital Status" options={MARITAL_OPTIONS} value={form.maritalStatus} onChange={(v) => setField("maritalStatus", v)} />
+                <ChipGroup label="Are you Manglik?" options={MANGLIK_OPTIONS} value={form.manglikLevel} onChange={(v) => setField("manglikLevel", v)} />
 
-                <ChipGroup
-                  label="Marital Status"
-                  options={MARITAL_OPTIONS}
-                  value={form.maritalStatus}
-                  onChange={(v) => setField("maritalStatus", v)}
-                />
-
-                <ChipGroup
-                  label="Are you Manglik?"
-                  options={MANGLIK_OPTIONS}
-                  value={form.manglikLevel}
-                  onChange={(v) => setField("manglikLevel", v)}
+                <LongText
+                  id="aboutMe"
+                  label="About yourself"
+                  hint="Optional. A few lines in your own words — what you enjoy, what matters to you."
+                  value={form.aboutMe}
+                  onChange={(v) => setField("aboutMe", v)}
                 />
               </div>,
 
-              /* ---------- Step 1: Social background ---------- */
+              /* ---------- 1: Social background ---------- */
               <div key="social" className="flex flex-col gap-5 px-1">
                 <div className="form-grid-2">
-                  <PickerField
-                    label="Religion"
-                    options={RELIGION_OPTIONS}
-                    value={form.religion}
-                    onChange={(v) => setForm((prev) => ({ ...prev, religion: v, community: "" }))}
-                  />
-                  <PickerField
-                    label="Caste / Community"
-                    options={communityOptions}
-                    value={form.community}
-                    onChange={(v) => setField("community", v)}
-                    searchable
-                  />
+                  <PickerField label="Religion" options={RELIGION_OPTIONS} value={form.religion} onChange={(v) => setForm((p) => ({ ...p, religion: v, community: "" }))} />
+                  <PickerField label="Caste / Community" options={communityOptions} value={form.community} onChange={(v) => setField("community", v)} searchable />
                 </div>
 
-                <PickerField
-                  label="Mother Tongue"
-                  options={motherTongueOptions}
-                  value={form.mothertongue}
-                  onChange={(v) => setField("mothertongue", v)}
-                  searchable
-                />
+                <PickerField label="Mother Tongue" options={motherTongueOptions} value={form.mothertongue} onChange={(v) => setField("mothertongue", v)} searchable />
+
+                <div className="form-section">
+                  <p className="form-section-title">Religious outlook</p>
+                  <p className="form-section-hint mb-3">Pick the stance that fits you, then how it shows up day to day.</p>
+                  <ChipGroup
+                    options={RELIGIOSITY_OPTIONS}
+                    value={form.religiosity}
+                    onChange={(v) => setForm((p) => ({ ...p, religiosity: v, religiosityDetail: "" }))}
+                  />
+                  {religiosityDetails.length > 0 && (
+                    <div className="mt-4">
+                      <PickerField
+                        label="More specifically"
+                        options={religiosityDetails}
+                        value={form.religiosityDetail}
+                        onChange={(v) => setField("religiosityDetail", v)}
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <div className="form-section">
                   <p className="form-section-title">Currently living in</p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField
-                      label="Country"
-                      options={COUNTRY_OPTIONS}
-                      value={form.currentCountry}
-                      onChange={(v) => setForm((prev) => ({ ...prev, currentCountry: v, currentCity: "" }))}
-                      searchable
-                    />
-                    <PickerField
-                      label="City"
-                      options={citiesFor(form.currentCountry)}
-                      value={form.currentCity}
-                      onChange={(v) => setField("currentCity", v)}
-                      searchable
-                    />
+                    <PickerField label="Country" options={COUNTRY_OPTIONS} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentCity: "" }))} searchable />
+                    <PickerField label="City" options={citiesForCountry(form.currentCountry)} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
                   </div>
                 </div>
 
                 <div className="form-section">
                   <p className="form-section-title">Place of birth</p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField
-                      label="Country"
-                      options={COUNTRY_OPTIONS}
-                      value={form.placeOfBirthCountry}
-                      onChange={(v) => setForm((prev) => ({ ...prev, placeOfBirthCountry: v, placeOfBirthCity: "" }))}
-                      searchable
-                    />
-                    <PickerField
-                      label="City"
-                      options={citiesFor(form.placeOfBirthCountry)}
-                      value={form.placeOfBirthCity}
-                      onChange={(v) => setField("placeOfBirthCity", v)}
-                      searchable
-                    />
-                  </div>
-                </div>
-
-                <div className="form-section">
-                  <p className="form-section-title">Family details</p>
-                  <div className="form-grid-2 mt-3">
-                    <PickerField
-                      label="Family lives in (country)"
-                      options={COUNTRY_OPTIONS}
-                      value={form.familyLivingInCountry}
-                      onChange={(v) => setForm((prev) => ({ ...prev, familyLivingInCountry: v, familyLivingInCity: "" }))}
-                      searchable
-                    />
-                    <PickerField
-                      label="Family lives in (city)"
-                      options={citiesFor(form.familyLivingInCountry)}
-                      value={form.familyLivingInCity}
-                      onChange={(v) => setField("familyLivingInCity", v)}
-                      searchable
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <PickerField
-                      label="Family income (per annum)"
-                      options={familyIncomeOptions}
-                      value={form.familyIncome}
-                      onChange={(v) => setField("familyIncome", v)}
-                    />
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <ChipGroup
-                      label="Family Type"
-                      options={FAMILY_TYPE_OPTIONS}
-                      value={form.familyType}
-                      onChange={(v) => setField("familyType", v)}
-                    />
-                    <ChipGroup
-                      label="Lives with family"
-                      options={YES_NO_OPTIONS}
-                      value={form.livesWithFamily ? "yes" : "no"}
-                      onChange={(v) => setField("livesWithFamily", v === "yes")}
-                    />
+                    <PickerField label="Country" options={COUNTRY_OPTIONS} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthCity: "" }))} searchable />
+                    <PickerField label="City" options={citiesForCountry(form.placeOfBirthCountry)} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
                   </div>
                 </div>
               </div>,
 
-              /* ---------- Step 2: Education & career ---------- */
+              /* ---------- 2: Education & career ---------- */
               <div key="career" className="flex flex-col gap-5 px-1">
                 <div className="form-section">
                   <p className="form-section-title">Education</p>
                   <div className="mt-4 flex flex-col gap-5">
-                    <PickerField
-                      label="Highest Education Level"
-                      options={educationOptions}
-                      value={form.educationLevel}
-                      onChange={(v) => setField("educationLevel", v)}
-                      searchable
-                    />
-                    <PickerField
-                      label="Field of Study"
-                      options={fieldOfStudyOptions}
-                      value={form.fieldOfStudy}
-                      onChange={(v) => setField("fieldOfStudy", v)}
-                      searchable
-                    />
-                    <PickerField
-                      label="College / University"
-                      options={collegeOptions}
-                      value={form.collegeUniversity}
-                      onChange={(v) => setField("collegeUniversity", v)}
-                      searchable
-                    />
+                    <PickerField label="Highest Education Level" options={educationOptions} value={form.educationLevel} onChange={(v) => setField("educationLevel", v)} searchable />
+                    <PickerField label="Field of Study" options={fieldOfStudyOptions} value={form.fieldOfStudy} onChange={(v) => setField("fieldOfStudy", v)} searchable />
+                    <PickerField label="College / University" options={collegeOptions} value={form.collegeUniversity} onChange={(v) => setField("collegeUniversity", v)} searchable />
                   </div>
                 </div>
 
                 <div className="form-section">
                   <p className="form-section-title">Profession</p>
                   <div className="mt-4 flex flex-col gap-5">
-                    <PickerField
-                      label="Profession"
-                      options={professionOptions}
-                      value={form.profession}
-                      onChange={(v) => setField("profession", v)}
-                      searchable
-                    />
-                    <PickerField
-                      label="Employed In"
-                      options={employedInOptions}
-                      value={form.employedIn}
-                      onChange={(v) => setField("employedIn", v)}
-                    />
-                    <PickerField
-                      label="Employed As"
-                      options={employedAsOptions}
-                      value={form.employedAs}
-                      onChange={(v) => setField("employedAs", v)}
-                      searchable
-                    />
-                    <PickerField
-                      label="Annual income"
-                      options={familyIncomeOptions}
-                      value={form.salaryAmount}
-                      onChange={(v) => setField("salaryAmount", v)}
-                    />
+                    <PickerField label="Profession" options={professionOptions} value={form.profession} onChange={(v) => setField("profession", v)} searchable />
+                    <PickerField label="Employed In" options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
+                    <PickerField label="Employed As" options={employedAsOptions} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
+                    <PickerField label="Annual income" options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
                   </div>
                 </div>
               </div>,
 
-              /* ---------- Step 3: Lifestyle ---------- */
+              /* ---------- 3: Family background ---------- */
+              <div key="family" className="flex flex-col gap-5 px-1">
+                <div className="form-section">
+                  <p className="form-section-title">Where your family lives</p>
+                  <div className="form-grid-2 mt-3">
+                    <PickerField label="Country" options={COUNTRY_OPTIONS} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInCity: "" }))} searchable />
+                    <PickerField label="City" options={citiesForCountry(form.familyLivingInCountry)} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
+                  </div>
+                  <div className="mt-4">
+                    <PickerField label="Family income (per annum)" options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
+                  </div>
+                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <ChipGroup label="Family Type" options={FAMILY_TYPE_OPTIONS} value={form.familyType} onChange={(v) => setField("familyType", v)} />
+                    <ChipGroup label="Lives with family" options={YES_NO_OPTIONS} value={form.livesWithFamily ? "yes" : "no"} onChange={(v) => setField("livesWithFamily", v === "yes")} />
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">Parents</p>
+                  <p className="form-section-hint mb-3">Optional.</p>
+                  <div className="form-grid-2">
+                    <PickerField label="Father" options={PARENT_OCCUPATION_OPTIONS} value={form.fatherOccupation} onChange={(v) => setField("fatherOccupation", v)} />
+                    <PickerField label="Mother" options={PARENT_OCCUPATION_OPTIONS} value={form.motherOccupation} onChange={(v) => setField("motherOccupation", v)} />
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">Siblings</p>
+                  <p className="form-section-hint mb-3">Optional. How many, and how many are married.</p>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <PickerField label="Brothers" options={SIBLING_COUNT_OPTIONS} value={form.brothers} onChange={(v) => setField("brothers", v)} />
+                    <PickerField label="Married" options={SIBLING_COUNT_OPTIONS} value={form.brothersMarried} onChange={(v) => setField("brothersMarried", v)} />
+                    <PickerField label="Sisters" options={SIBLING_COUNT_OPTIONS} value={form.sisters} onChange={(v) => setField("sisters", v)} />
+                    <PickerField label="Married" options={SIBLING_COUNT_OPTIONS} value={form.sistersMarried} onChange={(v) => setField("sistersMarried", v)} />
+                  </div>
+                </div>
+
+                <LongText
+                  id="familyAbout"
+                  label="About your family"
+                  hint="Optional. Values, background, anything a family would want to know."
+                  value={form.familyAbout}
+                  onChange={(v) => setField("familyAbout", v)}
+                />
+              </div>,
+
+              /* ---------- 4: Lifestyle ---------- */
               <div key="lifestyle" className="flex flex-col gap-5 px-1">
                 <div className="form-grid-2">
-                  <PickerField
-                    label="Diet"
-                    options={dietOptions}
-                    value={form.diet}
-                    onChange={(v) => setField("diet", v)}
-                  />
-                  <PickerField
-                    label="Daily Routine"
-                    options={routineOptions}
-                    value={form.routine}
-                    onChange={(v) => setField("routine", v)}
-                  />
-                  <PickerField
-                    label="Smoking"
-                    options={smokingOptions}
-                    value={form.smoking}
-                    onChange={(v) => setField("smoking", v)}
-                  />
-                  <PickerField
-                    label="Drinking"
-                    options={drinkingOptions}
-                    value={form.drinking}
-                    onChange={(v) => setField("drinking", v)}
-                  />
+                  <PickerField label="Diet" options={dietOptions} value={form.diet} onChange={(v) => setField("diet", v)} />
+                  <PickerField label="Smoking" options={smokingOptions} value={form.smoking} onChange={(v) => setField("smoking", v)} />
+                  <PickerField label="Drinking" options={drinkingOptions} value={form.drinking} onChange={(v) => setField("drinking", v)} />
                 </div>
 
-                <div className="form-section flex flex-col gap-6">
-                  <RangeSlider
-                    label="How often do you exercise?"
-                    value={form.exercise}
-                    onChange={(v) => setField("exercise", v)}
-                    endLabels={["Never", "Daily"]}
-                    captions={["Never", "Rarely", "Sometimes", "Often", "Daily"]}
-                  />
-                  <RangeSlider
-                    label="How religious are you?"
-                    value={form.religiousness}
-                    onChange={(v) => setField("religiousness", v)}
-                    endLabels={["Not at all", "Very"]}
-                    captions={["Not religious", "Slightly", "Moderately", "Quite religious", "Very religious"]}
-                  />
-                  <RangeSlider
-                    label="Do you believe in astrology?"
-                    value={form.astrologyBelief}
-                    onChange={(v) => setField("astrologyBelief", v)}
-                    endLabels={["Not at all", "Strongly"]}
-                    captions={["Not at all", "Slightly", "Somewhat", "Strongly", "Completely"]}
-                  />
-                </div>
-
-                <div className="form-section grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {WAS_MARRIED.has(form.maritalStatus) && (
+                {WAS_MARRIED.has(form.maritalStatus) && (
+                  <div className="form-section">
                     <ChipGroup
                       label="Do you have children?"
                       options={YES_NO_OPTIONS}
                       value={form.hasChildren ? "yes" : "no"}
                       onChange={(v) => setField("hasChildren", v === "yes")}
                     />
-                  )}
-                  <ChipGroup
-                    label="Do you want children?"
-                    options={YES_NO_OPTIONS}
-                    value={form.wantsChildren ? "yes" : "no"}
-                    onChange={(v) => setField("wantsChildren", v === "yes")}
-                  />
-                </div>
+                  </div>
+                )}
               </div>,
 
-              /* ---------- Step 4: Photos ---------- */
+              /* ---------- 5: Partner preference ---------- */
+              <div key="partner" className="flex flex-col gap-5 px-1">
+                <p className="text-sm text-color-placeholder-text">
+                  Everything here is optional — leave anything blank for no preference.
+                </p>
+
+                <div className="form-section">
+                  <p className="form-section-title">Age &amp; height</p>
+                  <div className="form-grid-2 mt-3">
+                    <PickerField label="Age from" options={PARTNER_AGE_OPTIONS} value={form.partnerAgeMin} onChange={(v) => setField("partnerAgeMin", v)} />
+                    <PickerField label="Age to" options={PARTNER_AGE_OPTIONS} value={form.partnerAgeMax} onChange={(v) => setField("partnerAgeMax", v)} />
+                    <PickerField label="Height from" options={PARTNER_HEIGHT_OPTIONS} value={form.partnerHeightMin} onChange={(v) => setField("partnerHeightMin", v)} />
+                    <PickerField label="Height to" options={PARTNER_HEIGHT_OPTIONS} value={form.partnerHeightMax} onChange={(v) => setField("partnerHeightMax", v)} />
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">Background</p>
+                  <div className="form-grid-2 mt-3">
+                    <PickerField label="Marital status" options={PARTNER_MARITAL_OPTIONS} value={form.partnerMaritalStatus} onChange={(v) => setField("partnerMaritalStatus", v)} />
+                    <PickerField label="Religion" options={PARTNER_RELIGION_OPTIONS} value={form.partnerReligion} onChange={(v) => setForm((p) => ({ ...p, partnerReligion: v, partnerCommunity: "" }))} />
+                    <PickerField label="Community" options={partnerCommunityOptions} value={form.partnerCommunity} onChange={(v) => setField("partnerCommunity", v)} searchable />
+                    <PickerField label="Mother tongue" options={PARTNER_MOTHER_TONGUE_OPTIONS} value={form.partnerMotherTongue} onChange={(v) => setField("partnerMotherTongue", v)} searchable />
+                    <PickerField label="Country" options={PARTNER_COUNTRY_OPTIONS} value={form.partnerCountry} onChange={(v) => setField("partnerCountry", v)} searchable />
+                    <PickerField label="Diet" options={PARTNER_DIET_OPTIONS} value={form.partnerDiet} onChange={(v) => setField("partnerDiet", v)} />
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">Education &amp; work</p>
+                  <div className="form-grid-2 mt-3">
+                    <PickerField label="Education" options={PARTNER_EDUCATION_OPTIONS} value={form.partnerEducation} onChange={(v) => setField("partnerEducation", v)} searchable />
+                    <PickerField label="Profession" options={PARTNER_PROFESSION_OPTIONS} value={form.partnerProfession} onChange={(v) => setField("partnerProfession", v)} searchable />
+                  </div>
+                </div>
+
+                <LongText
+                  id="partnerAbout"
+                  label="What are you looking for?"
+                  hint="Optional. Qualities that matter to you in a partner."
+                  value={form.partnerAbout}
+                  onChange={(v) => setField("partnerAbout", v)}
+                />
+              </div>,
+
+              /* ---------- 6: Photos ---------- */
               <div key="photo" className="flex flex-col gap-6 px-1">
                 <div className="form-section flex flex-col items-center">
                   <p className="form-section-title">Display photo</p>
                   <p className="form-section-hint mb-4 text-center">
                     Drag the photo to reposition it, and zoom until your face fills the circle.
                   </p>
-
-                  <AvatarCropper
-                    value={form.photo}
-                    onChange={(dataUrl) => setField("photo", dataUrl)}
-                    size={224}
-                  />
-
+                  <AvatarCropper value={form.photo} onChange={(dataUrl) => setField("photo", dataUrl)} size={224} />
                   {form.photo && (
-                    <p className="avatar-hint mt-3">
-                      This is how you appear in search results and to your matches.
-                    </p>
+                    <p className="avatar-hint mt-3">This is how you appear in search results and to your matches.</p>
                   )}
                 </div>
 
@@ -923,10 +805,7 @@ export default function ProfileRegisterPage() {
                   <p className="form-section-hint mb-4">
                     Optional. Add a few more so families can get a fuller picture of you.
                   </p>
-                  <PhotoGallery
-                    value={form.photos}
-                    onChange={(photos) => setField("photos", photos)}
-                  />
+                  <PhotoGallery value={form.photos} onChange={(photos) => setField("photos", photos)} />
                 </div>
               </div>,
             ]}

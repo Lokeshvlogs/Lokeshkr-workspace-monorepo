@@ -51,16 +51,42 @@ class ProfileUpdateSchema(Schema):
     employedAs: Optional[str] = None
     salaryAmount: Optional[str] = None
 
+    # About the member (optional)
+    aboutMe: Optional[str] = None
+
+    # Religious outlook: broad stance plus qualifier
+    religiosity: Optional[str] = None
+    religiosityDetail: Optional[str] = None
+
+    # Family background (all optional)
+    fatherOccupation: Optional[str] = None
+    motherOccupation: Optional[str] = None
+    brothers: Optional[Number] = None
+    brothersMarried: Optional[Number] = None
+    sisters: Optional[Number] = None
+    sistersMarried: Optional[Number] = None
+    familyAbout: Optional[str] = None
+
+    # Partner preference
+    partnerAgeMin: Optional[Number] = None
+    partnerAgeMax: Optional[Number] = None
+    partnerHeightMin: Optional[Number] = None
+    partnerHeightMax: Optional[Number] = None
+    partnerMaritalStatus: Optional[str] = None
+    partnerReligion: Optional[str] = None
+    partnerCommunity: Optional[str] = None
+    partnerMotherTongue: Optional[str] = None
+    partnerCountry: Optional[str] = None
+    partnerEducation: Optional[str] = None
+    partnerProfession: Optional[str] = None
+    partnerDiet: Optional[str] = None
+    partnerAbout: Optional[str] = None
+
     # Step 3 - lifestyle and preferences
     diet: Optional[str] = None
     smoking: Optional[str] = None
     drinking: Optional[str] = None
-    routine: Optional[str] = None
-    exercise: Optional[Number] = None
-    religiousness: Optional[Number] = None
-    astrologyBelief: Optional[Number] = None
     hasChildren: Optional[bool] = None
-    wantsChildren: Optional[bool] = None
 
     # Step 4 - photos, sent as base64 data URLs (or the URLs of ones already
     # stored, which are kept as-is). The list is the complete desired gallery.

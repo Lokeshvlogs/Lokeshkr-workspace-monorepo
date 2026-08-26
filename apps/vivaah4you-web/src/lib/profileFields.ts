@@ -15,11 +15,28 @@ import {
   feetOptions,
   inchOptions,
   physiqueOptions,
-  routineOptions,
   smokingOptions,
 } from '@/constants/selectOptions/person'
 import { COUNTRY_OPTIONS } from '@/constants/selectOptions/places'
 import { motherTongueOptions } from '@/constants/selectOptions/social'
+import {
+  PARENT_OCCUPATION_OPTIONS,
+  RELIGIOSITY_OPTIONS,
+  SIBLING_COUNT_OPTIONS,
+  religiosityDetailOptions,
+} from '@/constants/selectOptions/beliefs'
+import {
+  ANY_OPTION,
+  PARTNER_AGE_OPTIONS,
+  PARTNER_COUNTRY_OPTIONS,
+  PARTNER_DIET_OPTIONS,
+  PARTNER_EDUCATION_OPTIONS,
+  PARTNER_HEIGHT_OPTIONS,
+  PARTNER_MARITAL_OPTIONS,
+  PARTNER_MOTHER_TONGUE_OPTIONS,
+  PARTNER_PROFESSION_OPTIONS,
+  PARTNER_RELIGION_OPTIONS,
+} from '@/constants/selectOptions/partner'
 import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from '@/lib/profileDisplay'
 import type { PublicProfile } from '@/types/profile'
 
@@ -35,7 +52,7 @@ export type EditorKind =
   | 'text'
   | 'select'
   | 'chips'
-  | 'range'
+  | 'textarea'
   | 'bool'
   | 'height'
   | 'date'
@@ -87,15 +104,20 @@ const FAMILY_TYPE_OPTIONS: SelectOption[] = [
 ]
 
 export const SECTIONS = [
+  'About',
   'Basic Details',
   'Religion & Community',
   'Location',
   'Education & Career',
   'Family',
   'Lifestyle',
+  'Partner Preference',
 ] as const
 
 export const PROFILE_FIELDS: ProfileFieldDef[] = [
+  // ---- About (step 0) ----
+  { key: 'aboutMe', label: 'About me', section: 'About', step: 0, editor: 'textarea' },
+
   // ---- Basic Details (step 0) ----
   { key: 'firstName', label: 'First name', section: 'Basic Details', step: 0, editor: 'text' },
   { key: 'surname', label: 'Surname', section: 'Basic Details', step: 0, editor: 'text' },
@@ -135,6 +157,24 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
     options: motherTongueOptions as SelectOption[],
   },
 
+  {
+    key: 'religiosity',
+    label: 'Religious outlook',
+    section: 'Religion & Community',
+    step: 1,
+    editor: 'chips',
+    options: RELIGIOSITY_OPTIONS,
+    resets: ['religiosityDetail'],
+  },
+  {
+    key: 'religiosityDetail',
+    label: 'More specifically',
+    section: 'Religion & Community',
+    step: 1,
+    editor: 'select',
+    optionsFor: (profile) => religiosityDetailOptions(profile.religiosity),
+  },
+
   // ---- Location (step 1) ----
   { key: 'currentCountry', label: 'Country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['currentCity'] },
   { key: 'currentCity', label: 'Lives in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.currentCountry) },
@@ -151,21 +191,31 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'salaryAmount', label: 'Annual income', section: 'Education & Career', step: 2, editor: 'select', options: familyIncomeOptions },
 
   // ---- Family (step 1) ----
-  { key: 'familyLivingInCountry', label: 'Family country', section: 'Family', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['familyLivingInCity'] },
-  { key: 'familyLivingInCity', label: 'Family lives in', section: 'Family', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.familyLivingInCountry) },
-  { key: 'familyType', label: 'Family type', section: 'Family', step: 1, editor: 'chips', options: FAMILY_TYPE_OPTIONS },
-  { key: 'familyIncome', label: 'Family income', section: 'Family', step: 1, editor: 'select', options: familyIncomeOptions },
-  { key: 'livesWithFamily', label: 'Lives with family', section: 'Family', step: 1, editor: 'bool' },
+  { key: 'familyLivingInCountry', label: 'Family country', section: 'Family', step: 3, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['familyLivingInCity'] },
+  { key: 'familyLivingInCity', label: 'Family lives in', section: 'Family', step: 3, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.familyLivingInCountry) },
+  { key: 'familyType', label: 'Family type', section: 'Family', step: 3, editor: 'chips', options: FAMILY_TYPE_OPTIONS },
+  { key: 'familyIncome', label: 'Family income', section: 'Family', step: 3, editor: 'select', options: familyIncomeOptions },
+  { key: 'livesWithFamily', label: 'Lives with family', section: 'Family', step: 3, editor: 'bool' },
 
   // ---- Lifestyle (step 3) ----
-  { key: 'diet', label: 'Diet', section: 'Lifestyle', step: 3, editor: 'select', options: dietOptions },
-  { key: 'smoking', label: 'Smoking', section: 'Lifestyle', step: 3, editor: 'select', options: smokingOptions },
-  { key: 'drinking', label: 'Drinking', section: 'Lifestyle', step: 3, editor: 'select', options: drinkingOptions },
-  { key: 'routine', label: 'Daily routine', section: 'Lifestyle', step: 3, editor: 'select', options: routineOptions },
-  { key: 'exercise', label: 'Exercise', section: 'Lifestyle', step: 3, editor: 'range', min: 0, max: 10, captions: ['Never', 'Rarely', 'Sometimes', 'Often', 'Daily'] },
-  { key: 'religiousness', label: 'Religiousness', section: 'Lifestyle', step: 3, editor: 'range', min: 0, max: 10, captions: ['Not religious', 'Slightly', 'Moderately', 'Quite religious', 'Very religious'] },
-  { key: 'astrologyBelief', label: 'Believes in astrology', section: 'Lifestyle', step: 3, editor: 'range', min: 0, max: 10, captions: ['Not at all', 'Slightly', 'Somewhat', 'Strongly', 'Completely'] },
-  { key: 'wantsChildren', label: 'Wants children', section: 'Lifestyle', step: 3, editor: 'bool' },
+  { key: 'diet', label: 'Diet', section: 'Lifestyle', step: 4, editor: 'select', options: dietOptions },
+  { key: 'smoking', label: 'Smoking', section: 'Lifestyle', step: 4, editor: 'select', options: smokingOptions },
+  { key: 'drinking', label: 'Drinking', section: 'Lifestyle', step: 4, editor: 'select', options: drinkingOptions },
+
+  // ---- Partner preference (step 5, all optional) ----
+  { key: 'partnerAgeMin', label: 'Age from', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_AGE_OPTIONS },
+  { key: 'partnerAgeMax', label: 'Age to', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_AGE_OPTIONS },
+  { key: 'partnerHeightMin', label: 'Height from', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_HEIGHT_OPTIONS },
+  { key: 'partnerHeightMax', label: 'Height to', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_HEIGHT_OPTIONS },
+  { key: 'partnerMaritalStatus', label: 'Marital status', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_MARITAL_OPTIONS },
+  { key: 'partnerReligion', label: 'Religion', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_RELIGION_OPTIONS, resets: ['partnerCommunity'] },
+  { key: 'partnerCommunity', label: 'Community', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, optionsFor: (p) => [ANY_OPTION, ...communitiesFor(p.partnerReligion)] },
+  { key: 'partnerMotherTongue', label: 'Mother tongue', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_MOTHER_TONGUE_OPTIONS },
+  { key: 'partnerCountry', label: 'Country', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_COUNTRY_OPTIONS },
+  { key: 'partnerEducation', label: 'Education', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_EDUCATION_OPTIONS },
+  { key: 'partnerProfession', label: 'Profession', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_PROFESSION_OPTIONS },
+  { key: 'partnerDiet', label: 'Diet', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_DIET_OPTIONS },
+  { key: 'partnerAbout', label: 'Looking for', section: 'Partner Preference', step: 5, editor: 'textarea' },
 ]
 
 export const HEIGHT_FEET_OPTIONS = feetOptions

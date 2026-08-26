@@ -583,3 +583,178 @@ button.chip-selected:hover {
   background-color: var(--color-bg, #ffffff);
 }
 
+
+/* --- Birth date & time picker --- */
+.dob-picker {
+  @apply w-full;
+}
+
+.dob-trigger.dob-trigger {
+  @apply flex w-full items-center gap-2 rounded-md border p-3 text-left transition-colors;
+  height: 54px;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary, #ec4899);
+}
+
+.dob-trigger.dob-trigger:hover {
+  border-color: var(--color-primary-light, #f96cba);
+}
+
+.dob-trigger:focus-visible {
+  outline: 2px solid var(--color-primary, #ec4899);
+  outline-offset: 2px;
+}
+
+.dob-trigger-value {
+  @apply flex-1 truncate text-base font-medium;
+  color: var(--color-primary-text, #111827);
+}
+
+.dob-trigger-placeholder {
+  @apply flex-1 truncate text-base;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.dob-age {
+  @apply shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary, #ec4899);
+}
+
+.dob-popup {
+  @apply rounded-xl border p-3 shadow-xl;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+}
+
+.dob-head {
+  @apply mb-2 flex items-center justify-between gap-2;
+}
+
+.dob-head-selects {
+  @apply flex flex-1 items-center justify-center gap-2;
+}
+
+.dob-nav.dob-nav {
+  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-lg leading-none;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary, #ec4899);
+}
+
+.dob-nav.dob-nav:hover {
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.dob-select {
+  @apply rounded-md border px-2 py-1.5 text-sm;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary-text, #111827);
+}
+
+.dob-select:focus {
+  outline: none;
+  border-color: var(--color-primary, #ec4899);
+}
+
+.dob-weekdays {
+  @apply grid grid-cols-7 gap-1 pb-1 text-center text-xs font-semibold;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.dob-grid {
+  @apply grid grid-cols-7 gap-1;
+}
+
+.dob-day.dob-day {
+  @apply flex h-9 items-center justify-center rounded-md text-sm transition-colors;
+  background-color: transparent;
+  color: var(--color-primary-text, #111827);
+}
+
+.dob-day.dob-day:hover:not(:disabled) {
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.dob-day:disabled {
+  @apply cursor-not-allowed;
+  color: #d1d5db;
+}
+
+.dob-day-selected.dob-day-selected {
+  background-color: var(--color-primary, #ec4899);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dob-time {
+  @apply mt-3 border-t pt-3;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+.dob-time-toggle {
+  @apply flex cursor-pointer items-center gap-2 text-sm font-medium;
+  color: var(--color-primary-text, #111827);
+}
+
+.dob-time-toggle input {
+  accent-color: var(--color-primary, #ec4899);
+}
+
+.dob-time-row {
+  @apply mt-2 flex items-center gap-2;
+}
+
+.dob-time-colon {
+  @apply font-semibold;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.dob-meridiem {
+  @apply ml-1 flex gap-1;
+}
+
+.dob-mer-btn.dob-mer-btn {
+  @apply rounded-md border px-2.5 py-1 text-xs font-medium;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary-text, #111827);
+}
+
+.dob-mer-selected.dob-mer-selected {
+  background-color: var(--color-primary, #ec4899);
+  border-color: var(--color-primary, #ec4899);
+  color: #ffffff;
+}
+
+.dob-time-hint {
+  @apply mt-2 text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.dob-footer {
+  @apply mt-3 flex items-center justify-end gap-2 border-t pt-3;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+/* --- Multi-line text --- */
+.textarea-field.textarea-field {
+  @apply w-full rounded-md border p-3 text-base;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary-text, #111827);
+  min-height: 96px;
+  resize: vertical;
+}
+
+.textarea-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light, #f96cba);
+}
+
+.textarea-count {
+  @apply mt-1 text-right text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}

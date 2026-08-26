@@ -2,12 +2,10 @@
 
 import React, { useState } from 'react'
 import {
+  BirthDateTimePicker,
   ChipGroup,
-  DatePicker,
-  RangeSlider,
   SelectDropdown,
   TextField,
-  TimePicker,
 } from '@lokesh-workspace/ui'
 
 import {
@@ -49,17 +47,30 @@ export function displayValue(def: ProfileFieldDef, profile: PublicProfile): stri
       return FAMILY_TYPE_LABELS[profile.familyType] ?? ''
     case 'livesWithFamily':
       return profile.livesWithFamily ? 'Yes' : 'No'
-    case 'wantsChildren':
-      return profile.wantsChildren ? 'Yes' : 'No'
-    case 'exercise':
-    case 'religiousness':
-    case 'astrologyBelief': {
-      const value = Number((profile as any)[def.key] ?? 0)
-      const captions = def.captions
-      if (!captions?.length) return String(value)
-      const span = (def.max ?? 10) - (def.min ?? 0) || 1
-      return captions[Math.min(captions.length - 1, Math.round((value / span) * (captions.length - 1)))]
+    case 'hasChildren':
+      return profile.hasChildren ? 'Yes' : 'No'
+    case 'partnerAgeMin':
+    case 'partnerAgeMax': {
+      const value = (profile as any)[def.key]
+      return value ? `${value} yrs` : ''
     }
+    case 'partnerHeightMin':
+    case 'partnerHeightMax': {
+      const inches = Number((profile as any)[def.key] ?? 0)
+      return inches ? `${Math.floor(inches / 12)} ft ${inches % 12} in` : ''
+    }
+    case 'brothers':
+    case 'brothersMarried':
+    case 'sisters':
+    case 'sistersMarried': {
+      const value = Number((profile as any)[def.key] ?? 0)
+      // 0 siblings is a real answer, so show it rather than "Not added".
+      return String(value)
+    }
+    case 'aboutMe':
+    case 'familyAbout':
+    case 'partnerAbout':
+      return String((profile as any)[def.key] ?? '')
     default:
       return labelFor(def.key, (profile as any)[def.key])
   }
@@ -210,15 +221,16 @@ export default function EditableField({ def, profile, onSave }: Props) {
         />
       )}
 
-      {def.editor === 'range' && (
-        <RangeSlider
-          label={def.label}
-          value={Number(value ?? 0)}
-          min={def.min ?? 0}
-          max={def.max ?? 10}
-          captions={def.captions}
-          onChange={(v) => setDraft({ [def.key]: v })}
-        />
+      {def.editor === 'textarea' && (
+        <>
+          <textarea
+            className="textarea-field"
+            value={String(value ?? '')}
+            maxLength={600}
+            onChange={(e) => setDraft({ [def.key]: e.target.value })}
+          />
+          <p className="textarea-count">{String(value ?? '').length} / 600</p>
+        </>
       )}
 
       {def.editor === 'height' && (
@@ -246,33 +258,11 @@ export default function EditableField({ def, profile, onSave }: Props) {
         </div>
       )}
 
-      {/* Date and time stay on one row; the panel scrolls rather than wrapping. */}
       {def.editor === 'date' && (
-        <div className="flex flex-nowrap items-end gap-4 overflow-x-auto pb-1">
-          <div className="shrink-0">
-            <span className="mb-1 block text-xs font-medium text-color-placeholder-text">Date of birth</span>
-            <DatePicker
-              value={String(value ?? '').split('T')[0]}
-              onDateChange={(y, m, d) => {
-                if (!y || !m || !d) return
-                const time = String(value ?? '').split('T')[1]?.slice(0, 5)
-                setDraft({ [def.key]: time ? `${y}-${m}-${d}T${time}` : `${y}-${m}-${d}` })
-              }}
-            />
-          </div>
-          <div className="mb-2 hidden h-8 w-px shrink-0 bg-color-border sm:block" />
-          <div className="shrink-0">
-            <span className="mb-1 block text-xs font-medium text-color-placeholder-text">Time of birth</span>
-            <TimePicker
-              value={String(value ?? '').split('T')[1]?.slice(0, 5) ?? ''}
-              onChange={(t) => {
-                const date = String(value ?? '').split('T')[0]
-                if (date) setDraft({ [def.key]: `${date}T${t}` })
-              }}
-              inputClassName="p-3 w-12"
-            />
-          </div>
-        </div>
+        <BirthDateTimePicker
+          value={String(value ?? '')}
+          onChange={(v) => setDraft({ [def.key]: v })}
+        />
       )}
 
       {error && <p className="error-text mt-2">{error}</p>}

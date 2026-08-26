@@ -32,12 +32,30 @@ export interface PublicProfile {
   diet: string
   smoking: string
   drinking: string
-  routine: string
-  exercise: number
-  religiousness: number
-  astrologyBelief: number
   hasChildren: boolean
-  wantsChildren: boolean
+  aboutMe: string
+  religiosity: string
+  religiosityDetail: string
+  fatherOccupation: string
+  motherOccupation: string
+  brothers: number
+  brothersMarried: number
+  sisters: number
+  sistersMarried: number
+  familyAbout: string
+  partnerAgeMin: number | null
+  partnerAgeMax: number | null
+  partnerHeightMin: number | null
+  partnerHeightMax: number | null
+  partnerMaritalStatus: string
+  partnerReligion: string
+  partnerCommunity: string
+  partnerMotherTongue: string
+  partnerCountry: string
+  partnerEducation: string
+  partnerProfession: string
+  partnerDiet: string
+  partnerAbout: string
   photo: string | null
   /** Extra gallery photos, ordered. */
   photos: string[]

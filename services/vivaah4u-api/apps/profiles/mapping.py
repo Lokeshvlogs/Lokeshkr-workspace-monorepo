@@ -52,12 +52,32 @@ CAMEL_TO_MODEL = {
     "diet": "diet",
     "smoking": "smoking_habits",
     "drinking": "drinking_habits",
-    "routine": "daily_routine",
-    "exercise": "exercise_habits",
-    "religiousness": "religiousness",
-    "astrologyBelief": "astrology_belief",
     "hasChildren": "has_children",
-    "wantsChildren": "wants_children",
+    "religiosity": "religiosity",
+    "religiosityDetail": "religiosity_detail",
+    "aboutMe": "about_me",
+    # Family background (optional)
+    "fatherOccupation": "father_occupation",
+    "motherOccupation": "mother_occupation",
+    "brothers": "brothers",
+    "brothersMarried": "brothers_married",
+    "sisters": "sisters",
+    "sistersMarried": "sisters_married",
+    "familyAbout": "family_about",
+    # Partner preference
+    "partnerAgeMin": "partner_age_min",
+    "partnerAgeMax": "partner_age_max",
+    "partnerHeightMin": "partner_height_min",
+    "partnerHeightMax": "partner_height_max",
+    "partnerMaritalStatus": "partner_marital_status",
+    "partnerReligion": "partner_religion",
+    "partnerCommunity": "partner_community",
+    "partnerMotherTongue": "partner_mother_tongue",
+    "partnerCountry": "partner_country",
+    "partnerEducation": "partner_education",
+    "partnerProfession": "partner_profession",
+    "partnerDiet": "partner_diet",
+    "partnerAbout": "partner_about",
 }
 
 MODEL_TO_CAMEL = {v: k for k, v in CAMEL_TO_MODEL.items()}
@@ -80,11 +100,19 @@ INT_FIELDS = {
     "height_inches",
     "manglik_level",
     "family_type",
-    "exercise_habits",
-    "religiousness",
-    "astrology_belief",
+    "brothers",
+    "brothers_married",
+    "sisters",
+    "sisters_married",
 }
-BOOL_FIELDS = {"lives_with_family", "has_children", "wants_children"}
+# Blank means "no preference", so these stay NULL rather than coercing to 0.
+NULLABLE_INT_FIELDS = {
+    "partner_age_min",
+    "partner_age_max",
+    "partner_height_min",
+    "partner_height_max",
+}
+BOOL_FIELDS = {"lives_with_family", "has_children"}
 
 
 def _to_int(value, default=0):
@@ -203,6 +231,8 @@ def apply_payload(profile, payload: dict) -> list:
             value = MARITAL_TO_MODEL.get(str(value), _to_int(value))
         elif field in BOOL_FIELDS:
             value = bool(value)
+        elif field in NULLABLE_INT_FIELDS:
+            value = None if value in ("", None) else _to_int(value, None)
         elif field in INT_FIELDS:
             value = _to_int(value)
         elif isinstance(value, str):
@@ -271,12 +301,30 @@ def profile_to_api(profile, request=None, public: bool = False) -> dict:
         "diet": profile.diet,
         "smoking": profile.smoking_habits,
         "drinking": profile.drinking_habits,
-        "routine": profile.daily_routine,
-        "exercise": profile.exercise_habits,
-        "religiousness": profile.religiousness,
-        "astrologyBelief": profile.astrology_belief,
         "hasChildren": profile.has_children,
-        "wantsChildren": profile.wants_children,
+        "religiosity": profile.religiosity,
+        "religiosityDetail": profile.religiosity_detail,
+        "aboutMe": profile.about_me,
+        "fatherOccupation": profile.father_occupation,
+        "motherOccupation": profile.mother_occupation,
+        "brothers": profile.brothers,
+        "brothersMarried": profile.brothers_married,
+        "sisters": profile.sisters,
+        "sistersMarried": profile.sisters_married,
+        "familyAbout": profile.family_about,
+        "partnerAgeMin": profile.partner_age_min,
+        "partnerAgeMax": profile.partner_age_max,
+        "partnerHeightMin": profile.partner_height_min,
+        "partnerHeightMax": profile.partner_height_max,
+        "partnerMaritalStatus": profile.partner_marital_status,
+        "partnerReligion": profile.partner_religion,
+        "partnerCommunity": profile.partner_community,
+        "partnerMotherTongue": profile.partner_mother_tongue,
+        "partnerCountry": profile.partner_country,
+        "partnerEducation": profile.partner_education,
+        "partnerProfession": profile.partner_profession,
+        "partnerDiet": profile.partner_diet,
+        "partnerAbout": profile.partner_about,
         "photo": picture,
         "photos": gallery,
         "profile_completeness": profile.profile_completeness,

@@ -71,7 +71,9 @@ def update_profile_step(request, data: ProfileUpdateSchema):
     payload = data.dict(exclude_unset=True)
     step = payload.pop("step", None)
 
-    if step not in (0, 1, 2, 3, 4):
+    # The wizard now runs 0..6 (basics, social, career, family, lifestyle,
+    # partner preference, photos).
+    if step not in range(0, 7):
         raise HttpError(400, "Invalid step value")
 
     profile = get_object_or_404(Profile, user=request.user)
