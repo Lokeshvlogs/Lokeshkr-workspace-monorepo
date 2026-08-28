@@ -65,6 +65,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
   const typedRef = useRef<string>('');
   const typedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -205,7 +206,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
   }
 
   function scrollOptionIntoView(index: number) {
-    const node = popupRef.current?.querySelector(`[data-option-index="${index}"]`);
+    const node = listRef.current?.querySelector(`[data-option-index="${index}"]`);
     if (node && 'scrollIntoView' in node) {
       (node as HTMLElement).scrollIntoView({ block: 'nearest' });
     }
@@ -353,38 +354,41 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
       {open && popupStyle && typeof document !== 'undefined' && createPortal(
         <div
           ref={popupRef}
-          role="listbox"
-          aria-label={label}
-          className={`select-popup divide-y divide-pink-50 ${selectPopupClassName}`}
+          className={`select-popup ${selectPopupClassName}`}
           style={popupStyle}
         >
           {searchable && (
-            <input
-              type="text"
-              autoFocus
-              className="sticky top-0 z-10 mb-1 w-full rounded-md border border-color-border bg-color-bg p-2 text-base focus:outline-none focus:ring-2 focus:ring-color-primary-light"
-              placeholder={`Search ${label.toLowerCase()}...`}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setOpen(false);
-                  return;
-                }
-                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  moveActive(e.key === 'ArrowDown' ? 1 : -1);
-                  return;
-                }
-                if (e.key === 'Enter' && visibleOptions.length > 0) {
-                  e.preventDefault();
-                  doSelect(visibleOptions[activeIndex >= 0 ? activeIndex : 0]);
-                }
-              }}
-            />
+            <div className="select-search">
+              <input
+                type="text"
+                autoFocus
+                className="select-search-input"
+                placeholder={`Search ${label.toLowerCase()}...`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setOpen(false);
+                    return;
+                  }
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    moveActive(e.key === 'ArrowDown' ? 1 : -1);
+                    return;
+                  }
+                  if (e.key === 'Enter' && visibleOptions.length > 0) {
+                    e.preventDefault();
+                    doSelect(visibleOptions[activeIndex >= 0 ? activeIndex : 0]);
+                  }
+                }}
+              />
+            </div>
           )}
+          {/* The only scrolling box. Rows are clipped by it, so one that has
+              passed behind the search header cannot be drawn above it. */}
+          <div ref={listRef} role="listbox" aria-label={label} className="select-options divide-y divide-pink-50">
           {visibleOptions.length === 0 && (
-            <div className="p-2 text-color-placeholder-text">{emptyText}</div>
+            <div className="select-empty">{emptyText}</div>
           )}
           {visibleOptions.map((option, index) => {
             const isSelected = value === option.value;
@@ -406,6 +410,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
               </div>
             )
           })}
+          </div>
         </div>,
         document.body
       )}
