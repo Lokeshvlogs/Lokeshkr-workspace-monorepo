@@ -104,8 +104,6 @@ export default function RegisterForm() {
             label="Profile for"
             options={PROFILE_FOR_OPTIONS}
             errorValue={errors.profile_for ? errors.profile_for[0] : undefined}
-            PlaceHolderX={2}
-            LabelX={-5}
           />
           <SelectDropdown
             {...registerInputProps('age', true)}
@@ -113,7 +111,6 @@ export default function RegisterForm() {
             label="Age"
             options={AGE_OPTIONS}
             errorValue={errors.age ? errors.age[0] : undefined}
-            selectLabelClassName='mr-1'
           />
           {lookingForVisible && (
             <SelectDropdown
@@ -121,8 +118,6 @@ export default function RegisterForm() {
               label="Looking for"
               options={LOOKING_FOR_OPTIONS}
               errorValue={errors.looking_for ? errors.looking_for[0] : undefined}
-              PlaceHolderX={-5}
-              LabelX={-5}
               className="w-[550px]"
             />
           )}
@@ -138,7 +133,6 @@ export default function RegisterForm() {
               options={COUNTRY_CODES_OPTIONS}
               errorValue={errors.country_code ? errors.country_code[0] : undefined}
               showButtonValue={true}
-              LabelX={-10}
             />
           </div>
 
@@ -158,10 +152,6 @@ export default function RegisterForm() {
             {...registerInputProps('password')}
             label="Password"
             errorValue={errors.password ? errors.password[0] : undefined}
-            LabelX={15}
-            LabelY={-12}
-            PlaceholderX={10}
-            PlaceholderY={10}
           />
         </div>
 

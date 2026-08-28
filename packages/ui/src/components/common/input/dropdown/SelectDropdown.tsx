@@ -15,6 +15,11 @@ interface Props {
   showButtonValue?: boolean;
   errorValue?: string;
   showError?: boolean;
+  /**
+   * @deprecated The floating label is CSS-driven now (see `.text-field-label`).
+   * Still accepted so existing call sites compile, but they position nothing -
+   * the label can no longer stray outside the control and get clipped.
+   */
   LabelBorderScale?: number;
   PlaceHolderX?: number;
   PlaceHolderY?: number;
@@ -318,42 +323,31 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
         id={id}
         type="button"
         ref={btnRef}
-        className={`select-button order-2 peer ${errorValue ? 'select-error' : ''}`}
+        className={`select-button ${errorValue ? 'select-error' : ''}`}
+        data-filled={selectedOption ? 'true' : 'false'}
         onClick={() => { if (!disabled) setOpen(v => !v); }}
         onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-invalid={errorValue ? 'true' : 'false'}
         disabled={disabled}
         onBlur={(e) => doBlur(e)}
       >
-        <label
-          htmlFor={id}
-          className={`text-field-label order-1 transition-all duration-150`}
-          style={{
-            transform: `
-                        translate(${selectedOption ?
-                `${LabelX ? `${LabelX < 0 ? `-${Math.abs(LabelX)}%` : `${Math.abs(LabelX)}%`}` : '2%'}` :
-                `${PlaceHolderX ? `${PlaceHolderX < 0 ? `-${Math.abs(PlaceHolderX)}px` : `${Math.abs(PlaceHolderX)}px`}` : '0'}`}, 
-                        
-                                  ${selectedOption ?
-                `${LabelY ? `${LabelY < 0 ? `-${Math.abs(LabelY)}px` : `${Math.abs(LabelY)}px`}` : '-1rem'}` :
-                `${PlaceHolderY ? `${PlaceHolderY < 0 ? `-${Math.abs(PlaceHolderY)}px` : `${Math.abs(PlaceHolderY)}px`}` : '0'}`}) 
-                        scale(${selectedOption ? LabelBorderScale / 100 : 1})
-                      `
-          }}
-        >
+        {/* Floated by CSS off data-filled / aria-expanded - see .text-field-label
+            in styles.css. The old per-call-site LabelX/LabelY nudges are gone. */}
+        <label htmlFor={id} className={`text-field-label ${labelClassName ?? ''}`}>
           {label}
         </label>
-        <div className="flex items-center gap-2 z-5">
-          {displayFlag && <img src={displayFlag} alt={displayLabel} className={`select-icon ${iconClassName}`} />}
-        </div>
 
-        <div className="flex items-center mr-2 gap-2">
-          <span className={`${selectedOption ? 'select-label' : 'select-placeholder'} ${selectLabelClassName} `}>{showButtonValue ? value ? value + ' ' + displayLabel : displayLabel : displayLabel}</span>
-        </div>
-        <div className="ml-auto flex items-center z-5">
+        {displayFlag && <img src={displayFlag} alt={displayLabel} className={`select-icon ${iconClassName}`} />}
+
+        <span className={`${selectedOption ? 'select-label' : 'select-placeholder'} truncate ${selectLabelClassName}`}>
+          {showButtonValue && value ? `${value} ${displayLabel}` : displayLabel}
+        </span>
+
+        <span className="select-chevron" aria-hidden="true">
           <ChevronDown size={18} />
-        </div>
+        </span>
       </button>
 
       {open && popupStyle && typeof document !== 'undefined' && createPortal(

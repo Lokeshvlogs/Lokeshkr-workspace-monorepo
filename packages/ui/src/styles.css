@@ -19,64 +19,212 @@
   --color-success: #22c55e;
   --color-placeholder-text: #6b7280;
   --color-primary-text: #111827;
+  --color-focus-ring: rgba(236, 72, 153, 0.16);
   --radius: 8px;
+  /* One height and one corner radius for every field-shaped control, so a text
+     input, a select and the date trigger line up pixel for pixel in a grid. */
+  --control-height: 54px;
+  --control-radius: 10px;
 }
 
-.input-wrapper {
-  @apply relative items-stretch w-full;
+/* ---------------------------------------------------------------------------
+ * Form controls
+ *
+ * TextField, PasswordInput and SelectDropdown all render the same shell: a
+ * fixed-height box whose label starts vertically centred - standing in for the
+ * placeholder - and floats up INSIDE the box once the control is focused or
+ * filled.
+ *
+ * The label deliberately never leaves the control's own bounds. It used to be
+ * translated onto the border, half outside the wrapper, which the registration
+ * wizard's `overflow: hidden` slider track sliced through: the first row's
+ * "First Name" and "Surname" labels were cut in half horizontally.
+ *
+ * The floated state is pure CSS - `:focus` plus `:not(:placeholder-shown)` for
+ * inputs (hence the mandatory `placeholder=" "` the components pass), and
+ * `[data-filled="true"]` for the select button. No JS measuring and no
+ * per-call-site pixel nudges.
+ * ------------------------------------------------------------------------ */
+
+.input-wrapper,
+.select-wrapper {
+  position: relative;
+  width: 100%;
 }
 
-.input {
-  @apply w-full p-3 h-[54px] text-lg border border-pink-200 rounded-md
-    focus:outline-none focus:ring-2 focus:ring-color-primary-light
-    placeholder-color-placeholder-text;
+/* The shared box. Everything that reads as "a field" is exactly this shape. */
+.input,
+.select-button.select-button {
+  width: 100%;
+  height: var(--control-height, 54px);
+  padding: 0.875rem 0.9375rem;
+  border: 1px solid var(--color-border, #fbcfe8);
+  border-radius: var(--control-radius, 10px);
+  background-color: var(--color-bg, #ffffff);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  color: var(--color-primary-text, #111827);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.input-error {
-  @apply border-2 border-red-500;
+.select-button.select-button {
+  /* Containing block for the floating label, so the label is measured against
+     the button and not against a wrapper that an error message has grown. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.input::placeholder {
+  color: var(--color-placeholder-text, #6b7280);
+  font-weight: 400;
+}
+
+/* Inside an .input-wrapper there IS a floating label, so the value shifts down
+   to clear it and the label owns the empty state - the native placeholder only
+   surfaces on focus, as a quiet hint beneath the floated label. */
+.input-wrapper > .input,
+.select-button.select-button {
+  padding: 1.375rem 0.9375rem 0.5rem;
+}
+
+.input-wrapper > .input::placeholder {
+  color: transparent;
+}
+
+.input-wrapper > .input:focus::placeholder {
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.input:hover:not(:disabled):not(:focus),
+.select-button.select-button:hover:not(:disabled) {
+  border-color: var(--color-primary-light, #f96cba);
+}
+
+.input:focus,
+.select-button.select-button:focus-visible,
+.select-button.select-button[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--color-primary, #ec4899);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+}
+
+.input:disabled,
+.select-button.select-button:disabled {
+  cursor: not-allowed;
+  background-color: #f9fafb;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.input-error.input-error,
+.select-error.select-error {
+  border-color: var(--color-error, #ef4444);
+}
+
+.input-error.input-error:focus,
+.select-error.select-error:focus-visible {
+  border-color: var(--color-error, #ef4444);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
 }
 
 .error-text {
-  @apply text-red-500 text-sm mt-1;
+  @apply mt-1.5 text-xs font-medium;
+  color: var(--color-error, #ef4444);
 }
 
+/* --- Floating label --- */
 .text-field-label {
-  @apply absolute left-3 top-2 -translate-y-4 scale-75 bg-color-bg px-1 text-xl text-color-placeholder-text transition-all pointer-events-none
-    peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100
-    peer-focus:-translate-y-5 peer-focus:scale-75 peer-focus:text-color-primary;
+  position: absolute;
+  left: 0.9375rem;
+  /* Anchored to the control's own height rather than 50% of the wrapper - the
+     wrapper also holds the error message, which would drag a 50% label down. */
+  top: calc(var(--control-height, 54px) / 2);
+  transform: translateY(-50%);
+  max-width: calc(100% - 2.75rem);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+  color: var(--color-placeholder-text, #6b7280);
+  pointer-events: none;
+  transition: top 0.16s ease, font-size 0.16s ease, color 0.16s ease,
+    font-weight 0.16s ease, letter-spacing 0.16s ease;
 }
 
-.text-field-label-error {
-  @apply absolute left-3 top-2 -translate-y-4 scale-75 bg-color-bg px-1 text-xl text-color-error transition-all pointer-events-none
-    peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100
-    peer-focus:-translate-y-5 peer-focus:scale-75 peer-focus:text-color-error;
+.input:focus ~ .text-field-label,
+.input:not(:placeholder-shown) ~ .text-field-label,
+.select-button[data-filled="true"] .text-field-label,
+.select-button[aria-expanded="true"] .text-field-label {
+  top: 0.5rem;
+  transform: none;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-.select-wrapper {
-  @apply relative w-full items-stretch;
+.input:focus ~ .text-field-label,
+.select-button[aria-expanded="true"] .text-field-label {
+  color: var(--color-primary, #ec4899);
 }
 
-.select-button {
-  @apply w-full text-left p-3 h-[54px] text-lg text-gray-500 whitespace-nowrap border border-color-border rounded-md
-    flex items-center justify-between cursor-pointer placeholder-color-placeholder-text focus:outline-none focus:ring-2
-    focus:ring-color-primary-light;
+.input-error ~ .text-field-label,
+.text-field-label-error,
+.select-error .text-field-label {
+  color: var(--color-error, #ef4444);
 }
 
-button.select-button,
-.select-button.select-button {
-  background-color: var(--color-bg, #ffffff);
+/* Reveal toggle for PasswordInput. Pinned to the control's own height so it
+   stays centred on the box even when an error message extends the wrapper. */
+.password-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: var(--control-height, 54px);
+  display: flex;
+  align-items: center;
+  padding: 0 0.9375rem;
+  color: var(--color-placeholder-text, #6b7280);
+  transition: color 0.15s ease;
 }
 
-.select-error {
-  @apply border-2 border-color-error;
+.password-toggle:hover {
+  color: var(--color-primary, #ec4899);
 }
 
+.password-toggle:focus-visible {
+  outline: 2px solid var(--color-primary, #ec4899);
+  outline-offset: -4px;
+  border-radius: var(--control-radius, 10px);
+}
+
+/* --- Select popup --- */
 .select-popup {
-  @apply absolute bg-color-bg w-full mt-1 border border-color-border rounded-md p-1 shadow max-h-56 overflow-y-auto hide-scrollbar;
+  @apply absolute w-full mt-1.5 rounded-xl p-1.5 max-h-60 overflow-y-auto hide-scrollbar;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 12px 32px rgba(17, 24, 39, 0.12), 0 2px 8px rgba(17, 24, 39, 0.06);
 }
 
 .select-option {
-  @apply flex items-center gap-2 w-full text-left p-2 rounded-md first:rounded-t-md last:rounded-b-md bg-white text-lg text-color-primary-text hover:bg-pink-100;
+  @apply flex items-center gap-2 w-full text-left rounded-lg cursor-pointer;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-primary-text, #111827);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.select-option:hover {
+  background-color: var(--color-primary-surface, #fdf2f8);
 }
 
 /* Keyboard / type-ahead highlight. Distinct from the selected row so both can
@@ -91,19 +239,45 @@ button.select-button,
 }
 
 .select-selected-option {
-  @apply flex items-center gap-2 w-full text-left p-2 first:rounded-t-md last:rounded-b-md bg-color-primary text-color-bg hover:bg-color-primary-light;
+  @apply flex items-center gap-2 w-full text-left rounded-lg cursor-pointer;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background-color: var(--color-primary, #ec4899);
+  color: #ffffff;
 }
 
+.select-selected-option:hover {
+  background-color: var(--color-primary-light, #f96cba);
+}
+
+/* The chosen value inside the button. Sits in the same slot as an input's
+   text, so a select and a text field line up when they share a grid row. */
 .select-label {
-  @apply text-lg text-color-primary-text;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--color-primary-text, #111827);
 }
 
 .select-placeholder {
-  @apply text-lg text-color-placeholder-text;
+  font-size: 0.9375rem;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.select-chevron {
+  @apply ml-auto flex shrink-0 items-center;
+  color: var(--color-placeholder-text, #6b7280);
+  transition: transform 0.16s ease, color 0.16s ease;
+}
+
+.select-button[aria-expanded="true"] .select-chevron {
+  transform: rotate(180deg);
+  color: var(--color-primary, #ec4899);
 }
 
 .select-icon {
-  @apply w-5 h-4 object-contain mr-1;
+  @apply w-5 h-4 shrink-0 object-contain;
 }
 
 .border-primary {
@@ -180,10 +354,6 @@ button.select-button,
 /* --- Chip group (single-select pills) --- */
 .chip-group {
   @apply w-full border-0 p-0 m-0;
-}
-
-.chip-group-label {
-  @apply mb-2 block text-sm font-semibold text-color-primary-text;
 }
 
 .chip-group-options {
@@ -267,7 +437,10 @@ button.chip-selected:hover {
 }
 
 .range-slider-label {
-  @apply text-sm font-semibold text-color-primary-text;
+  @apply text-color-primary-text;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .range-slider-value {
@@ -382,8 +555,12 @@ button.chip-selected:hover {
   @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
 }
 
-.field-label {
-  @apply mb-2 block text-sm font-semibold text-color-primary-text;
+.field-label,
+.chip-group-label {
+  @apply mb-2 block text-color-primary-text;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 /* --- Avatar cropper --- */
@@ -583,18 +760,20 @@ button.chip-selected:hover {
   background-color: var(--color-bg, #ffffff);
 }
 
-
 /* --- Birth date & time picker --- */
 .dob-picker {
   @apply w-full;
 }
 
 .dob-trigger.dob-trigger {
-  @apply flex w-full items-center gap-2 rounded-md border p-3 text-left transition-colors;
-  height: 54px;
-  border-color: var(--color-border, #fbcfe8);
+  @apply flex w-full items-center gap-2 text-left;
+  height: var(--control-height, 54px);
+  padding: 0 0.9375rem;
+  border: 1px solid var(--color-border, #fbcfe8);
+  border-radius: var(--control-radius, 10px);
   background-color: var(--color-bg, #ffffff);
   color: var(--color-primary, #ec4899);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .dob-trigger.dob-trigger:hover {
@@ -602,17 +781,21 @@ button.chip-selected:hover {
 }
 
 .dob-trigger:focus-visible {
-  outline: 2px solid var(--color-primary, #ec4899);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--color-primary, #ec4899);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
 }
 
 .dob-trigger-value {
-  @apply flex-1 truncate text-base font-medium;
+  @apply flex-1 truncate font-medium;
+  font-size: 0.9375rem;
+  letter-spacing: -0.005em;
   color: var(--color-primary-text, #111827);
 }
 
 .dob-trigger-placeholder {
-  @apply flex-1 truncate text-base;
+  @apply flex-1 truncate;
+  font-size: 0.9375rem;
   color: var(--color-placeholder-text, #6b7280);
 }
 
@@ -741,17 +924,32 @@ button.chip-selected:hover {
 
 /* --- Multi-line text --- */
 .textarea-field.textarea-field {
-  @apply w-full rounded-md border p-3 text-base;
-  border-color: var(--color-border, #fbcfe8);
+  @apply w-full;
+  padding: 0.75rem 0.9375rem;
+  border: 1px solid var(--color-border, #fbcfe8);
+  border-radius: var(--control-radius, 10px);
   background-color: var(--color-bg, #ffffff);
   color: var(--color-primary-text, #111827);
-  min-height: 96px;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  min-height: 104px;
   resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea-field.textarea-field:hover:not(:focus) {
+  border-color: var(--color-primary-light, #f96cba);
+}
+
+.textarea-field::placeholder {
+  color: var(--color-placeholder-text, #6b7280);
 }
 
 .textarea-field:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--color-primary-light, #f96cba);
+  border-color: var(--color-primary, #ec4899);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
 }
 
 .textarea-count {

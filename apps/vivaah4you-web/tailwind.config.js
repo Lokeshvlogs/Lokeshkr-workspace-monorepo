@@ -8,7 +8,20 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial']
+        // --font-inter is set by next/font in app/layout.tsx. The rest of the
+        // stack is the system grotesque Instagram falls back to, so the page
+        // still reads the same way before the webfont lands.
+        sans: [
+          'var(--font-inter)',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Helvetica',
+          'Arial',
+          'sans-serif'
+        ]
       }
     }
   },

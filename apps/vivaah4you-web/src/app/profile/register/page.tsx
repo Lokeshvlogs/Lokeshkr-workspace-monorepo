@@ -231,10 +231,6 @@ function PickerField({
       onChange={onChange}
       searchable={searchable}
       className={className}
-      LabelX={-2}
-      LabelY={-20}
-      PlaceHolderX={2}
-      PlaceHolderY={2}
     />
   );
 }

@@ -8,6 +8,12 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   labelClassName?: string;
   errorValue?: string;
   showError?: boolean;
+  /**
+   * @deprecated Label placement is CSS-driven now (see `.text-field-label` in
+   * styles.css). These are accepted so existing call sites keep compiling, but
+   * they no longer move anything - the label can never leave the field's box,
+   * which is what used to get clipped by the wizard's overflow-hidden track.
+   */
   LabelBorderScale?: number;
   focuseValue?: boolean;
   LabelX?: number;
@@ -16,64 +22,42 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   PlaceholderY?: number;
 }
 
-export const TextField = ({ 
-  label, 
-  id, 
-  labelClassName, 
-  errorValue, 
-  showError = true, 
-  LabelBorderScale = 75, 
-  focuseValue = false, 
-  LabelX = 0, 
-  LabelY = -20, 
-  PlaceholderX = 0, 
-  PlaceholderY = 0, 
-  ...props 
-}: TextFieldProps) => {
-
-  // KEY FIX: Check if the input has text or is focused
-  // Using String(props.value || "") to handle undefined/null safely
-  const isNotEmpty = String(props.value || "").trim().length > 0;
-  const isActive = focuseValue || isNotEmpty;
-
-  // Helper to format the coordinates safely
-  const getX = isActive 
-    ? (LabelX !== 0 ? `${LabelX}%` : '2%') 
-    : (PlaceholderX !== 0 ? `${PlaceholderX}px` : '0');
-
-  const getY = isActive 
-    ? (LabelY !== 0 ? `${LabelY}px` : '-1rem') 
-    : (PlaceholderY !== 0 ? `${PlaceholderY}px` : '0');
-
-  const scale = isActive ? LabelBorderScale / 100 : 1;
-
-  return (
-    <div className="input-wrapper relative">
-        <input
-          {...props}
-          id={id}
-          aria-invalid={errorValue ? 'true' : 'false'}
-          aria-describedby={`${id}-error`}
-          className={`input peer ${errorValue ? 'input-error' : ''} ${props.className}`}
-        />
-        <label
-            htmlFor={id}
-            className={`text-field-label ${errorValue ? 'text-color-error' : ''} ${labelClassName}`}
-            style={{ 
-              position: 'absolute',
-              pointerEvents: 'none', // Ensures clicks pass through to input
-              transition: 'transform 0.2s ease, color 0.2s ease',
-              transform: `translate(${getX}, ${getY}) scale(${scale})`,
-              transformOrigin: 'left top'
-            }}
-          >
-            {label}
-        </label>
-        {showError && errorValue && (
-          <p id={`${id}-error`} className="error-text" role="alert">
-            {errorValue}
-          </p>
-        )}
-    </div>
-  );
-};
+export const TextField = ({
+  label,
+  id,
+  className = "",
+  labelClassName = "",
+  errorValue,
+  showError = true,
+  // Deprecated positioning props - destructured only to keep them out of the
+  // DOM spread below.
+  LabelBorderScale,
+  focuseValue,
+  LabelX,
+  LabelY,
+  PlaceholderX,
+  PlaceholderY,
+  placeholder,
+  ...props
+}: TextFieldProps) => (
+  <div className="input-wrapper">
+    <input
+      {...props}
+      id={id}
+      /* A non-empty placeholder is what makes `:not(:placeholder-shown)` flip
+         the label to its floated state. It renders transparent until focus. */
+      placeholder={placeholder || " "}
+      aria-invalid={errorValue ? "true" : "false"}
+      aria-describedby={errorValue ? `${id}-error` : undefined}
+      className={`input ${errorValue ? "input-error" : ""} ${className}`}
+    />
+    <label htmlFor={id} className={`text-field-label ${labelClassName}`}>
+      {label}
+    </label>
+    {showError && errorValue && (
+      <p id={`${id}-error`} className="error-text" role="alert">
+        {errorValue}
+      </p>
+    )}
+  </div>
+);

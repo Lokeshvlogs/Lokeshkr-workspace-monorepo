@@ -23,23 +23,78 @@ body,
   height: 100%;
 }
 
+/*
+ * Typography
+ *
+ * One family (Inter, wired up in app/layout.tsx), weight and tracking doing the
+ * work instead of size jumps - the Instagram approach. Grotesques like Inter
+ * are drawn for optical sizes, so headings get progressively tighter tracking
+ * while body text stays at its natural width.
+ */
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply text-gray-900 font-sans;
+    @apply font-sans text-gray-900;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    letter-spacing: -0.006em;
+    /* Inter's contextual alternates give the single-storey 'a'-adjacent shapes
+       and disambiguated 1/l/I that keep small UI text readable. */
+    font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1, 'calt' 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-gray-900;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+  }
+
+  h1 { letter-spacing: -0.032em; }
+  h2 { letter-spacing: -0.028em; }
+
+  /* Numbers in tables, ages, counts and prices should not wobble. */
+  table, .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  button, input, select, textarea {
+    font-family: inherit;
+    letter-spacing: inherit;
   }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold transition;
+    height: 44px;
+    letter-spacing: -0.006em;
   }
 
   .btn-primary {
-    @apply btn bg-color-primary text-white hover:opacity-90;
+    @apply btn bg-color-primary text-white;
+    box-shadow: 0 1px 2px rgba(236, 72, 153, 0.24);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-light);
+  }
+
+  .btn-primary:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
   }
 
   .link {
-    @apply text-color-primary hover:underline;
+    @apply font-semibold text-color-primary hover:underline;
   }
 
   .hero-bg {

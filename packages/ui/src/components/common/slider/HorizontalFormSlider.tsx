@@ -84,7 +84,12 @@ export default function HorizontalFormSlider({
         {steps.map((content, index) => (
           <div
             key={index}
-            style={width ? { width } : { width: `${100 / totalSteps}%` }}
+            /* The track is overflow:hidden so it can slide; the padding keeps
+               focus rings and shadows on the outermost fields off that edge. */
+            style={{
+              ...(width ? { width } : { width: `${100 / totalSteps}%` }),
+              padding: "6px 4px",
+            }}
             aria-hidden={index !== step}
           >
             {content}

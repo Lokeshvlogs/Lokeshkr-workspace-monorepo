@@ -70,18 +70,18 @@ function LoginCard() {
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">Username or Email</label>
-              <input id="identifier" name="identifier" value={username} onChange={(e) => setUserName(e.target.value)} type="text" className="input mt-1" placeholder="username or you@example.com" autoComplete="username" />
+              <label htmlFor="identifier" className="field-label">Username or Email</label>
+              <input id="identifier" name="identifier" value={username} onChange={(e) => setUserName(e.target.value)} type="text" className="input" placeholder="username or you@example.com" autoComplete="username" />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+              <label htmlFor="password" className="field-label">Password</label>
               <div className="relative">
                 <input
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type={showPassword ? "text" : "password"}
-                  className="input mt-1 pr-20"
+                  className="input pr-20"
                   placeholder="••••••••"
                   autoComplete="current-password"
                   name="password"
@@ -99,7 +99,7 @@ function LoginCard() {
             </div>
 
             <div className="flex items-center justify-between">
-              <button type="submit" className="btn bg-color-primary text-white" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</button>
+              <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</button>
               <Link href="/" className="text-sm text-gray-600 hover:underline">Back to home</Link>
             </div>
 

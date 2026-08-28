@@ -198,10 +198,6 @@ export default function EditableField({ def, profile, onSave }: Props) {
           value={value}
           onChange={(v) => setDraft({ [def.key]: v })}
           searchable={def.searchable}
-          LabelX={-2}
-          LabelY={-20}
-          PlaceHolderX={2}
-          PlaceHolderY={2}
         />
       )}
 
@@ -242,8 +238,6 @@ export default function EditableField({ def, profile, onSave }: Props) {
             value={draft.heightFeet}
             onChange={(v) => setDraft({ ...draft, heightFeet: v })}
             className="w-28"
-            LabelX={-2}
-            LabelY={-20}
           />
           <SelectDropdown
             label="Inches"
@@ -252,8 +246,6 @@ export default function EditableField({ def, profile, onSave }: Props) {
             value={draft.heightInches}
             onChange={(v) => setDraft({ ...draft, heightInches: v })}
             className="w-28"
-            LabelX={-2}
-            LabelY={-20}
           />
         </div>
       )}
