@@ -1,5 +1,5 @@
 "use client";
-import { ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import React, { useState, useRef, useEffect, CSSProperties, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption } from '../../../../types/select';
@@ -386,7 +386,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
           )}
           {/* The only scrolling box. Rows are clipped by it, so one that has
               passed behind the search header cannot be drawn above it. */}
-          <div ref={listRef} role="listbox" aria-label={label} className="select-options divide-y divide-pink-50">
+          <div ref={listRef} role="listbox" aria-label={label} className="select-options">
           {visibleOptions.length === 0 && (
             <div className="select-empty">{emptyText}</div>
           )}
@@ -403,10 +403,11 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
                 onClick={() => doSelect(option)}
               >
                 {option.icon && <img src={option.icon} alt={option.label || option.extra_label} className={`select-icon ${iconClassName}`} />}
-                {option.label && <label className={`${optionsLabelClassName}`}>{option.label}</label>}
-                <div className={`flex-auto flex items-center ${extraLabelJustify} gap-2`}>
-                  {option.extra_label && <label className={`whitespace-nowrap ${extraLabelClassName} mr-2`}>{option.extra_label}</label>}
-                </div>
+                {option.label && <span className={`select-option-label ${optionsLabelClassName}`}>{option.label}</span>}
+                <span className={`select-option-extra ${extraLabelJustify}`}>
+                  {option.extra_label && <span className={`truncate ${extraLabelClassName}`}>{option.extra_label}</span>}
+                </span>
+                <Check size={16} strokeWidth={2.75} className="select-option-check" aria-hidden="true" />
               </div>
             )
           })}

@@ -255,12 +255,58 @@
 /* min-height:0 lets this shrink inside the flex column instead of forcing the
    popup past its max-height, which is what makes it the scrolling box. */
 .select-options {
-  @apply hide-scrollbar;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.25rem 0.375rem 0.375rem;
+}
+
+/*
+ * Scrollbar. A long caste or city list gives no hint that it scrolls without
+ * one, so this is a slim inset pill rather than the blanket hide-scrollbar.
+ *
+ * The two styling systems are mutually exclusive and must not be combined:
+ * setting the standard scrollbar-color makes Chrome ignore every
+ * ::-webkit-scrollbar rule below and draw a classic bar complete with stepper
+ * arrows at each end. So the standard properties are fenced off to Firefox,
+ * which is the only engine that both supports -moz-appearance and lacks the
+ * ::-webkit-scrollbar pseudo-elements.
+ */
+@supports (-moz-appearance: none) {
+  .select-options {
+    scrollbar-width: thin;
+    scrollbar-color: #f5cfe4 transparent;
+  }
+}
+
+.select-options::-webkit-scrollbar {
+  width: 10px;
+}
+
+.select-options::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Opting into a custom scrollbar gives Chrome the classic bar, which ships with
+   a stepper arrow at each end. Nothing else removes them. */
+.select-options::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* The transparent border plus content-box clip is what makes the thumb read as
+   a slim inset pill instead of a full-width bar. */
+.select-options::-webkit-scrollbar-thumb {
+  background-color: #f5cfe4;
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.select-options::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-light, #f96cba);
 }
 
 .select-empty {
@@ -270,41 +316,74 @@
   color: var(--color-placeholder-text, #6b7280);
 }
 
+/* Rows read as a list, not a table - no rules between them. Selection shows as
+   a check plus a colour shift rather than a solid fill: a filled bar is heavy
+   in a long list, and it left nowhere for the keyboard cursor to show on the
+   selected row. Now the cursor is the fill and selection is the check, so both
+   states are legible at the same time. */
 .select-option {
-  @apply flex items-center gap-2 w-full text-left rounded-lg cursor-pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
   padding: 0.5rem 0.625rem;
+  border-radius: 8px;
+  cursor: pointer;
   font-size: 0.9375rem;
   font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
   color: var(--color-primary-text, #111827);
   transition: background-color 0.12s ease, color 0.12s ease;
 }
 
-.select-option:hover {
-  background-color: var(--color-primary-surface, #fdf2f8);
+.select-option + .select-option {
+  margin-top: 1px;
 }
 
-/* Keyboard / type-ahead highlight. Distinct from the selected row so both can
-   be visible at once while arrowing through the list. */
-.select-option-active {
-  background-color: var(--color-primary-surface, #fdf2f8);
-  box-shadow: inset 2px 0 0 var(--color-primary, #ec4899);
+.select-option-label {
+  @apply truncate;
 }
 
-.select-selected-option.select-option-active {
-  background-color: var(--color-primary-light, #f96cba);
+/* Secondary column - the country name beside a dial code, for instance. */
+.select-option-extra {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* Reserved on every row, so choosing one never reflows the list. */
+.select-option-check {
+  flex: 0 0 auto;
+  opacity: 0;
+  color: var(--color-primary, #ec4899);
+  transition: opacity 0.12s ease;
 }
 
 .select-selected-option {
-  @apply flex items-center gap-2 w-full text-left rounded-lg cursor-pointer;
-  padding: 0.5rem 0.625rem;
-  font-size: 0.9375rem;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary, #ec4899);
   font-weight: 600;
-  background-color: var(--color-primary, #ec4899);
-  color: #ffffff;
 }
 
-.select-selected-option:hover {
-  background-color: var(--color-primary-light, #f96cba);
+.select-selected-option .select-option-extra {
+  color: var(--color-primary-light, #f96cba);
+}
+
+.select-selected-option .select-option-check {
+  opacity: 1;
+}
+
+/* Declared after the selected rule on purpose: same specificity, so the cursor
+   wins and stays visible when it lands on the already-selected row. Pointer
+   hover and the keyboard cursor are one state - hovering sets the active index. */
+.select-option:hover,
+.select-option-active {
+  background-color: #fce7f3;
 }
 
 /* The chosen value inside the button. Sits in the same slot as an input's
