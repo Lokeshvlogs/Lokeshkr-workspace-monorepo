@@ -39,6 +39,9 @@ class Profile(models.Model):
         null=True
     )
     email = models.EmailField( blank=True,)
+    # Set once the sign-up passcode is confirmed. Password login is refused
+    # until then, so an unverified number cannot hold an account hostage.
+    phone_verified = models.BooleanField(default=False)
 
     # Captured at sign-up (see apps.auth_api.api.register)
     PROFILE_FOR_CHOICES = [

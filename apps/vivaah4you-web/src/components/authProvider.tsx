@@ -102,7 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const searchParams = new URLSearchParams(window.location.search);
     const nextUrl = searchParams.get("next");
-    const invalidNextUrl = ["/login", "/logout"];
+    const invalidNextUrl = ["/login", "/verify"];
     const nextUrlValid =
       !!nextUrl &&
       nextUrl.startsWith("/") &&
@@ -119,6 +119,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = () => {
+    // The real credential is the httpOnly cookie pair, not any of the
+    // localStorage below - without this the "logged out" browser still holds a
+    // working session and /api/profile/me keeps answering.
+    void fetch("/api/logout", { method: "POST" }).catch(() => {});
+
     setIsAuthenticated(false);
     setIsProfileComplete(false);
     setUsername("");
@@ -143,7 +148,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsAuthenticated(false);
     localStorage.setItem(LOCAL_STORAGE_KEY, "0");
 
-    let loginWithNextUrl = `${LOGIN_REQUIRED_URL}?next=${pathname}`;
+    let loginWithNextUrl = `${LOGIN_REQUIRED_URL}?next=${encodeURIComponent(pathname)}`;
 
     if (pathname === LOGIN_REQUIRED_URL) {
       loginWithNextUrl = LOGIN_REQUIRED_URL;

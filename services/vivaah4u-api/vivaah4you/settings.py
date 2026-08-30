@@ -10,8 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from datetime import timedelta
 from pathlib import Path
+
+
+def _env_list(name, default):
+    """Comma-separated env var -> list, ignoring blanks."""
+    raw = os.environ.get(name, default)
+    return [item.strip() for item in raw.split(",") if item.strip()]
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,13 +27,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v@=!f1y#z)ee=^%n9&(mok(bq4z20i2*(g&bbaui64rfqvm11('
+# All three are environment-driven so a deployment can be secured without a
+# code change. The fallbacks keep `service.bat vivaah4u-api server` working out
+# of the box for local development.
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-v@=!f1y#z)ee=^%n9&(mok(bq4z20i2*(g&bbaui64rfqvm11(",
+)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "1").lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]")
+
+if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY must be set to a real secret when DEBUG is off."
+    )
 
 
 # Application definition
@@ -61,10 +77,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'vivaah4you.urls'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = _env_list(
+    "DJANGO_CORS_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000",
+)
 
 TEMPLATES = [
     {
@@ -153,3 +169,23 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
+
+
+# -------------------------------
+# One-time passcodes
+# -------------------------------
+
+# How long an issued passcode stays valid, and how long before another may be
+# requested for the same number.
+OTP_TTL_SECONDS = int(os.environ.get("OTP_TTL_SECONDS", "300"))
+OTP_RESEND_COOLDOWN_SECONDS = int(os.environ.get("OTP_RESEND_COOLDOWN_SECONDS", "30"))
+
+# Development bypass: this code is accepted for any number, so the sign-up and
+# login flows work with no SMS provider wired up. Set OTP_DEV_CODE to an empty
+# string in any real deployment - that disables the bypass entirely and leaves
+# only genuinely issued codes working.
+OTP_DEV_CODE = os.environ.get("OTP_DEV_CODE", "8888" if DEBUG else "")
+
+# Set to enable the "Continue with Google" button. Until then the UI renders it
+# in a disabled state that explains it is not configured yet.
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")

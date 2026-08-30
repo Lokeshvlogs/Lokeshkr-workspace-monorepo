@@ -7,12 +7,19 @@ const emptyToUndefined = (val: unknown) => {
   return val
 }
 
+// The old rule was /^[A-Za-z]+$/, which rejected every space, hyphen and
+// apostrophe - "Ram Kumar", "Anne-Marie" and "D'Souza" could not sign up at all.
+// \p{L} also admits accented and non-Latin scripts. Still anchored on a letter,
+// so a name cannot be punctuation alone.
+const NAME_PATTERN = /^\p{L}[\p{L}\p{M}\s'’.-]*$/u
+const NAME_MESSAGE = "Use letters, spaces, hyphens or apostrophes."
+
 // Field-level schema: keeps `.shape` reachable so useZodForm can validate one
 // input at a time on blur.
 export const registerFieldSchema = z.object({
   email: z.string().email("Invalid email"),
-  first_name: z.string().regex(/^[A-Za-z]+$/, "Must be Alphabets only.").min(1, "First name must be at least 1 character"),
-  surname: z.string().regex(/^[A-Za-z]+$/, "Must be Alphabets only.").min(1, "Surname must be at least 1 character"),
+  first_name: z.string().trim().min(1, "First name must be at least 1 character").regex(NAME_PATTERN, NAME_MESSAGE),
+  surname: z.string().trim().min(1, "Surname must be at least 1 character").regex(NAME_PATTERN, NAME_MESSAGE),
   profile_for: z.preprocess(emptyToUndefined, z.enum(PROFILE_FOR_VALUES).optional().refine((val) => val !== undefined, {
     message: "Please select a profile for",
   })),
@@ -39,9 +46,12 @@ export const registerFieldSchema = z.object({
       // This function catches the 'undefined' produced by your preprocess
       error: (issue) => issue.input === undefined ? "Please enter a Phone number" : "Invalid Phone number"
     })
+      // 9-10 digits was India's mobile shape, applied regardless of the country
+      // code chosen right next to it. This range covers the dial codes the form
+      // already offers (UK national numbers run to 11, for instance).
       .regex(/^\d+$/, "Phone number must contain only digits")
-      .min(9, "Phone number must be at least 9 digits")
-      .max(10, "Phone number must not exceed 10 digits")),
+      .min(7, "Phone number must be at least 7 digits")
+      .max(15, "Phone number must not exceed 15 digits")),
 
   password: z.preprocess(emptyToUndefined,
     z.string({

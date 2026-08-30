@@ -4,8 +4,9 @@ import { DJANGO_API_ENDPOINT } from '@/config/defaults'
 
 const DJANGO_API_REGISTER_URL = `${DJANGO_API_ENDPOINT}/auth_api/register`
 
-// Sign-up proxy. Registration deliberately does NOT log the user in: the user is
-// sent to /login afterwards, so no tokens are minted or stored here.
+// Sign-up proxy. Registration deliberately does NOT log the user in - the account
+// is inert until the mobile number is confirmed. No tokens are minted here; the
+// client goes to /verify next, and it is the passcode that signs the member in.
 export async function POST(request: NextRequest) {
     const requestData = await request.json()
 
@@ -43,6 +44,10 @@ export async function POST(request: NextRequest) {
                 registered: true,
                 username: responseData.username,
                 profile_id: responseData.profile_id,
+                // Echoed so /verify can address the code to the right number.
+                phone: responseData.phone ?? requestData.phone,
+                country_code: responseData.country_code ?? requestData.country_code,
+                verificationRequired: responseData.verification_required !== false,
             },
             { status: 200 },
         )

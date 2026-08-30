@@ -14,6 +14,7 @@ export { default as ScrollableDropdown } from './components/common/input/dropdow
 export { default as SelectDropdown } from './components/common/input/dropdown/SelectDropdown';
 export { default as SimpleSelectDropDown } from './components/common/input/dropdown/SimpleSelectDropDown';
 export { default as TypeaheadDropdown } from './components/common/input/dropdown/TypeaheadDropdown';
+export { OtpInput } from './components/common/input/text/OtpInput';
 export { PasswordInput } from './components/common/input/text/Password';
 export { TextField } from './components/common/input/text/TextField';
 export { default as HorizontalFormSlider } from './components/common/slider/HorizontalFormSlider';

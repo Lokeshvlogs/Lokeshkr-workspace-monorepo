@@ -6,6 +6,7 @@ import { COUNTRY_CODES_OPTIONS } from '@/constants/selectOptions/places'
 import { registerFieldSchema, registerSchema } from '@/lib/validation/schemas/registerUserSchema'
 import { useZodForm, blockEnterKeySubmit } from '@/hooks/useZodForm'
 import { PROFILE_FOR_OPTIONS, LOOKING_FOR_OPTIONS, AGE_OPTIONS } from './constants/RegisterUserOptions'
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton'
 
 export default function RegisterForm() {
   const REGISTER_URL = '/api/register'
@@ -28,9 +29,14 @@ export default function RegisterForm() {
       const result = await response.json().catch(() => ({}))
 
       if (response.ok && result.registered) {
-        // Registration does not sign the user in - send them to log in, and let
-        // the login flow decide between the profile wizard and the home page.
-        router.push('/login?registered=1')
+        // The account is created but unusable until the number is confirmed.
+        // Verifying the passcode is what signs them in and sends them onward to
+        // the wizard, so registration hands straight over to /verify.
+        const query = new URLSearchParams({
+          phone: String(result.phone ?? data.phone ?? ''),
+          cc: String(result.country_code ?? data.country_code ?? ''),
+        })
+        router.push(`/verify?${query.toString()}`)
         return { success: true }
       }
 
@@ -161,6 +167,9 @@ export default function RegisterForm() {
         {regMessage && (
           <div className="text-sm text-red-600 text-center" role="alert">{regMessage}</div>
         )}
+
+        <div className="auth-divider">or</div>
+        <GoogleAuthButton mode="signup" />
       </div>
     </form>
   )

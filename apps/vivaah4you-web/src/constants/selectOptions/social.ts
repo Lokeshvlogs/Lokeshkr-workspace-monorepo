@@ -1621,6 +1621,31 @@ export const communitiesByReligion: { [key: string]: { value: string; label: str
     { value: 'svetambara', label: 'Svetambara' },
     { value: 'other', label: 'Other' },
   ],
+  buddhist: [
+    { value: 'theravada', label: 'Theravada' },
+    { value: 'mahayana', label: 'Mahayana' },
+    { value: 'vajrayana', label: 'Vajrayana' },
+    { value: 'navayana', label: 'Navayana / Ambedkarite' },
+    { value: 'other', label: 'Other' },
+  ],
+  parsi: [
+    { value: 'zoroastrian', label: 'Zoroastrian' },
+    { value: 'irani', label: 'Irani' },
+    { value: 'other', label: 'Other' },
+  ],
+  jewish: [
+    { value: 'bene_israel', label: 'Bene Israel' },
+    { value: 'cochin', label: 'Cochin Jews' },
+    { value: 'baghdadi', label: 'Baghdadi' },
+    { value: 'ashkenazi', label: 'Ashkenazi' },
+    { value: 'sephardi', label: 'Sephardi' },
+    { value: 'other', label: 'Other' },
+  ],
+  // RELIGION_OPTIONS uses the key "other"; this list was only ever reachable as
+  // "others". Both spellings are kept so neither lookup misses.
+  other: [
+    { value: 'other', label: 'Other' },
+  ],
   others: [
     { value: 'other', label: 'Other' },
   ],
@@ -1648,7 +1673,7 @@ export const motherTongueOptions = [
                     { value: 'Sindhi', label: 'Sindhi' },
                     { value: 'Kashmiri', label: 'Kashmiri' },
                     { value: 'Dogri', label: 'Dogri' },
-                    { value: ' Konkani', label: ' Konkani' },
+                    { value: 'Konkani', label: 'Konkani' },
                     { value: 'Manipuri', label: 'Manipuri' },
                     { value: 'Sanskrit', label: 'Sanskrit' },
                     { value: 'Other', label: 'Other' }, 

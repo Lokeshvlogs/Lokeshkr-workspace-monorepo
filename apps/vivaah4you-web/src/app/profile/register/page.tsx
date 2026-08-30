@@ -117,6 +117,10 @@ const YES_NO_OPTIONS = [
 
 const WAS_MARRIED = new Set(["married", "divorced", "widowed", "annulled", "awaiting_divorce"]);
 
+/** Sibling counts up to `total`, so "married" can never offer an impossible number. */
+const marriedOptionsUpTo = (total: string) =>
+  SIBLING_COUNT_OPTIONS.filter((option) => Number(option.value) <= Number(total || 0));
+
 const INITIAL_FORM = {
   // Step 0
   firstName: "",
@@ -284,6 +288,24 @@ export default function ProfileRegisterPage() {
   const setField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
+
+  /**
+   * Set a sibling total, pulling the "married" figure down if it no longer fits.
+   *
+   * Without this, answering 3 brothers / 2 married and then correcting the total
+   * to 1 leaves an impossible pair that the API rejects on save - with the error
+   * appearing on a field the member is no longer looking at.
+   */
+  const setSiblingTotal = useCallback(
+    (totalKey: "brothers" | "sisters", marriedKey: "brothersMarried" | "sistersMarried", value: string) => {
+      setForm((prev) => ({
+        ...prev,
+        [totalKey]: value,
+        [marriedKey]: Math.min(Number(prev[marriedKey] || 0), Number(value || 0)).toString(),
+      }));
+    },
+    [],
+  );
 
   const communityOptions = useMemo(() => communitiesFor(form.religion), [form.religion]);
   const partnerCommunityOptions = useMemo(
@@ -701,11 +723,15 @@ export default function ProfileRegisterPage() {
                 <div className="form-section">
                   <p className="form-section-title">Siblings</p>
                   <p className="form-section-hint mb-3">Optional. How many, and how many are married.</p>
+                  {/* "Married" is capped at the sibling count either way: its
+                      options stop there, and lowering the total drags the
+                      married figure down with it, so the pair can never end up
+                      contradicting itself. The API enforces the same rule. */}
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <PickerField label="Brothers" options={SIBLING_COUNT_OPTIONS} value={form.brothers} onChange={(v) => setField("brothers", v)} />
-                    <PickerField label="Married" options={SIBLING_COUNT_OPTIONS} value={form.brothersMarried} onChange={(v) => setField("brothersMarried", v)} />
-                    <PickerField label="Sisters" options={SIBLING_COUNT_OPTIONS} value={form.sisters} onChange={(v) => setField("sisters", v)} />
-                    <PickerField label="Married" options={SIBLING_COUNT_OPTIONS} value={form.sistersMarried} onChange={(v) => setField("sistersMarried", v)} />
+                    <PickerField label="Brothers" options={SIBLING_COUNT_OPTIONS} value={form.brothers} onChange={(v) => setSiblingTotal("brothers", "brothersMarried", v)} />
+                    <PickerField label="Married" options={marriedOptionsUpTo(form.brothers)} value={form.brothersMarried} onChange={(v) => setField("brothersMarried", v)} />
+                    <PickerField label="Sisters" options={SIBLING_COUNT_OPTIONS} value={form.sisters} onChange={(v) => setSiblingTotal("sisters", "sistersMarried", v)} />
+                    <PickerField label="Married" options={marriedOptionsUpTo(form.sisters)} value={form.sistersMarried} onChange={(v) => setField("sistersMarried", v)} />
                   </div>
                 </div>
 

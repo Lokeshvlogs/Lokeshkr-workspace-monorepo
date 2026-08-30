@@ -47,6 +47,19 @@ export async function POST(request: NextRequest) {
     const responseData = await response.json().catch(() => ({}))
 
     if (!response.ok) {
+        // The service answers 403 "phone_not_verified" for an account that never
+        // confirmed its number. Surfacing that as a distinct flag is what lets the
+        // login page send them to /verify rather than accusing them of a bad password.
+        if (response.status === 403 && responseData.detail === "phone_not_verified") {
+            return NextResponse.json(
+                {
+                    loggedIn: false,
+                    needsVerification: true,
+                    detail: "Confirm your mobile number to finish setting up your account.",
+                },
+                { status: 403 },
+            )
+        }
         return NextResponse.json(
             { loggedIn: false, detail: responseData.detail ?? "Invalid username or password." },
             { status: response.status },

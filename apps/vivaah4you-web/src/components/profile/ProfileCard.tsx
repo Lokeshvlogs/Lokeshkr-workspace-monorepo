@@ -11,46 +11,77 @@ export type ProfileCardData = {
   location: string
   image: string | null
   headline?: string
+  /** Secondary facts (height, religion, community, language), shown as pills. */
+  details?: string[]
 }
 
-export default function ProfileCard({ profileId, name, age, location, image, headline }: ProfileCardData) {
+export default function ProfileCard({
+  profileId,
+  name,
+  age,
+  location,
+  image,
+  headline,
+  details = [],
+}: ProfileCardData) {
   const href = profileId ? `/profile/${profileId}` : undefined
 
   const media = (
-    <div className="relative h-56 w-full overflow-hidden rounded-lg bg-pink-50">
+    <div className="match-card-media">
       {image ? (
         // Avatars come from remote hosts or user uploads of unknown size.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt={name} className="h-full w-full object-cover" />
+        <img src={image} alt={name} className="match-card-img" loading="lazy" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-5xl font-semibold text-color-primary">
+        <div className="match-card-initial" aria-hidden="true">
           {name.charAt(0).toUpperCase()}
         </div>
       )}
-      <div className="absolute bottom-3 left-3 rounded-md bg-white/80 px-3 py-1 backdrop-blur-md">
-        <div className="text-sm font-semibold">
+      {/* Name and age sit on the image behind a gradient rather than a floating
+          chip, so they stay legible over a light photo without hiding it. */}
+      <div className="match-card-scrim">
+        <div className="match-card-name">
           {name}
-          {age ? <span className="font-normal">, {age}</span> : null}
+          {age ? <span className="match-card-age">, {age}</span> : null}
         </div>
-        {location && <div className="text-xs text-gray-600">{location}</div>}
+        {location && <div className="match-card-location">{location}</div>}
       </div>
     </div>
   )
 
   return (
-    <div className="card-flashy p-4">
-      {href ? <Link href={href} aria-label={`View ${name}'s profile`}>{media}</Link> : media}
+    <article className="match-card">
+      {href ? (
+        <Link href={href} aria-label={`View ${name}'s profile`} className="match-card-link">
+          {media}
+        </Link>
+      ) : (
+        media
+      )}
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <div className="min-w-0 truncate text-sm text-gray-700">
-          {headline || 'Open to meetings · Verified'}
-        </div>
+      <div className="match-card-body">
+        {headline && <p className="match-card-headline">{headline}</p>}
+
+        {details.length > 0 && (
+          <ul className="match-card-details">
+            {details.map((detail) => (
+              <li key={detail} className="match-card-pill">
+                {detail}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {href ? (
-          <Link href={href} className="btn bg-color-primary text-white shrink-0">View</Link>
+          <Link href={href} className="btn-primary match-card-cta">
+            View profile
+          </Link>
         ) : (
-          <button type="button" className="btn bg-color-primary text-white shrink-0">Connect</button>
+          <button type="button" className="btn-primary match-card-cta">
+            Connect
+          </button>
         )}
       </div>
-    </div>
+    </article>
   )
 }

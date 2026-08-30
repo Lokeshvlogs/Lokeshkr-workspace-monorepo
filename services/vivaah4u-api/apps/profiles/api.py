@@ -17,6 +17,26 @@ router = Router(tags=["profiles"])
 PROFILE_COMPLETE_THRESHOLD = 95
 
 
+def validate_sibling_counts(profile: Profile) -> None:
+    """You cannot have more married siblings than siblings.
+
+    Checked against the merged profile rather than the incoming payload: a step
+    patch may raise `brothers_married` while leaving `brothers` untouched, and
+    that pair is only invalid once combined with what is already stored.
+    """
+    for total_field, married_field, noun in (
+        ("brothers", "brothers_married", "brothers"),
+        ("sisters", "sisters_married", "sisters"),
+    ):
+        total = getattr(profile, total_field, 0) or 0
+        married = getattr(profile, married_field, 0) or 0
+        if married > total:
+            raise HttpError(
+                400,
+                f"Married {noun} ({married}) cannot exceed the number of {noun} ({total}).",
+            )
+
+
 @router.get("/profiles", auth=JWTAuth())
 def profiles_list(request):
     qs = Profile.objects.exclude(user=request.user).exclude(hide=True).exclude(
@@ -78,6 +98,7 @@ def update_profile_step(request, data: ProfileUpdateSchema):
 
     profile = get_object_or_404(Profile, user=request.user)
     apply_payload(profile, payload)
+    validate_sibling_counts(profile)
     # Profile.save() recomputes completeness and mints profile_id when possible.
     profile.save()
 

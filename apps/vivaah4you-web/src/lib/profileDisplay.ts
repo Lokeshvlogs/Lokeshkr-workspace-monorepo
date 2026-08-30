@@ -106,6 +106,21 @@ export function religiosityDetailLabel(value: string): string {
   return ''
 }
 
+/**
+ * value -> label across every religion's community list, built once.
+ *
+ * The values are namespaced per religion, so resolving one used to mean a
+ * linear scan of all of them - about 1,600 entries, repeated for every row on
+ * screen. Later religions win a duplicate value, which matches the previous
+ * first-hit-wins behaviour closely enough that no label changes in practice.
+ */
+const COMMUNITY_LABELS: Record<string, string> = Object.values(communitiesByReligion)
+  .flat()
+  .reduce<Record<string, string>>((acc, option) => {
+    if (!(option.value in acc)) acc[option.value] = option.label
+    return acc
+  }, {})
+
 export function labelFor(field: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return ''
   const raw = String(value)
@@ -117,14 +132,7 @@ export function labelFor(field: string, value: unknown): string {
     return labelFor(field === 'partnerReligion' ? 'religion' : 'community', raw)
   }
   if (field === 'religion') return RELIGION_LABELS[raw] ?? titleCase(raw)
-  if (field === 'community') {
-    // Community values are namespaced per religion, so search every list.
-    for (const list of Object.values(communitiesByReligion)) {
-      const hit = list.find((o) => o.value === raw)
-      if (hit) return hit.label
-    }
-    return titleCase(raw)
-  }
+  if (field === 'community') return COMMUNITY_LABELS[raw] ?? titleCase(raw)
 
   const map = LABEL_MAPS[field]
   if (map && map[raw]) return map[raw]
@@ -151,8 +159,17 @@ export function communitiesFor(religion: string): SelectOption[] {
   return communitiesByReligion[religion] ?? [{ value: 'other', label: 'Other' }]
 }
 
+/** Built city lists, keyed by country code ('' is the global list). */
+const CITY_CACHE = new Map<string, SelectOption[]>()
+
 /** "City, State, Country" options for one country, or every city when unset. */
 export function citiesForCountry(country: string): SelectOption[] {
+  // Rebuilding was cheap per country but ruinous with none - it flattened and
+  // deduped every city on earth - and this is called inline from JSX, so it ran
+  // on every render. The source lists are static imports, so caching is safe.
+  const cached = CITY_CACHE.get(country)
+  if (cached) return cached
+
   const build = (countryKey: string) => {
     const countryLabel = COUNTRY_OPTIONS.find((c) => c.value === countryKey)?.label ?? ''
     return (placesByCountry[countryKey] ?? []).flatMap((state) =>
@@ -163,9 +180,15 @@ export function citiesForCountry(country: string): SelectOption[] {
     )
   }
 
-  if (country) return build(country)
+  let options: SelectOption[]
+  if (country) {
+    options = build(country)
+  } else {
+    const all = Object.keys(placesByCountry).flatMap(build)
+    const seen = new Set<string>()
+    options = all.filter((o) => (seen.has(o.label) ? false : seen.add(o.label)))
+  }
 
-  const all = Object.keys(placesByCountry).flatMap(build)
-  const seen = new Set<string>()
-  return all.filter((o) => (seen.has(o.label) ? false : seen.add(o.label)))
+  CITY_CACHE.set(country, options)
+  return options
 }

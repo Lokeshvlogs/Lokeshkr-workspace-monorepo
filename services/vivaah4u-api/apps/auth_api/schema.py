@@ -29,6 +29,11 @@ class RegisteredSchema(Schema):
     message: str
     username: str
     profile_id: Optional[str] = None
+    # Echoed back so the client can go straight to the passcode screen without
+    # re-reading the form it just submitted.
+    phone: str = ""
+    country_code: str = ""
+    verification_required: bool = True
 
 
 class LoginUsernameSchema(Schema):
@@ -47,3 +52,76 @@ class MessageSchema(Schema):
 
 class RefreshSchema(Schema):
     refresh: str
+
+
+# -------------------------------
+# One-time passcodes
+# -------------------------------
+
+# Kept in step with OtpCode.PURPOSE_CHOICES.
+OtpPurpose = Literal["signup", "login", "phone_change"]
+
+
+class OtpRequestSchema(Schema):
+    phone: str
+    country_code: str = ""
+    purpose: OtpPurpose = "signup"
+
+
+class OtpSentSchema(Schema):
+    sent: bool
+    expires_in: int
+    retry_after: int
+    # Only populated while OTP_DEV_CODE is configured, so the flow is testable
+    # without an SMS provider. Never set in production.
+    dev_code: Optional[str] = None
+
+
+class OtpVerifySchema(Schema):
+    phone: str
+    code: str
+    country_code: str = ""
+    purpose: OtpPurpose = "signup"
+
+
+class OtpSessionSchema(Schema):
+    """Verification result. Doubles as a login response - verifying signs you in."""
+    verified: bool
+    username: str
+    access: str
+    refresh: str
+    profile_id: Optional[str] = None
+
+
+# -------------------------------
+# Account settings
+# -------------------------------
+
+class AccountSchema(Schema):
+    username: str
+    email: str
+    phone: str = ""
+    country_code: str = ""
+    phone_verified: bool = False
+    has_usable_password: bool = True
+
+
+class ChangePasswordSchema(Schema):
+    current_password: str
+    new_password: str
+
+
+class ChangeEmailSchema(Schema):
+    password: str
+    new_email: str
+
+
+class ChangeUsernameSchema(Schema):
+    password: str
+    new_username: str
+
+
+class ChangePhoneSchema(Schema):
+    phone: str
+    code: str
+    country_code: str = ""

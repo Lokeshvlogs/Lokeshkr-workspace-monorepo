@@ -1091,3 +1091,422 @@ button.chip-selected:hover {
   @apply mt-1 text-right text-xs;
   color: var(--color-placeholder-text, #6b7280);
 }
+
+/* --- One-time passcode entry --- */
+.otp-field {
+  @apply w-full;
+}
+
+.otp-boxes {
+  @apply flex gap-3;
+}
+
+.otp-box {
+  width: 3.5rem;
+  height: 4rem;
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary-text, #111827);
+  background-color: var(--color-bg, #ffffff);
+  border: 1px solid var(--color-border, #fbcfe8);
+  border-radius: var(--control-radius, 10px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.otp-box:hover:not(:disabled):not(:focus) {
+  border-color: var(--color-primary-light, #f96cba);
+}
+
+.otp-box:focus {
+  outline: none;
+  border-color: var(--color-primary, #ec4899);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+}
+
+.otp-box:disabled {
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
+
+.otp-box-error,
+.otp-box-error:focus {
+  border-color: var(--color-error, #ef4444);
+}
+
+.otp-box-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+}
+
+/* --- Auth screens (login, sign-up confirmation, settings) --- */
+
+/* Centred column with the pink wash behind it, shared so the auth screens are
+   visually one family rather than three separately-styled pages. */
+.auth-shell {
+  @apply flex min-h-screen items-center justify-center px-4 py-12;
+}
+
+.auth-card {
+  @apply w-full rounded-2xl p-7;
+  max-width: 26rem;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 18px 48px rgba(17, 24, 39, 0.08), 0 2px 8px rgba(17, 24, 39, 0.04);
+}
+
+.auth-title {
+  @apply text-2xl font-bold;
+  color: var(--color-primary-text, #111827);
+  letter-spacing: -0.028em;
+}
+
+.auth-subtitle {
+  @apply mt-1.5 text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* Segmented control for picking a sign-in method. */
+.auth-tabs {
+  @apply mt-6 flex gap-1 rounded-xl p-1;
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.auth-tab.auth-tab {
+  @apply flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition;
+  background-color: transparent;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.auth-tab.auth-tab:hover:not(.auth-tab-active) {
+  color: var(--color-primary, #ec4899);
+}
+
+.auth-tab-active.auth-tab-active {
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary, #ec4899);
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.10);
+}
+
+/* "or" rule between the credential form and the social buttons. */
+.auth-divider {
+  @apply my-5 flex items-center gap-3 text-xs font-medium uppercase;
+  color: var(--color-placeholder-text, #6b7280);
+  letter-spacing: 0.08em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  @apply h-px flex-1;
+  background-color: var(--color-border, #fbcfe8);
+}
+
+/* Third-party sign-in. Styled as a real button even when disabled, so the
+   option reads as "coming soon" rather than broken. */
+.auth-provider-btn.auth-provider-btn {
+  @apply flex w-full items-center justify-center gap-2.5 rounded-lg px-4 text-sm font-semibold transition;
+  height: 44px;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary-text, #111827);
+}
+
+.auth-provider-btn.auth-provider-btn:hover:not(:disabled) {
+  border-color: var(--color-primary-light, #f96cba);
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.auth-provider-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+}
+
+.auth-provider-btn:disabled {
+  @apply cursor-not-allowed opacity-60;
+}
+
+.auth-note {
+  @apply mt-2 text-center text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* Inline status messages. */
+.auth-alert {
+  @apply mt-4 rounded-lg px-4 py-3 text-sm;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary-text, #111827);
+}
+
+.auth-alert-error {
+  border-color: #fecaca;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.auth-alert-success {
+  border-color: #bbf7d0;
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+
+/* --- Account settings --- */
+.settings-page {
+  @apply mx-auto w-full px-5 py-12;
+  max-width: 44rem;
+}
+
+.settings-section {
+  @apply rounded-xl p-5;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+}
+
+.settings-row {
+  @apply flex items-start justify-between gap-4;
+}
+
+.settings-row-title {
+  @apply text-base font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+.settings-row-value {
+  @apply mt-0.5 truncate text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.settings-row-hint {
+  @apply mt-0.5 text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* The open editor, separated from the summary row it belongs to. */
+.settings-form {
+  @apply mt-5 border-t pt-5;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+/* --- Match search --- */
+.match-search {
+  @apply rounded-2xl p-5 sm:p-6;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
+}
+
+.match-search-head {
+  @apply mb-5 flex flex-wrap items-center justify-between gap-3;
+}
+
+.match-search-title {
+  @apply text-xl font-bold;
+  color: var(--color-primary-text, #111827);
+  letter-spacing: -0.024em;
+}
+
+.match-search-count {
+  @apply mt-0.5 text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+.match-search-grid {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+/* The free-text field earns a full row on wide layouts - it is the one people
+   reach for first, and the option dropdowns read fine at a third the width. */
+.match-search-query {
+  @apply sm:col-span-2 lg:col-span-3;
+}
+
+.match-search-chips {
+  @apply mt-4 flex flex-wrap gap-2 border-t pt-4;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+.match-filter-chip {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary-text, #111827);
+}
+
+.match-filter-chip:hover {
+  border-color: var(--color-primary, #ec4899);
+  color: var(--color-primary, #ec4899);
+}
+
+.match-filter-chip-key {
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* --- Match results --- */
+.match-grid {
+  @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+.match-card {
+  @apply flex flex-col overflow-hidden rounded-2xl transition;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+.match-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-primary-light, #f96cba);
+  box-shadow: 0 18px 40px rgba(236, 72, 153, 0.14);
+}
+
+.match-card-link {
+  @apply block;
+}
+
+.match-card-media {
+  @apply relative aspect-[4/5] w-full overflow-hidden;
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.match-card-img {
+  @apply h-full w-full object-cover transition-transform duration-500;
+}
+
+.match-card:hover .match-card-img {
+  transform: scale(1.04);
+}
+
+.match-card-initial {
+  @apply flex h-full w-full items-center justify-center text-6xl font-bold;
+  color: var(--color-primary-extra-light, #fab2dd);
+}
+
+/* Gradient rather than a solid chip: the photo stays visible underneath and the
+   text stays readable whatever the image behind it. */
+.match-card-scrim {
+  @apply absolute inset-x-0 bottom-0 px-4 pb-3 pt-10;
+  background: linear-gradient(to top, rgba(17, 24, 39, 0.78), rgba(17, 24, 39, 0));
+}
+
+.match-card-name {
+  @apply truncate text-base font-semibold text-white;
+}
+
+.match-card-age {
+  @apply font-normal;
+}
+
+.match-card-location {
+  @apply truncate text-xs;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.match-card-body {
+  @apply flex flex-1 flex-col gap-3 p-4;
+}
+
+.match-card-headline {
+  @apply truncate text-sm font-medium;
+  color: var(--color-primary-text, #111827);
+}
+
+.match-card-details {
+  @apply flex flex-1 flex-wrap content-start gap-1.5;
+}
+
+.match-card-pill {
+  @apply rounded-full px-2 py-0.5 text-xs;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.match-card-cta {
+  @apply w-full;
+}
+
+/* --- Match empty / gated / loading states --- */
+.match-gate {
+  @apply rounded-2xl px-6 py-12 text-center;
+  border: 1px dashed var(--color-border, #fbcfe8);
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.match-gate-title {
+  @apply text-2xl font-bold;
+  color: var(--color-primary-text, #111827);
+  letter-spacing: -0.024em;
+}
+
+.match-gate-text {
+  @apply mx-auto mt-2 max-w-md text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.match-gate-actions {
+  @apply mt-6 flex flex-wrap items-center justify-center gap-3;
+}
+
+.match-empty {
+  @apply mt-6 rounded-2xl px-6 py-12 text-center;
+  border: 1px dashed var(--color-border, #fbcfe8);
+}
+
+.match-empty-title {
+  @apply text-base font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+.match-empty-text {
+  @apply mx-auto mt-1.5 max-w-sm text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.match-skeleton {
+  @apply overflow-hidden rounded-2xl p-4;
+  border: 1px solid var(--color-border, #fbcfe8);
+}
+
+.match-skeleton-media {
+  @apply mb-4 aspect-[4/5] w-full rounded-xl;
+}
+
+.match-skeleton-line {
+  @apply mb-2 h-3 w-3/4 rounded-full;
+}
+
+.match-skeleton-line-short {
+  @apply w-1/2;
+}
+
+.match-skeleton-media,
+.match-skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-surface, #fdf2f8) 25%,
+    #fce7f3 37%,
+    var(--color-primary-surface, #fdf2f8) 63%
+  );
+  background-size: 400% 100%;
+  animation: match-shimmer 1.4s ease infinite;
+}
+
+@keyframes match-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-skeleton-media,
+  .match-skeleton-line {
+    animation: none;
+  }
+  .match-card:hover {
+    transform: none;
+  }
+  .match-card:hover .match-card-img {
+    transform: none;
+  }
+}

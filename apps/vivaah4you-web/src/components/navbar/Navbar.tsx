@@ -16,12 +16,16 @@ export default function Navbar() {
   const links = (
     <>
       <Link href="/#features" className="text-gray-700 hover:text-gray-900">Features</Link>
-      <Link href="/#profiles" className="text-gray-700 hover:text-gray-900">
-        {auth.isAuthenticated ? 'Matches' : 'Profiles'}
+      <Link
+        href={auth.isAuthenticated ? '/#profiles' : '/#register'}
+        className="text-gray-700 hover:text-gray-900"
+      >
+        {auth.isAuthenticated ? 'Matches' : 'Join free'}
       </Link>
       {auth.isAuthenticated ? (
         <>
           <Link href="/profile/me" className="text-gray-700 hover:text-gray-900">My Profile</Link>
+          <Link href="/settings" className="text-gray-700 hover:text-gray-900">Settings</Link>
           <button
             type="button"
             onClick={handleLogoutClick}

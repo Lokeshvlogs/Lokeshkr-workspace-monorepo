@@ -116,8 +116,194 @@ body,
     transform: translateY(-6px) scale(1.02);
   }
 
-  .img-collage > img {
-    @apply rounded-lg shadow-md object-cover;
+  /* --- Hero --- */
+  .hero-eyebrow {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase;
+    letter-spacing: 0.08em;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-primary-surface);
+    color: var(--color-primary);
+  }
+
+  .hero-title {
+    @apply mt-5 text-4xl font-extrabold sm:text-5xl lg:text-6xl;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    color: var(--color-primary-text);
+  }
+
+  /* Gradient on the second half of the headline, so the accent reads as part of
+     the sentence rather than a separately-coloured word. */
+  .hero-title-accent {
+    background: linear-gradient(100deg, var(--color-primary) 0%, #f472b6 55%, #fb923c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero-lede {
+    @apply mt-5 text-lg;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+
+  .hero-stats {
+    @apply mt-9 grid grid-cols-3 gap-4 border-t pt-6;
+    border-color: var(--color-border);
+  }
+
+  .hero-stat-value {
+    @apply text-sm font-bold;
+    color: var(--color-primary);
+  }
+
+  .hero-stat-label {
+    @apply mt-1 text-xs;
+    color: var(--color-placeholder-text);
+    line-height: 1.4;
+  }
+
+  /* --- Hero collage --- */
+
+  /* Two columns of unequal height: the outer panels are taller, which gives the
+     block a woven look instead of a plain 2x2 grid. */
+  .collage {
+    @apply grid grid-cols-2 gap-4;
+    align-items: start;
+  }
+
+  .collage-item {
+    @apply relative m-0 overflow-hidden rounded-2xl;
+    aspect-ratio: 1 / 1.15;
+    background: linear-gradient(140deg, var(--color-primary-surface), #fde7f1);
+    box-shadow: 0 16px 40px rgba(236, 72, 153, 0.14);
+    animation: collage-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .collage-item-tall {
+    aspect-ratio: 1 / 1.38;
+  }
+
+  /* Nudging the second column down is what staggers the two columns against
+     each other. */
+  .collage-item:nth-child(2n) {
+    margin-top: 1.75rem;
+  }
+
+  .collage-item img {
+    @apply h-full w-full object-cover;
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .collage-item:hover img {
+    transform: scale(1.05);
+  }
+
+  /* Applied by the onError handler; the gradient background shows through. */
+  .collage-img-failed {
+    display: none;
+  }
+
+  @keyframes collage-rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- Section furniture --- */
+  .section-title {
+    @apply text-3xl font-bold;
+    letter-spacing: -0.028em;
+    color: var(--color-primary-text);
+  }
+
+  .section-lede {
+    @apply mt-3 text-base;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+
+  .checklist {
+    @apply mt-6 flex flex-col gap-2.5 text-sm;
+    color: #4b5563;
+  }
+
+  .checklist li {
+    @apply relative pl-7;
+  }
+
+  .checklist li::before {
+    content: "";
+    @apply absolute left-0 top-1 h-4 w-4 rounded-full;
+    background-color: var(--color-primary-surface);
+    border: 1px solid var(--color-primary-light);
+  }
+
+  .checklist li::after {
+    content: "";
+    @apply absolute h-1.5 w-2.5 border-b-2 border-l-2;
+    left: 0.3125rem;
+    top: 0.4375rem;
+    border-color: var(--color-primary);
+    transform: rotate(-45deg);
+  }
+
+  /* --- Welcome card (signed in) --- */
+  .welcome-card {
+    @apply rounded-2xl p-8 text-center;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
+  }
+
+  .welcome-title {
+    @apply text-2xl font-bold;
+    letter-spacing: -0.024em;
+    color: var(--color-primary-text);
+  }
+
+  .welcome-text {
+    @apply mt-2 text-sm;
+    color: var(--color-placeholder-text);
+  }
+
+  /* --- Features --- */
+  .feature-card {
+    @apply rounded-2xl p-6 transition;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+  }
+
+  .feature-card:hover {
+    border-color: var(--color-primary-light);
+    box-shadow: 0 14px 34px rgba(236, 72, 153, 0.10);
+  }
+
+  .feature-icon-wrap {
+    @apply mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl;
+    background-color: var(--color-primary-surface);
+    color: var(--color-primary);
+  }
+
+  .feature-icon {
+    @apply h-5 w-5;
+  }
+
+  .feature-title {
+    @apply text-base font-semibold;
+    color: var(--color-primary-text);
+  }
+
+  .feature-body {
+    @apply mt-2 text-sm;
+    color: var(--color-placeholder-text);
+    line-height: 1.6;
+  }
+
+  /* --- Footer --- */
+  .site-footer {
+    @apply mt-24 border-t pt-8 text-center text-sm;
+    border-color: var(--color-border);
+    color: var(--color-placeholder-text);
   }
 
   .pulse {
