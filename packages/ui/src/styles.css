@@ -1289,61 +1289,6 @@ button.chip-selected:hover {
   border-color: var(--color-border, #fbcfe8);
 }
 
-/* --- Match search --- */
-.match-search {
-  @apply rounded-2xl p-5 sm:p-6;
-  border: 1px solid var(--color-border, #fbcfe8);
-  background-color: var(--color-bg, #ffffff);
-  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
-}
-
-.match-search-head {
-  @apply mb-5 flex flex-wrap items-center justify-between gap-3;
-}
-
-.match-search-title {
-  @apply text-xl font-bold;
-  color: var(--color-primary-text, #111827);
-  letter-spacing: -0.024em;
-}
-
-.match-search-count {
-  @apply mt-0.5 text-sm;
-  color: var(--color-placeholder-text, #6b7280);
-  font-variant-numeric: tabular-nums;
-}
-
-.match-search-grid {
-  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
-}
-
-/* The free-text field earns a full row on wide layouts - it is the one people
-   reach for first, and the option dropdowns read fine at a third the width. */
-.match-search-query {
-  @apply sm:col-span-2 lg:col-span-3;
-}
-
-.match-search-chips {
-  @apply mt-4 flex flex-wrap gap-2 border-t pt-4;
-  border-color: var(--color-border, #fbcfe8);
-}
-
-.match-filter-chip {
-  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition;
-  border: 1px solid var(--color-border, #fbcfe8);
-  background-color: var(--color-primary-surface, #fdf2f8);
-  color: var(--color-primary-text, #111827);
-}
-
-.match-filter-chip:hover {
-  border-color: var(--color-primary, #ec4899);
-  color: var(--color-primary, #ec4899);
-}
-
-.match-filter-chip-key {
-  color: var(--color-placeholder-text, #6b7280);
-}
-
 /* --- Match results --- */
 .match-grid {
   @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4;
@@ -1509,4 +1454,257 @@ button.chip-selected:hover {
   .match-card:hover .match-card-img {
     transform: none;
   }
+}
+
+/* --- Member home strip --- */
+.member-strip {
+  @apply mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background: linear-gradient(120deg, var(--color-bg, #ffffff), var(--color-primary-surface, #fdf2f8));
+}
+
+.member-identity {
+  @apply flex min-w-0 items-center gap-4;
+}
+
+.member-avatar {
+  @apply h-12 w-12 shrink-0 rounded-full object-cover;
+  border: 2px solid var(--color-bg, #ffffff);
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.20);
+}
+
+.member-avatar-initial {
+  @apply flex items-center justify-center text-lg font-bold text-white;
+  background: linear-gradient(135deg, var(--color-primary, #ec4899), #f472b6);
+}
+
+.member-greeting {
+  @apply truncate text-lg font-bold;
+  letter-spacing: -0.022em;
+  color: var(--color-primary-text, #111827);
+}
+
+.member-subline {
+  @apply truncate text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.member-actions {
+  @apply flex shrink-0 items-center gap-3;
+}
+
+/* Completeness donut.
+
+   Not named .ring: that is a Tailwind utility, and because utilities are emitted
+   after this file it won't lose the tie - the element picked up Tailwind's
+   default blue ring shadow on top of this styling. */
+.completeness {
+  @apply relative flex h-12 w-12 items-center justify-center;
+}
+
+.completeness-svg {
+  @apply absolute inset-0 h-full w-full -rotate-90;
+}
+
+.completeness-track {
+  fill: none;
+  stroke: var(--color-border, #fbcfe8);
+  stroke-width: 5;
+}
+
+.completeness-value {
+  fill: none;
+  stroke: var(--color-primary, #ec4899);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.completeness-label {
+  @apply relative text-xs font-bold;
+  color: var(--color-primary, #ec4899);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Neutral placeholder while sign-in state is still being read. */
+.home-boot {
+  @apply rounded-2xl;
+  height: 22rem;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 37%, #f8fafc 63%);
+  background-size: 400% 100%;
+  animation: match-shimmer 1.4s ease infinite;
+}
+
+/* --- Search panel --- */
+.search-panel {
+  @apply rounded-2xl p-4 sm:p-5;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
+}
+
+/* One row on desktop: the text query takes the slack, the three key selects
+   stay their natural width, and the filters toggle sits at the end. */
+.search-bar {
+  @apply flex flex-col gap-3 lg:flex-row lg:items-stretch;
+}
+
+.search-bar-query {
+  @apply relative flex-1;
+  min-width: 0;
+}
+
+.search-bar-icon {
+  @apply pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.search-bar-input {
+  @apply w-full;
+  height: var(--control-height, 54px);
+  padding: 0 0.9375rem 0 2.875rem;
+  border: 1px solid var(--color-border, #fbcfe8);
+  border-radius: var(--control-radius, 10px);
+  background-color: var(--color-bg, #ffffff);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--color-primary-text, #111827);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-bar-input::placeholder {
+  font-weight: 400;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.search-bar-input:hover:not(:focus) {
+  border-color: var(--color-primary-light, #f96cba);
+}
+
+.search-bar-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #ec4899);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+}
+
+/* Native clear affordance on type=search, hidden so it does not fight the
+   chips below, which already offer a clear. */
+.search-bar-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.search-bar-compact {
+  @apply grid grid-cols-2 gap-3 sm:grid-cols-3;
+}
+
+.search-bar-compact > * {
+  @apply lg:w-40;
+}
+
+.search-advanced-toggle.search-advanced-toggle {
+  @apply flex shrink-0 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition;
+  height: var(--control-height, 54px);
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary-text, #111827);
+}
+
+.search-advanced-toggle svg {
+  @apply h-4 w-4;
+  color: var(--color-primary, #ec4899);
+}
+
+.search-advanced-toggle.search-advanced-toggle:hover {
+  border-color: var(--color-primary-light, #f96cba);
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.search-advanced-toggle-open.search-advanced-toggle-open {
+  border-color: var(--color-primary, #ec4899);
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary, #ec4899);
+}
+
+.search-advanced-badge {
+  @apply flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold text-white;
+  background-color: var(--color-primary, #ec4899);
+  font-variant-numeric: tabular-nums;
+}
+
+.search-advanced {
+  @apply mt-4 border-t pt-4;
+  border-color: var(--color-border, #fbcfe8);
+  animation: search-expand 0.22s ease both;
+}
+
+.search-advanced-grid {
+  @apply grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+@keyframes search-expand {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.search-summary {
+  @apply mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 border-t pt-4;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+.search-summary-count {
+  @apply text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+.search-summary-count strong {
+  @apply font-bold;
+  color: var(--color-primary-text, #111827);
+}
+
+.search-chips {
+  @apply flex flex-1 flex-wrap items-center gap-2;
+}
+
+.search-chip {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary-text, #111827);
+}
+
+.search-chip:hover {
+  border-color: var(--color-primary, #ec4899);
+  color: var(--color-primary, #ec4899);
+}
+
+.search-chip-key {
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.search-chip-clear {
+  @apply text-xs font-semibold underline-offset-2 hover:underline;
+  color: var(--color-primary, #ec4899);
+}
+
+.search-sort {
+  @apply ml-auto flex shrink-0 items-center gap-2 text-sm;
+}
+
+.search-sort-label {
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.search-sort-select {
+  @apply rounded-lg px-2.5 py-1.5 text-sm font-medium;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary-text, #111827);
+}
+
+.search-sort-select:focus {
+  outline: none;
+  border-color: var(--color-primary, #ec4899);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
 }

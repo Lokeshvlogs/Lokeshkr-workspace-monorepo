@@ -32,6 +32,14 @@ export interface LoginDetails {
 
 interface AuthContextValue {
   isAuthenticated: boolean;
+  /**
+   * False until the localStorage rehydrate has run.
+   *
+   * Sign-in state lives in localStorage, so the first client render always says
+   * "signed out". Anything that renders a materially different layout for
+   * members needs to wait rather than flash the signed-out version first.
+   */
+  isReady: boolean;
   username: string;
   profileId: string;
   isProfileComplete: boolean;
@@ -52,6 +60,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isReady, setIsReady] = useState<boolean>(false);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [profileId, setProfileId] = useState<string>("");
@@ -77,6 +86,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const storedComplete = localStorage.getItem(LOCAL_PROFILE_COMPLETE_KEY);
     setIsProfileComplete(storedComplete === "1" || storedComplete === "true");
+
+    setIsReady(true);
   }, []);
 
   const login = (details: LoginDetails = {}) => {
@@ -161,6 +172,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     <AuthContext.Provider
       value={{
         isAuthenticated,
+        isReady,
         isProfileComplete,
         profileId,
         login,
