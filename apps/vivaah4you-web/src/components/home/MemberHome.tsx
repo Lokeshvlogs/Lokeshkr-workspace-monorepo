@@ -4,30 +4,26 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import MatchesSection from '@/components/profile/MatchesSection'
+import ProfileStrengthCard from '@/components/home/ProfileStrengthCard'
+import InsightsPanel, { type MemberStats } from '@/components/home/InsightsPanel'
 import { useAuth } from '@/components/authProvider'
 import type { MyProfile } from '@/types/profile'
 
-/** Donut showing how far through the wizard the member is. */
-function CompletenessRing({ value }: { value: number }) {
-  const radius = 22
-  const circumference = 2 * Math.PI * radius
-  const clamped = Math.max(0, Math.min(100, value))
-
+/** Headline figures, shown across the welcome band. */
+function StatTile({
+  value,
+  label,
+  hint,
+  suffix,
+}: { value: number; label: string; hint?: string; suffix?: string }) {
   return (
-    <div className="completeness" role="img" aria-label={`Profile ${clamped}% complete`}>
-      <svg viewBox="0 0 56 56" className="completeness-svg" aria-hidden="true">
-        <circle className="completeness-track" cx="28" cy="28" r={radius} />
-        <circle
-          className="completeness-value"
-          cx="28"
-          cy="28"
-          r={radius}
-          strokeDasharray={circumference}
-          /* Dash offset is the unfilled remainder, so 100% closes the ring. */
-          strokeDashoffset={circumference * (1 - clamped / 100)}
-        />
-      </svg>
-      <span className="completeness-label">{clamped}%</span>
+    <div className="stat-tile">
+      <span className="stat-value">
+        {value}
+        {suffix && <span className="stat-suffix">{suffix}</span>}
+      </span>
+      <span className="stat-label">{label}</span>
+      {hint && <span className="stat-hint">{hint}</span>}
     </div>
   )
 }
@@ -36,23 +32,30 @@ function CompletenessRing({ value }: { value: number }) {
  * The signed-in home page.
  *
  * Deliberately not the marketing page: no collage, no tagline, no sales copy.
- * A member arriving here wants to search and to see who matched, so the strip
- * below is kept to one line and search takes over from there.
+ * A member arriving here wants to search, to see who matched, and to know what
+ * has happened since they were last here - so the layout is a dashboard with
+ * search as its centre column.
  */
 export default function MemberHome() {
   const auth = useAuth()
   const [profile, setProfile] = useState<MyProfile | null>(null)
+  const [stats, setStats] = useState<MemberStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/profile/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled && data) setProfile(data)
-      })
-      .catch(() => {
-        // The strip degrades to the username from auth state.
-      })
+
+    // One pass for both panels; they render from the same two payloads.
+    Promise.all([
+      fetch('/api/profile/me').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/profile/stats').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([me, activity]) => {
+      if (cancelled) return
+      if (me) setProfile(me)
+      if (activity) setStats(activity)
+      setLoading(false)
+    })
+
     return () => {
       cancelled = true
     }
@@ -63,43 +66,56 @@ export default function MemberHome() {
   const complete = auth.isProfileComplete || completeness >= 95
 
   return (
-    <div className="member-home">
-      <div className="container mx-auto px-6 py-8">
-        <header className="member-strip">
-          <div className="member-identity">
+    <div className="dashboard">
+      <div className="container mx-auto px-4 py-8 sm:px-6">
+        <header className="welcome">
+          <div className="welcome-main">
             {profile?.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.photo} alt="" className="member-avatar" />
+              <img src={profile.photo} alt="" className="welcome-avatar" />
             ) : (
-              <span className="member-avatar member-avatar-initial" aria-hidden="true">
+              <span className="welcome-avatar welcome-avatar-initial" aria-hidden="true">
                 {firstName.charAt(0).toUpperCase()}
               </span>
             )}
+
             <div className="min-w-0">
-              <h1 className="member-greeting">Welcome back, {firstName}</h1>
-              <p className="member-subline">
+              <h1 className="welcome-greeting">Welcome back, {firstName}</h1>
+              <p className="welcome-sub">
                 {complete
                   ? 'Your profile is live and visible to matches.'
                   : 'Finish your profile to appear in other members’ matches.'}
               </p>
             </div>
-          </div>
 
-          <div className="member-actions">
-            {!complete && <CompletenessRing value={completeness} />}
-            {complete ? (
-              <Link href="/profile/me" className="btn border border-color-border bg-white">
-                My profile
-              </Link>
-            ) : (
-              <Link href="/profile/register" className="btn-primary">
+            {!complete && (
+              <Link href="/profile/register" className="btn-primary welcome-cta">
                 Complete profile
               </Link>
             )}
           </div>
+
+          <div className="welcome-stats">
+            <StatTile value={stats?.profileViews ?? 0} label="Profile views" hint="last 30 days" />
+            <StatTile value={stats?.uniqueVisitors ?? 0} label="Visitors" hint="unique people" />
+            <StatTile value={stats?.matches ?? 0} label="Matches" hint="available now" />
+            <StatTile value={completeness} label="Profile complete" hint="all sections" suffix="%" />
+          </div>
         </header>
 
-        <MatchesSection />
+        <div className="dashboard-grid">
+          <aside className="dashboard-side dashboard-side-left">
+            <ProfileStrengthCard profile={profile} loading={loading} />
+          </aside>
+
+          <main className="dashboard-main">
+            <MatchesSection />
+          </main>
+
+          <aside className="dashboard-side dashboard-side-right">
+            <InsightsPanel stats={stats} loading={loading} />
+          </aside>
+        </div>
       </div>
     </div>
   )

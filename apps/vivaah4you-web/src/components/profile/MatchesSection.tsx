@@ -37,6 +37,8 @@ const toCard = (profile: PublicProfile): ProfileCardData => ({
     labelFor('community', profile.community),
     labelFor('mothertongue', profile.mothertongue),
   ].filter(Boolean),
+  // Display picture plus gallery - what a visitor would actually be able to see.
+  photoCount: (profile.photo ? 1 : 0) + (profile.photos?.length ?? 0),
 })
 
 function matchesFilters(profile: PublicProfile, filters: MatchFilters): boolean {
@@ -185,7 +187,7 @@ export default function MatchesSection() {
 
       <div className="match-grid mt-6">
         {loading
-          ? Array.from({ length: 8 }, (_, i) => <MatchSkeleton key={i} />)
+          ? Array.from({ length: 6 }, (_, i) => <MatchSkeleton key={i} />)
           : visible.map((entry) => <ProfileCard key={entry.card.profileId} {...entry.card} />)}
       </div>
 

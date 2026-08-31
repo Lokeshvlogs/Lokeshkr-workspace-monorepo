@@ -1,13 +1,16 @@
+from datetime import timedelta
 from typing import List
 
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from ninja import File, Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from ninja_jwt.authentication import JWTAuth
 
 from .mapping import apply_payload, profile_to_api
-from .models import Profile
+from .models import Profile, ProfileView
 from .schemas import ProfileUpdateSchema
 
 router = Router(tags=["profiles"])
@@ -15,6 +18,26 @@ router = Router(tags=["profiles"])
 # A profile below this is still considered "in setup" and is bounced back into
 # the registration wizard after login.
 PROFILE_COMPLETE_THRESHOLD = 95
+
+# Window for the "recent activity" figures on the member dashboard.
+STATS_WINDOW_DAYS = 30
+# How many recent visitors the dashboard shows.
+VISITOR_LIMIT = 8
+
+
+def eligible_matches(profile: Profile):
+    """The pool a member is matched against - shared by /matches and /stats.
+
+    Kept in one place so the dashboard's "matches" figure can never disagree
+    with the number of cards actually rendered.
+    """
+    opposite = {"M": "F", "F": "M"}.get(profile.gender)
+    qs = Profile.objects.exclude(user=profile.user).exclude(hide=True).exclude(
+        hide_profile_from_search=True
+    )
+    if opposite:
+        qs = qs.filter(gender=opposite)
+    return qs
 
 
 def validate_sibling_counts(profile: Profile) -> None:
@@ -74,16 +97,92 @@ def matches(request):
     A real compatibility algorithm replaces the ordering here later.
     """
     profile = get_object_or_404(Profile, user=request.user)
-    opposite = {"M": "F", "F": "M"}.get(profile.gender)
-
-    qs = Profile.objects.exclude(user=request.user).exclude(hide=True).exclude(
-        hide_profile_from_search=True
-    )
-    if opposite:
-        qs = qs.filter(gender=opposite)
-    qs = qs.order_by("-profile_completeness", "-created_at")[:12]
+    qs = eligible_matches(profile).order_by("-profile_completeness", "-created_at")[:12]
 
     return [profile_to_api(p, request, public=True) for p in qs]
+
+
+def visitor_card(profile: Profile, request, last_seen) -> dict:
+    """The trimmed shape the dashboard's visitor list needs."""
+    photo = None
+    if profile.display_picture and not profile.hide_display_picture_from_search:
+        try:
+            photo = request.build_absolute_uri(profile.display_picture.url)
+        except ValueError:
+            photo = None
+    return {
+        "profile_id": profile.profile_id or "",
+        "first_name": profile.first_name,
+        "surname": profile.surname,
+        "age": profile.age,
+        "city": profile.current_city,
+        "photo": photo,
+        "last_seen": last_seen.isoformat() if last_seen else None,
+    }
+
+
+@router.post("/view/{profile_id}", auth=JWTAuth())
+def record_profile_view(request, profile_id: str):
+    """Log that the caller opened someone else's profile.
+
+    Separate from GET /public/{id} so that endpoint stays genuinely public and
+    unauthenticated. Self-views are ignored - your own visits are not activity.
+    """
+    viewer = get_object_or_404(Profile, user=request.user)
+    viewed = get_object_or_404(Profile, profile_id=profile_id)
+
+    if viewer.pk == viewed.pk:
+        return {"recorded": False}
+
+    ProfileView.objects.create(viewer=viewer, viewed=viewed)
+    return {"recorded": True}
+
+
+@router.get("/visitors", auth=JWTAuth())
+def profile_visitors(request):
+    """Who looked at your profile, most recent first, one row per person."""
+    profile = get_object_or_404(Profile, user=request.user)
+
+    seen: dict[int, object] = {}
+    # Ordered newest-first by Meta.ordering, so the first row per viewer is
+    # their latest visit.
+    views = (
+        ProfileView.objects.filter(viewed=profile)
+        .exclude(viewer__hide=True)
+        .exclude(viewer__hide_profile_from_search=True)
+        .select_related("viewer")[: VISITOR_LIMIT * 20]
+    )
+    for view in views:
+        if view.viewer_id not in seen:
+            seen[view.viewer_id] = (view.viewer, view.created_at)
+        if len(seen) >= VISITOR_LIMIT:
+            break
+
+    return [visitor_card(p, request, when) for p, when in seen.values()]
+
+
+@router.get("/stats", auth=JWTAuth())
+def profile_stats(request):
+    """Headline figures for the member dashboard.
+
+    Every number here is counted from real rows - nothing is estimated - so an
+    empty account correctly reads as zeros rather than inventing activity.
+    """
+    profile = get_object_or_404(Profile, user=request.user)
+    since = timezone.now() - timedelta(days=STATS_WINDOW_DAYS)
+
+    recent = ProfileView.objects.filter(viewed=profile, created_at__gte=since)
+    unique_visitors = recent.values("viewer").aggregate(n=Count("viewer", distinct=True))["n"]
+
+    return {
+        "window_days": STATS_WINDOW_DAYS,
+        "profile_views": recent.count(),
+        "unique_visitors": unique_visitors or 0,
+        "views_made": ProfileView.objects.filter(viewer=profile, created_at__gte=since).count(),
+        "matches": eligible_matches(profile).count(),
+        "completeness": profile.profile_completeness,
+        "photos": profile.photos.count() + (1 if profile.display_picture else 0),
+    }
 
 
 @router.patch("/save-step", auth=JWTAuth())

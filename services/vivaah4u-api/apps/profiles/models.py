@@ -270,3 +270,31 @@ class ProfilePhoto(models.Model):
 
     def __str__(self):
         return f"{self.profile.profile_id or self.profile_id} photo {self.position}"
+
+
+class ProfileView(models.Model):
+    """One member opening another member's profile.
+
+    Every visit is stored rather than one row per pair: "12 views from 4 people"
+    is a more useful signal than "4 people", and de-duplication is a query
+    concern, not a storage one. Anonymous visits are not recorded at all - there
+    is nobody to show in the visitors list.
+    """
+
+    viewer = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="views_made"
+    )
+    viewed = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="views_received"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            # Serves both the visitors list and the 30-day counts.
+            models.Index(fields=["viewed", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.viewer_id} viewed {self.viewed_id}"

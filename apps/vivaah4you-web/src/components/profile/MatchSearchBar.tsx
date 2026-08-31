@@ -142,7 +142,7 @@ export default function MatchSearchBar({
             id="match-query"
             type="search"
             className="search-bar-input"
-            placeholder="Search by name, city or profession"
+            placeholder="Search profiles"
             value={filters.query}
             onChange={(e) => set('query', e.target.value)}
             aria-label="Search by name, city or profession"

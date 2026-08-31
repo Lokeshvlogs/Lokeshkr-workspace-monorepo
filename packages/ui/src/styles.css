@@ -1289,87 +1289,146 @@ button.chip-selected:hover {
   border-color: var(--color-border, #fbcfe8);
 }
 
-/* --- Match results --- */
+/* --- Profile cards --- */
 .match-grid {
-  @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4;
+  @apply grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3;
 }
 
-.match-card {
-  @apply flex flex-col overflow-hidden rounded-2xl transition;
+.card {
+  @apply relative flex flex-col overflow-hidden rounded-2xl;
   border: 1px solid var(--color-border, #fbcfe8);
   background-color: var(--color-bg, #ffffff);
   box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.28s ease, border-color 0.2s ease;
 }
 
-.match-card:hover {
-  transform: translateY(-4px);
+.card:hover {
+  transform: translateY(-6px);
   border-color: var(--color-primary-light, #f96cba);
-  box-shadow: 0 18px 40px rgba(236, 72, 153, 0.14);
+  box-shadow: 0 22px 44px rgba(236, 72, 153, 0.18);
 }
 
-.match-card-link {
+.card-media-link {
   @apply block;
 }
 
-.match-card-media {
+.card-media {
   @apply relative aspect-[4/5] w-full overflow-hidden;
-  background-color: var(--color-primary-surface, #fdf2f8);
+  background: linear-gradient(150deg, var(--color-primary-surface, #fdf2f8), #fce7f3);
 }
 
-.match-card-img {
-  @apply h-full w-full object-cover transition-transform duration-500;
+.card-img {
+  @apply h-full w-full object-cover;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.match-card:hover .match-card-img {
-  transform: scale(1.04);
+.card:hover .card-img {
+  transform: scale(1.06);
 }
 
-.match-card-initial {
-  @apply flex h-full w-full items-center justify-center text-6xl font-bold;
+.card-initial {
+  @apply flex h-full w-full items-center justify-center text-7xl font-bold;
   color: var(--color-primary-extra-light, #fab2dd);
 }
 
-/* Gradient rather than a solid chip: the photo stays visible underneath and the
-   text stays readable whatever the image behind it. */
-.match-card-scrim {
-  @apply absolute inset-x-0 bottom-0 px-4 pb-3 pt-10;
-  background: linear-gradient(to top, rgba(17, 24, 39, 0.78), rgba(17, 24, 39, 0));
+/* Photo count, so a gallery is discoverable before opening the profile. */
+.card-photo-count {
+  @apply absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-white;
+  background-color: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(6px);
 }
 
-.match-card-name {
-  @apply truncate text-base font-semibold text-white;
+.card-photo-count svg {
+  @apply h-3.5 w-3.5;
 }
 
-.match-card-age {
-  @apply font-normal;
+/* Taller, softer gradient than a flat bar: the photo stays visible through it
+   while the text over it keeps its contrast. */
+.card-scrim {
+  @apply absolute inset-x-0 bottom-0 px-4 pb-3.5 pt-14;
+  background: linear-gradient(
+    to top,
+    rgba(17, 24, 39, 0.86) 0%,
+    rgba(17, 24, 39, 0.55) 45%,
+    rgba(17, 24, 39, 0) 100%
+  );
 }
 
-.match-card-location {
-  @apply truncate text-xs;
+/* Over a pale initial-only placeholder the near-black scrim reads as dirt.
+   Tint it instead, so the card still looks deliberate without a photograph. */
+.card-media-empty .card-scrim {
+  background: linear-gradient(
+    to top,
+    rgba(190, 24, 93, 0.92) 0%,
+    rgba(219, 39, 119, 0.55) 45%,
+    rgba(236, 72, 153, 0) 100%
+  );
+}
+
+.card-name {
+  @apply flex items-baseline gap-1.5 truncate text-base font-bold text-white;
+  letter-spacing: -0.018em;
+}
+
+.card-age {
+  @apply text-sm font-normal;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.card-location {
+  @apply mt-0.5 flex items-center gap-1 text-xs;
   color: rgba(255, 255, 255, 0.82);
 }
 
-.match-card-body {
+.card-pin {
+  @apply h-3 w-3 shrink-0;
+}
+
+.card-body {
   @apply flex flex-1 flex-col gap-3 p-4;
 }
 
-.match-card-headline {
-  @apply truncate text-sm font-medium;
+.card-headline {
+  @apply truncate text-sm font-semibold;
   color: var(--color-primary-text, #111827);
 }
 
-.match-card-details {
+.card-pills {
   @apply flex flex-1 flex-wrap content-start gap-1.5;
 }
 
-.match-card-pill {
-  @apply rounded-full px-2 py-0.5 text-xs;
+.card-pill {
+  @apply rounded-full px-2.5 py-1 text-xs font-medium;
   background-color: var(--color-primary-surface, #fdf2f8);
-  color: var(--color-placeholder-text, #6b7280);
+  color: #6b7280;
+  border: 1px solid rgba(251, 207, 232, 0.7);
 }
 
-.match-card-cta {
-  @apply w-full;
+.card-pill-more {
+  color: var(--color-primary, #ec4899);
+}
+
+.card-cta {
+  @apply inline-flex w-full items-center justify-center rounded-lg text-sm font-semibold transition;
+  height: 40px;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary, #ec4899);
+}
+
+/* Filled only on hover. A grid of solid pink buttons was the loudest thing on
+   the page and pulled attention away from the photographs. */
+.card:hover .card-cta,
+.card-cta:hover {
+  background-color: var(--color-primary, #ec4899);
+  border-color: var(--color-primary, #ec4899);
+  color: #ffffff;
+}
+
+.card-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
 }
 
 /* --- Match empty / gated / loading states --- */
@@ -1445,84 +1504,337 @@ button.chip-selected:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .match-skeleton-media,
-  .match-skeleton-line {
+  .match-skeleton-line,
+  .panel-skeleton,
+  .panel-skeleton-rows span,
+  .home-boot {
     animation: none;
   }
-  .match-card:hover {
+  .card,
+  .card:hover,
+  .card:hover .card-img {
     transform: none;
   }
-  .match-card:hover .match-card-img {
-    transform: none;
+  .strength-ring-value {
+    transition: none;
   }
 }
 
-/* --- Member home strip --- */
-.member-strip {
-  @apply mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4;
+/* --- Member dashboard --- */
+.dashboard {
+  background:
+    radial-gradient(900px 320px at 8% -5%, rgba(236, 72, 153, 0.07), transparent 60%),
+    radial-gradient(700px 280px at 95% 0%, rgba(251, 146, 60, 0.05), transparent 60%);
+}
+
+/* Welcome band. */
+.welcome {
+  @apply mb-6 overflow-hidden rounded-2xl;
   border: 1px solid var(--color-border, #fbcfe8);
-  background: linear-gradient(120deg, var(--color-bg, #ffffff), var(--color-primary-surface, #fdf2f8));
+  background: linear-gradient(115deg, #ffffff 0%, var(--color-primary-surface, #fdf2f8) 100%);
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
 }
 
-.member-identity {
-  @apply flex min-w-0 items-center gap-4;
+.welcome-main {
+  @apply flex flex-wrap items-center gap-4 px-5 py-5 sm:px-6;
 }
 
-.member-avatar {
-  @apply h-12 w-12 shrink-0 rounded-full object-cover;
-  border: 2px solid var(--color-bg, #ffffff);
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.20);
+.welcome-avatar {
+  @apply h-14 w-14 shrink-0 rounded-full object-cover;
+  border: 3px solid var(--color-bg, #ffffff);
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.24);
 }
 
-.member-avatar-initial {
-  @apply flex items-center justify-center text-lg font-bold text-white;
-  background: linear-gradient(135deg, var(--color-primary, #ec4899), #f472b6);
+.welcome-avatar-initial {
+  @apply flex items-center justify-center text-xl font-bold text-white;
+  background: linear-gradient(135deg, var(--color-primary, #ec4899), #fb923c);
 }
 
-.member-greeting {
-  @apply truncate text-lg font-bold;
-  letter-spacing: -0.022em;
+.welcome-greeting {
+  @apply truncate text-xl font-bold sm:text-2xl;
+  letter-spacing: -0.026em;
   color: var(--color-primary-text, #111827);
 }
 
-.member-subline {
-  @apply truncate text-sm;
+.welcome-sub {
+  @apply mt-0.5 text-sm;
   color: var(--color-placeholder-text, #6b7280);
 }
 
-.member-actions {
-  @apply flex shrink-0 items-center gap-3;
+.welcome-cta {
+  @apply ml-auto shrink-0;
 }
 
-/* Completeness donut.
-
-   Not named .ring: that is a Tailwind utility, and because utilities are emitted
-   after this file it won't lose the tie - the element picked up Tailwind's
-   default blue ring shadow on top of this styling. */
-.completeness {
-  @apply relative flex h-12 w-12 items-center justify-center;
+/* Four figures on one rule-separated row - no nested cards, so the band stays
+   light against the panels below it. */
+.welcome-stats {
+  @apply grid grid-cols-2 border-t sm:grid-cols-4;
+  border-color: var(--color-border, #fbcfe8);
+  background-color: rgba(255, 255, 255, 0.55);
 }
 
-.completeness-svg {
+.stat-tile {
+  @apply flex flex-col gap-0.5 px-5 py-4 sm:px-6;
+  border-left: 1px solid var(--color-border, #fbcfe8);
+}
+
+/* Two per row on mobile, four on desktop - the dividers have to follow. */
+.stat-tile:nth-child(2n + 1) {
+  border-left: 0;
+}
+
+.stat-tile:nth-child(n + 3) {
+  border-top: 1px solid var(--color-border, #fbcfe8);
+}
+
+@media (min-width: 640px) {
+  .stat-tile:nth-child(2n + 1) {
+    border-left: 1px solid var(--color-border, #fbcfe8);
+  }
+  .stat-tile:first-child {
+    border-left: 0;
+  }
+  .stat-tile:nth-child(n + 3) {
+    border-top: 0;
+  }
+}
+
+.stat-value {
+  @apply text-2xl font-extrabold leading-none;
+  letter-spacing: -0.03em;
+  color: var(--color-primary, #ec4899);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  @apply mt-1.5 text-sm font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+.stat-hint {
+  @apply text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* Three columns on wide screens. The sidebars fold away below xl so search and
+   results keep the full width on a laptop. */
+.dashboard-grid {
+  @apply grid grid-cols-1 gap-6 xl:grid-cols-[17rem_minmax(0,1fr)_19rem];
+}
+
+.dashboard-main {
+  @apply order-1 min-w-0 xl:order-none;
+}
+
+.dashboard-side {
+  @apply min-w-0;
+}
+
+/* Below xl the results come first; the panels are supplementary, not a wall to
+   scroll past before reaching the point of the page. */
+.dashboard-side-left {
+  @apply order-2 xl:order-none;
+}
+
+.dashboard-side-right {
+  @apply order-3 xl:order-none;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-side {
+    position: sticky;
+    top: 5.5rem;
+    align-self: start;
+    /* A long panel scrolls inside its own column rather than pushing the
+       sticky block past the bottom of the viewport. */
+    max-height: calc(100vh - 7rem);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .dashboard-side::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* --- Sidebar panels --- */
+.panel {
+  @apply rounded-2xl p-5;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+}
+
+.panel-title {
+  @apply mb-4 text-sm font-bold uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.panel-empty {
+  @apply text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+  line-height: 1.55;
+}
+
+.panel-foot {
+  @apply mt-3 border-t pt-3 text-xs;
+  border-color: var(--color-border, #fbcfe8);
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.panel-links {
+  @apply mt-4 flex flex-col gap-2 border-t pt-4 text-sm;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+.panel-links a {
+  color: var(--color-primary, #ec4899);
+  font-weight: 600;
+}
+
+.panel-links a:hover {
+  text-decoration: underline;
+}
+
+.panel-skeleton {
+  @apply rounded-2xl;
+  height: 20rem;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 37%, #f8fafc 63%);
+  background-size: 400% 100%;
+  animation: match-shimmer 1.4s ease infinite;
+}
+
+.panel-skeleton-rows {
+  @apply flex flex-col gap-3;
+}
+
+.panel-skeleton-rows span {
+  @apply block h-9 rounded-lg;
+  background: linear-gradient(90deg, #f8fafc 25%, #f1f5f9 37%, #f8fafc 63%);
+  background-size: 400% 100%;
+  animation: match-shimmer 1.4s ease infinite;
+}
+
+/* --- Profile strength --- */
+.strength-head {
+  @apply mb-4 flex items-center gap-4;
+}
+
+.strength-ring {
+  @apply relative flex h-[72px] w-[72px] shrink-0 items-center justify-center;
+}
+
+.strength-ring-svg {
   @apply absolute inset-0 h-full w-full -rotate-90;
 }
 
-.completeness-track {
+.strength-ring-track {
   fill: none;
-  stroke: var(--color-border, #fbcfe8);
-  stroke-width: 5;
+  stroke: var(--color-primary-surface, #fdf2f8);
+  stroke-width: 7;
 }
 
-.completeness-value {
+.strength-ring-value {
   fill: none;
   stroke: var(--color-primary, #ec4899);
-  stroke-width: 5;
+  stroke-width: 7;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: stroke-dashoffset 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.completeness-label {
-  @apply relative text-xs font-bold;
+.strength-ring-label {
+  @apply relative text-base font-extrabold;
   color: var(--color-primary, #ec4899);
+  font-variant-numeric: tabular-nums;
+}
+
+.strength-caption {
+  @apply text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+  line-height: 1.5;
+}
+
+.strength-list {
+  @apply flex flex-col gap-2;
+}
+
+.strength-item {
+  @apply flex items-center gap-2.5 text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.strength-item-done {
+  color: var(--color-primary-text, #111827);
+}
+
+.strength-tick {
+  @apply flex h-5 w-5 shrink-0 items-center justify-center rounded-full;
+  border: 1.5px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+}
+
+.strength-item-done .strength-tick {
+  border-color: var(--color-primary, #ec4899);
+  background-color: var(--color-primary, #ec4899);
+  color: #ffffff;
+}
+
+.strength-tick svg {
+  @apply h-3 w-3;
+}
+
+/* --- Visitors --- */
+.visitor-list {
+  @apply flex flex-col gap-1;
+}
+
+.visitor {
+  @apply -mx-2 flex items-center gap-3 rounded-xl px-2 py-2 transition;
+}
+
+.visitor:hover {
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.visitor-avatar {
+  @apply h-10 w-10 shrink-0 rounded-full object-cover;
+  border: 2px solid var(--color-bg, #ffffff);
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.12);
+}
+
+.visitor-avatar-initial {
+  @apply flex items-center justify-center text-sm font-bold text-white;
+  background: linear-gradient(135deg, var(--color-primary-light, #f96cba), var(--color-primary, #ec4899));
+}
+
+.visitor-name {
+  @apply block truncate text-sm font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+.visitor-meta {
+  @apply block truncate text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* --- Activity --- */
+.activity-list {
+  @apply flex flex-col;
+}
+
+.activity-row {
+  @apply flex items-center justify-between gap-3 border-b py-2.5 text-sm last:border-b-0;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+.activity-row dt {
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.activity-row dd {
+  @apply font-bold;
+  color: var(--color-primary-text, #111827);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1707,4 +2019,11 @@ button.chip-selected:hover {
   outline: none;
   border-color: var(--color-primary, #ec4899);
   box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+}
+
+/* Unit on a stat figure - smaller and lighter, so "14%" reads as one number
+   rather than two competing glyphs. */
+.stat-suffix {
+  @apply ml-0.5 text-base font-bold;
+  opacity: 0.7;
 }
