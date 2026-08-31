@@ -15,7 +15,6 @@ export default function Navbar() {
 
   const links = (
     <>
-      <Link href="/#features" className="text-gray-700 hover:text-gray-900">Features</Link>
       <Link
         href={auth.isAuthenticated ? '/#profiles' : '/#register'}
         className="text-gray-700 hover:text-gray-900"
