@@ -4,13 +4,20 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 import ProfileCard, { type ProfileCardData } from '@/components/profile/ProfileCard'
-import MatchSearchBar, { EMPTY_FILTERS, type MatchFilters } from '@/components/profile/MatchSearchBar'
+import MatchSearchBar, {
+  EMPTY_FILTERS,
+  type MatchFilters,
+  type SortKey,
+} from '@/components/profile/MatchSearchBar'
 import { useAuth } from '@/components/authProvider'
 import { formatHeight, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
 import type { PublicProfile } from '@/types/profile'
 
 /** A match plus the raw profile, so filtering can read fields the card omits. */
 type MatchEntry = { card: ProfileCardData; profile: PublicProfile }
+
+const totalInches = (profile: PublicProfile): number =>
+  (profile.heightFeet || 0) * 12 + (profile.heightInches || 0)
 
 const toCard = (profile: PublicProfile): ProfileCardData => ({
   profileId: profile.profile_id,
@@ -24,24 +31,41 @@ const toCard = (profile: PublicProfile): ProfileCardData => ({
   ]
     .filter(Boolean)
     .join(' · '),
-  // Community was the whole headline before, which put caste on every card
-  // above everything else. It reads better as one detail among several.
   details: [
     profile.heightFeet ? formatHeight(profile.heightFeet, profile.heightInches) : '',
     labelFor('religion', profile.religion),
     labelFor('community', profile.community),
     labelFor('mothertongue', profile.mothertongue),
   ].filter(Boolean),
+  // Display picture plus gallery - what a visitor would actually be able to see.
+  photoCount: (profile.photo ? 1 : 0) + (profile.photos?.length ?? 0),
 })
 
 function matchesFilters(profile: PublicProfile, filters: MatchFilters): boolean {
-  if (filters.religion && profile.religion !== filters.religion) return false
-  if (filters.maritalStatus && profile.maritalStatus !== filters.maritalStatus) return false
-  if (filters.country && profile.currentCountry !== filters.country) return false
+  // Exact-match filters, paired with the profile field each one tests.
+  const exact: [string, string][] = [
+    [filters.religion, profile.religion],
+    [filters.maritalStatus, profile.maritalStatus],
+    [filters.country, profile.currentCountry],
+    [filters.motherTongue, profile.mothertongue],
+    [filters.community, profile.community],
+    [filters.education, profile.educationLevel],
+    [filters.profession, profile.profession],
+    [filters.diet, profile.diet],
+  ]
+  for (const [wanted, actual] of exact) {
+    if (wanted && actual !== wanted) return false
+  }
 
   const age = profile.age ?? 0
   if (filters.ageMin && age && age < Number(filters.ageMin)) return false
   if (filters.ageMax && age && age > Number(filters.ageMax)) return false
+
+  // A profile with no height recorded is not excluded by a height range - it is
+  // unanswered, not a mismatch, and hiding it would punish incomplete profiles.
+  const height = totalInches(profile)
+  if (filters.heightMin && height && height < Number(filters.heightMin)) return false
+  if (filters.heightMax && height && height > Number(filters.heightMax)) return false
 
   const query = filters.query.trim().toLowerCase()
   if (query) {
@@ -60,7 +84,25 @@ function matchesFilters(profile: PublicProfile, filters: MatchFilters): boolean 
   return true
 }
 
-/** Keeps the grid from collapsing while the first request is in flight. */
+function sortEntries(entries: MatchEntry[], sort: SortKey): MatchEntry[] {
+  const sorted = [...entries]
+  switch (sort) {
+    case 'age_asc':
+      return sorted.sort((a, b) => (a.profile.age ?? 999) - (b.profile.age ?? 999))
+    case 'age_desc':
+      return sorted.sort((a, b) => (b.profile.age ?? 0) - (a.profile.age ?? 0))
+    case 'newest':
+      // The API already returns most-recent-first within equal completeness;
+      // reversing that ordering is the closest signal available client-side.
+      return sorted.reverse()
+    case 'best':
+    default:
+      return sorted.sort(
+        (a, b) => (b.profile.profile_completeness ?? 0) - (a.profile.profile_completeness ?? 0),
+      )
+  }
+}
+
 function MatchSkeleton() {
   return (
     <div className="match-skeleton" aria-hidden="true">
@@ -76,6 +118,7 @@ export default function MatchesSection() {
   const [entries, setEntries] = useState<MatchEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<MatchFilters>(EMPTY_FILTERS)
+  const [sort, setSort] = useState<SortKey>('best')
 
   useEffect(() => {
     // Matches are members-only, so there is nothing to fetch when signed out.
@@ -107,10 +150,10 @@ export default function MatchesSection() {
     }
   }, [auth.isAuthenticated])
 
-  const visible = useMemo(
-    () => entries.filter((entry) => matchesFilters(entry.profile, filters)),
-    [entries, filters],
-  )
+  const visible = useMemo(() => {
+    const filtered = entries.filter((entry) => matchesFilters(entry.profile, filters))
+    return sortEntries(filtered, sort)
+  }, [entries, filters, sort])
 
   // Signed out: no search bar and no profiles at all, just the reason why.
   if (!auth.isAuthenticated) {
@@ -132,24 +175,19 @@ export default function MatchesSection() {
   }
 
   return (
-    <section id="profiles" className="mt-20">
+    <section id="profiles" className="scroll-mt-20">
       <MatchSearchBar
         filters={filters}
         onChange={setFilters}
+        sort={sort}
+        onSortChange={setSort}
         resultCount={visible.length}
         totalCount={entries.length}
       />
 
-      {!auth.isProfileComplete && (
-        <div className="auth-alert mt-5 flex flex-wrap items-center justify-between gap-3">
-          <span>Finish your profile to appear in other members&rsquo; matches.</span>
-          <Link href="/profile/register" className="link shrink-0">Complete profile →</Link>
-        </div>
-      )}
-
       <div className="match-grid mt-6">
         {loading
-          ? Array.from({ length: 4 }, (_, i) => <MatchSkeleton key={i} />)
+          ? Array.from({ length: 6 }, (_, i) => <MatchSkeleton key={i} />)
           : visible.map((entry) => <ProfileCard key={entry.card.profileId} {...entry.card} />)}
       </div>
 

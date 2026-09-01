@@ -3,6 +3,7 @@
 import Link from 'next/link'
 
 import MatchesSection from '@/components/profile/MatchesSection'
+import MemberHome from '@/components/home/MemberHome'
 import { useAuth } from '@/components/authProvider'
 import RegisterForm from './Register/RegisterForm'
 import { HERO_FALLBACK_CLASS, HERO_IMAGES } from '@/constants/homeImagery'
@@ -96,9 +97,7 @@ function HeroCollage() {
   )
 }
 
-export default function Home() {
-  const auth = useAuth()
-
+function GuestHome() {
   return (
     <div className="hero-bg">
       <div className="container mx-auto px-6 pb-20 pt-12 lg:pt-16">
@@ -118,7 +117,7 @@ export default function Home() {
 
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="#profiles" className="btn-primary">
-                {auth.isAuthenticated ? 'View your matches' : 'Browse profiles'}
+                Browse profiles
               </Link>
               <Link href="#features" className="btn border border-color-border bg-white">
                 How it works
@@ -140,41 +139,22 @@ export default function Home() {
 
         {/* Sign-up sits below the fold on its own, rather than crowding the hero. */}
         <section id="register" className="mt-20 scroll-mt-24">
-          {auth.isAuthenticated ? (
-            <div className="welcome-card">
-              <h2 className="welcome-title">
-                Welcome back{auth.username ? `, ${auth.username.split('@')[0]}` : ''}
-              </h2>
-              <p className="welcome-text">
-                {auth.isProfileComplete
-                  ? 'Your profile is live. Your latest matches are below.'
-                  : 'Finish your profile to start appearing in match results.'}
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+            <div className="max-w-md">
+              <h2 className="section-title">Create your profile</h2>
+              <p className="section-lede">
+                It takes a couple of minutes. You will confirm your mobile number with a
+                short code, then build your profile at your own pace — every step saves as
+                you go.
               </p>
-              <Link
-                href={auth.isProfileComplete ? '/profile/me' : '/profile/register'}
-                className="btn-primary mt-5 inline-flex"
-              >
-                {auth.isProfileComplete ? 'View my profile' : 'Complete my profile'}
-              </Link>
+              <ul className="checklist">
+                <li>Free to join and to browse</li>
+                <li>Your photos stay private until you choose otherwise</li>
+                <li>Register for yourself or on behalf of family</li>
+              </ul>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-              <div className="max-w-md">
-                <h2 className="section-title">Create your profile</h2>
-                <p className="section-lede">
-                  It takes a couple of minutes. You will confirm your mobile number with a
-                  short code, then build your profile at your own pace — every step saves as
-                  you go.
-                </p>
-                <ul className="checklist">
-                  <li>Free to join and to browse</li>
-                  <li>Your photos stay private until you choose otherwise</li>
-                  <li>Register for yourself or on behalf of family</li>
-                </ul>
-              </div>
-              <RegisterForm />
-            </div>
-          )}
+            <RegisterForm />
+          </div>
         </section>
 
         {/* Renders the search bar and results for members, and the reason it is
@@ -208,4 +188,27 @@ export default function Home() {
       </div>
     </div>
   )
+}
+
+/**
+ * Two different products share this route.
+ *
+ * A visitor gets the marketing page - hero, collage, sign-up. A member gets a
+ * search-first dashboard with none of that. Sign-in state is rehydrated from
+ * localStorage, so `isReady` gates the choice: without it the marketing hero
+ * would paint for a frame before being replaced, which is a jarring flash
+ * between two entirely different layouts.
+ */
+export default function Home() {
+  const auth = useAuth()
+
+  if (!auth.isReady) {
+    return (
+      <div className="container mx-auto px-6 py-12">
+        <div className="home-boot" aria-hidden="true" />
+      </div>
+    )
+  }
+
+  return auth.isAuthenticated ? <MemberHome /> : <GuestHome />
 }

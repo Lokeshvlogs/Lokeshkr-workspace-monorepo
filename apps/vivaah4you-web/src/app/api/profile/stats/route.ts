@@ -1,0 +1,28 @@
+import { NextResponse } from "next/server"
+
+import { djangoFetch } from '@/lib/djangoFetch'
+
+/** Headline figures for the member dashboard. All counted from real rows. */
+export async function GET() {
+    const result = await djangoFetch('/profiles/stats')
+
+    if (!result.ok) {
+        return NextResponse.json(
+            { detail: result.data?.detail ?? 'Could not load your activity.' },
+            { status: result.status },
+        )
+    }
+
+    return NextResponse.json(
+        {
+            windowDays: Number(result.data.window_days ?? 30),
+            profileViews: Number(result.data.profile_views ?? 0),
+            uniqueVisitors: Number(result.data.unique_visitors ?? 0),
+            viewsMade: Number(result.data.views_made ?? 0),
+            matches: Number(result.data.matches ?? 0),
+            completeness: Number(result.data.completeness ?? 0),
+            photos: Number(result.data.photos ?? 0),
+        },
+        { status: 200 },
+    )
+}
