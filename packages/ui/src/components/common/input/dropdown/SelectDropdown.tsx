@@ -1,6 +1,6 @@
 "use client";
 import { Check, ChevronDown } from 'lucide-react';
-import React, { useState, useRef, useEffect, CSSProperties, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, CSSProperties, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption } from '../../../../types/select';
 
@@ -182,10 +182,29 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
   }
 
 
+  /**
+   * Options with any repeated value dropped, first occurrence winning.
+   *
+   * A duplicate value is always a data bug: both rows set the same thing, so
+   * the second is unreachable however it is drawn. Filtering it here removes
+   * the phantom row and keeps `value` usable as a React key - the option lists
+   * are long hand-maintained files (the caste list alone is ~1,600 entries),
+   * and a repeat there used to surface only as a duplicate-key warning.
+   */
+  const uniqueOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return options.filter(o => {
+      const key = String(o.value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [options]);
+
   const visibleOptions = searchable && search
-    ? options.filter(o =>
+    ? uniqueOptions.filter(o =>
         `${o.label ?? ''} ${o.extra_label ?? ''}`.toLowerCase().includes(search.toLowerCase()))
-    : options;
+    : uniqueOptions;
 
   /** Text a typed prefix is matched against, most human-readable first. */
   function searchableTextsFor(option: any): string[] {

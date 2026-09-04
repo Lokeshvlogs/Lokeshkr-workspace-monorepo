@@ -361,9 +361,28 @@ export default function ProfileRegisterPage() {
 
       if (cancelled) return;
 
+      // A "Complete profile" link carries the first step that still has a gap.
+      // It has to win over the saved draft step, or a stale draft pointing at
+      // step 0 would quietly defeat the deep link. Read from window rather than
+      // useSearchParams: this is one large client component, and useSearchParams
+      // would force a Suspense boundary around all of it.
+      // Tested as a string first: URLSearchParams.get returns null when the
+      // param is absent, and Number(null) is 0 - which would silently pin
+      // every ordinary visit to step 0 and override the saved draft.
+      const raw = new URLSearchParams(window.location.search).get("step");
+      const requested = raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
+      const fromUrl = requested !== null && requested <= PHOTO_STEP ? requested : null;
+
       setForm((prev) => ({ ...prev, ...restored }));
-      setStep(draftStep ?? 0);
+      setStep(fromUrl ?? draftStep ?? 0);
       hydrated.current = true;
+
+      // Consume the param once applied. The draft records the step on every
+      // change, so leaving ?step in the URL would drag a member who has moved
+      // on to step 4 back to the deep-linked step on the next refresh.
+      if (fromUrl !== null) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
     }
 
     hydrate();

@@ -1565,38 +1565,72 @@ button.chip-selected:hover {
   @apply ml-auto shrink-0;
 }
 
-/* Four figures on one rule-separated row - no nested cards, so the band stays
-   light against the panels below it. */
+/* Completeness and its call to action as one cluster, replacing the sidebar
+   panel that used to spend a whole column on the same number. Wraps to its own
+   full-width row on small screens rather than crushing the greeting. */
+.welcome-strength {
+  @apply ml-auto flex w-full items-center gap-3 rounded-xl px-3 py-2.5 sm:w-auto;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.welcome-strength-text {
+  @apply mr-1 flex min-w-0 flex-col;
+}
+
+.welcome-strength-title {
+  @apply text-sm font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+.welcome-strength-hint {
+  @apply text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.welcome-link {
+  @apply mt-1 text-sm font-semibold;
+  color: var(--color-primary, #ec4899);
+}
+
+.welcome-link:hover {
+  text-decoration: underline;
+}
+
+/* Compact ring for the welcome band and the compatibility score. The default
+   .strength-ring is sized for a panel head; this one sits inline beside text.
+   Doubled-up selector on purpose: .strength-ring is declared further down the
+   file, so a single class here would lose the size to it on source order. */
+.strength-ring.strength-ring-sm {
+  @apply h-14 w-14;
+}
+
+.strength-ring-sm .strength-ring-label {
+  @apply text-sm;
+}
+
+/* Three figures on one rule-separated row - no nested cards, so the band stays
+   light against the panels below it. Profile completeness is not among them:
+   it lives in the band above as a ring plus its call to action, and repeating
+   it here as a fourth figure said the same thing twice. */
 .welcome-stats {
-  @apply grid grid-cols-2 border-t sm:grid-cols-4;
+  @apply grid grid-cols-3 border-t;
   border-color: var(--color-border, #fbcfe8);
   background-color: rgba(255, 255, 255, 0.55);
 }
 
+/* Tighter side padding on small screens is what lets three tiles sit in a row
+   at 360px without the labels truncating. */
 .stat-tile {
-  @apply flex flex-col gap-0.5 px-5 py-4 sm:px-6;
+  @apply flex flex-col gap-0.5 px-3 py-4 sm:px-6;
   border-left: 1px solid var(--color-border, #fbcfe8);
 }
 
-/* Two per row on mobile, four on desktop - the dividers have to follow. */
-.stat-tile:nth-child(2n + 1) {
+/* A fixed three-up row needs one divider rule, not the 2-up/4-up nth-child
+   dance this replaced - that drew a divider down the middle of tile 3 and hung
+   a stray top border on it below 640px. */
+.stat-tile:first-child {
   border-left: 0;
-}
-
-.stat-tile:nth-child(n + 3) {
-  border-top: 1px solid var(--color-border, #fbcfe8);
-}
-
-@media (min-width: 640px) {
-  .stat-tile:nth-child(2n + 1) {
-    border-left: 1px solid var(--color-border, #fbcfe8);
-  }
-  .stat-tile:first-child {
-    border-left: 0;
-  }
-  .stat-tile:nth-child(n + 3) {
-    border-top: 0;
-  }
 }
 
 .stat-value {
@@ -1616,10 +1650,10 @@ button.chip-selected:hover {
   color: var(--color-placeholder-text, #6b7280);
 }
 
-/* Three columns on wide screens. The sidebars fold away below xl so search and
-   results keep the full width on a laptop. */
+/* Two columns on wide screens. The sidebar folds away below xl so the centre
+   column keeps the full width on a laptop. */
 .dashboard-grid {
-  @apply grid grid-cols-1 gap-6 xl:grid-cols-[17rem_minmax(0,1fr)_19rem];
+  @apply grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_19rem];
 }
 
 .dashboard-main {
@@ -1630,14 +1664,10 @@ button.chip-selected:hover {
   @apply min-w-0;
 }
 
-/* Below xl the results come first; the panels are supplementary, not a wall to
+/* Below xl the results come first; the panel is supplementary, not a wall to
    scroll past before reaching the point of the page. */
-.dashboard-side-left {
-  @apply order-2 xl:order-none;
-}
-
 .dashboard-side-right {
-  @apply order-3 xl:order-none;
+  @apply order-2 xl:order-none;
 }
 
 @media (min-width: 1280px) {
@@ -1716,11 +1746,10 @@ button.chip-selected:hover {
   animation: match-shimmer 1.4s ease infinite;
 }
 
-/* --- Profile strength --- */
-.strength-head {
-  @apply mb-4 flex items-center gap-4;
-}
-
+/* --- Completeness ring ---
+   Sized for a panel head originally; now used inline in the welcome band and
+   for the compatibility score via .strength-ring-sm. The list and tick classes
+   that sat alongside it went with the profile strength panel. */
 .strength-ring {
   @apply relative flex h-[72px] w-[72px] shrink-0 items-center justify-center;
 }
@@ -1749,39 +1778,297 @@ button.chip-selected:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.strength-caption {
-  @apply text-sm;
-  color: var(--color-placeholder-text, #6b7280);
-  line-height: 1.5;
+/* --- Centre column views --- */
+.center-bar {
+  @apply flex items-center gap-3;
 }
 
-.strength-list {
-  @apply flex flex-col gap-2;
+.center-back {
+  @apply inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold transition;
+  color: var(--color-primary, #ec4899);
 }
 
-.strength-item {
-  @apply flex items-center gap-2.5 text-sm;
-  color: var(--color-placeholder-text, #6b7280);
+.center-back:hover {
+  background-color: var(--color-primary-surface, #fdf2f8);
 }
 
-.strength-item-done {
+.center-back svg {
+  @apply h-4 w-4;
+}
+
+.center-error {
+  @apply rounded-2xl px-6 py-12 text-center;
+  border: 1px dashed var(--color-border, #fbcfe8);
+}
+
+/* --- Profile hero, shared by the inline own-profile and match views --- */
+.profile-hero {
+  @apply flex flex-col items-center gap-5 rounded-2xl p-6 sm:flex-row sm:items-start;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+}
+
+.profile-hero-avatar {
+  @apply h-24 w-24 shrink-0 rounded-full object-cover;
+  border: 4px solid var(--color-primary-surface, #fdf2f8);
+}
+
+.profile-hero-avatar-initial {
+  @apply flex items-center justify-center text-3xl font-bold text-white;
+  background: linear-gradient(135deg, var(--color-primary, #ec4899), #fb923c);
+}
+
+.profile-hero-name {
+  @apply flex items-baseline gap-2 text-2xl font-bold;
+  letter-spacing: -0.026em;
   color: var(--color-primary-text, #111827);
 }
 
-.strength-tick {
-  @apply flex h-5 w-5 shrink-0 items-center justify-center rounded-full;
-  border: 1.5px solid var(--color-border, #fbcfe8);
-  background-color: var(--color-bg, #ffffff);
+.profile-hero-age {
+  @apply text-lg font-normal;
+  color: var(--color-placeholder-text, #6b7280);
 }
 
-.strength-item-done .strength-tick {
-  border-color: var(--color-primary, #ec4899);
+.profile-hero-id {
+  @apply mt-0.5 font-mono text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.profile-hero-sub {
+  @apply mt-2 text-sm;
+  color: #4b5563;
+}
+
+.profile-hero-actions {
+  @apply flex shrink-0 flex-wrap justify-center gap-2;
+}
+
+/* Facts as icon-led pills, in place of a run-on summary line. */
+.profile-chips {
+  @apply mt-3 flex flex-wrap gap-2;
+}
+
+.profile-chip {
+  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: #4b5563;
+  border: 1px solid rgba(251, 207, 232, 0.7);
+}
+
+.profile-chip-icon {
+  @apply h-3.5 w-3.5 shrink-0;
+  color: var(--color-primary, #ec4899);
+}
+
+.profile-about {
+  @apply mt-2 text-sm;
+  color: #4b5563;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.profile-private-summary {
+  @apply cursor-pointer text-sm font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+/* --- Icon-led profile fields --- */
+
+/* Icon, value, and an optional trailing control. The label is present but
+   visually hidden when an icon stands in for it, so the row still reads as a
+   term/definition pair to a screen reader. */
+.field-row {
+  @apply flex items-start gap-2.5 py-1.5 text-sm;
+}
+
+.field-icon {
+  @apply mt-0.5 h-4 w-4 shrink-0;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* Fields with no icon keep a visible label, so a value is never orphaned. */
+.field-label-text {
+  @apply shrink-0;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.field-value {
+  @apply min-w-0 flex-1 font-medium;
+  color: var(--color-primary-text, #111827);
+  overflow-wrap: anywhere;
+}
+
+.field-value-empty {
+  @apply italic font-normal;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* --- Compatibility --- */
+.compat-head {
+  @apply mb-4 flex items-center gap-4;
+}
+
+.compat-score-title {
+  @apply text-base font-bold;
+  letter-spacing: -0.018em;
+  color: var(--color-primary-text, #111827);
+}
+
+.compat-score-text {
+  @apply mt-0.5 text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.compat-badge {
+  @apply mt-1 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary, #ec4899);
+  border: 1px solid var(--color-border, #fbcfe8);
+}
+
+.compat-noscore-title {
+  @apply text-base font-bold;
+  color: var(--color-primary-text, #111827);
+}
+
+.compat-noscore-text {
+  @apply mt-1 text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+  line-height: 1.55;
+}
+
+/* Stated preferences, ticked off. */
+.compat-prefs {
+  @apply mb-5 flex flex-col gap-1.5 border-b pb-5;
+  border-color: var(--color-border, #fbcfe8);
+}
+
+.compat-pref {
+  @apply flex items-center gap-2.5 text-sm;
+}
+
+.compat-pref-label {
+  @apply shrink-0;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.compat-pref-value {
+  @apply min-w-0 flex-1 truncate text-right font-medium;
+  color: var(--color-primary-text, #111827);
+}
+
+/* Column headings above the side-by-side rows. */
+.compat-cols {
+  @apply mb-1 grid items-center gap-2 text-xs font-bold uppercase;
+  grid-template-columns: minmax(0, 1fr) 3.5rem minmax(0, 1fr);
+  letter-spacing: 0.06em;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.compat-cols > :last-child {
+  @apply truncate text-right;
+}
+
+.compat-rows {
+  @apply flex flex-col;
+}
+
+.compat-row {
+  @apply grid items-center gap-2 border-b py-2 text-sm last:border-b-0;
+  grid-template-columns: minmax(0, 1fr) 3.5rem minmax(0, 1fr);
+  border-color: var(--color-border, #fbcfe8);
+}
+
+/* Rows nobody has answered stay legible but recede - they are not findings. */
+.compat-row-unknown {
+  opacity: 0.55;
+}
+
+.compat-me {
+  @apply min-w-0 font-medium;
+  color: var(--color-primary-text, #111827);
+  overflow-wrap: anywhere;
+}
+
+.compat-them {
+  @apply min-w-0 text-right font-medium;
+  color: var(--color-primary-text, #111827);
+  overflow-wrap: anywhere;
+}
+
+.compat-axis {
+  @apply flex flex-col items-center gap-1;
+}
+
+.compat-icon {
+  @apply h-4 w-4;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.compat-axis-label {
+  @apply text-center text-[10px] leading-tight;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* Fill, outline and dash differ by shape as well as colour, so the verdict
+   survives being read without hue. */
+.compat-mark {
+  @apply flex h-5 w-5 shrink-0 items-center justify-center rounded-full;
+}
+
+.compat-mark svg {
+  @apply h-3 w-3;
+}
+
+.compat-mark-same {
   background-color: var(--color-primary, #ec4899);
   color: #ffffff;
 }
 
-.strength-tick svg {
-  @apply h-3 w-3;
+.compat-mark-differ {
+  background-color: var(--color-bg, #ffffff);
+  border: 1.5px solid var(--color-border, #fbcfe8);
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.compat-mark-unknown {
+  background-color: var(--color-bg, #ffffff);
+  border: 1.5px dashed var(--color-border, #fbcfe8);
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* Three columns crush below sm; stack the two values instead of shrinking
+   them to a word each. */
+@media (max-width: 639px) {
+  .compat-cols {
+    display: none;
+  }
+
+  .compat-row {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  /* Placed explicitly: the DOM order is value / axis / value, so leaving this
+     to auto-placement would put the first value in the icon column. */
+  .compat-axis {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .compat-me {
+    grid-column: 2;
+    grid-row: 1;
+    @apply text-left;
+  }
+
+  .compat-them {
+    grid-column: 2;
+    grid-row: 2;
+    @apply text-left;
+    color: var(--color-placeholder-text, #6b7280);
+  }
 }
 
 /* --- Visitors --- */

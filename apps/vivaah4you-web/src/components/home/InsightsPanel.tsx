@@ -41,9 +41,11 @@ function relativeTime(iso: string | null): string {
 interface InsightsPanelProps {
   stats: MemberStats | null
   loading: boolean
+  /** Opens a visitor's profile in place, matching the match cards. */
+  onOpenProfile?: (profileId: string) => void
 }
 
-export default function InsightsPanel({ stats, loading }: InsightsPanelProps) {
+export default function InsightsPanel({ stats, loading, onOpenProfile }: InsightsPanelProps) {
   const [visitors, setVisitors] = useState<Visitor[]>([])
   const [visitorsLoading, setVisitorsLoading] = useState(true)
 
@@ -83,7 +85,18 @@ export default function InsightsPanel({ stats, loading }: InsightsPanelProps) {
           <ul className="visitor-list">
             {visitors.map((visitor) => (
               <li key={visitor.profileId}>
-                <Link href={`/profile/${visitor.profileId}`} className="visitor">
+                <Link
+                  href={`/profile/${visitor.profileId}`}
+                  className="visitor"
+                  onClick={(event) => {
+                    // Same rule as the match cards: plain click opens in place,
+                    // modifier-clicks still reach the standalone page.
+                    if (!onOpenProfile) return
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+                    event.preventDefault()
+                    onOpenProfile(visitor.profileId)
+                  }}
+                >
                   {visitor.photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={visitor.photo} alt="" className="visitor-avatar" />

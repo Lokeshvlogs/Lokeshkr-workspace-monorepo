@@ -1,43 +1,32 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useCallback, useEffect, useState } from 'react'
 
 import MatchesSection from '@/components/profile/MatchesSection'
-import ProfileStrengthCard from '@/components/home/ProfileStrengthCard'
+import WelcomeHeader from '@/components/home/WelcomeHeader'
+import MyProfileView from '@/components/home/MyProfileView'
+import MatchProfileView from '@/components/home/MatchProfileView'
 import InsightsPanel, { type MemberStats } from '@/components/home/InsightsPanel'
+import { useCenterView } from '@/components/home/useCenterView'
 import { useAuth } from '@/components/authProvider'
 import type { MyProfile } from '@/types/profile'
-
-/** Headline figures, shown across the welcome band. */
-function StatTile({
-  value,
-  label,
-  hint,
-  suffix,
-}: { value: number; label: string; hint?: string; suffix?: string }) {
-  return (
-    <div className="stat-tile">
-      <span className="stat-value">
-        {value}
-        {suffix && <span className="stat-suffix">{suffix}</span>}
-      </span>
-      <span className="stat-label">{label}</span>
-      {hint && <span className="stat-hint">{hint}</span>}
-    </div>
-  )
-}
 
 /**
  * The signed-in home page.
  *
  * Deliberately not the marketing page: no collage, no tagline, no sales copy.
  * A member arriving here wants to search, to see who matched, and to know what
- * has happened since they were last here - so the layout is a dashboard with
- * search as its centre column.
+ * has happened since they were last here.
+ *
+ * The centre column is a view switcher rather than a set of links away: the
+ * matches grid, the member's own profile, and one match alongside a comparison
+ * with them. Everything around it - the welcome band, the insights - stays put
+ * while that changes.
  */
 export default function MemberHome() {
   const auth = useAuth()
+  const { view, showMatches, showMe, showMatch } = useCenterView()
+
   const [profile, setProfile] = useState<MyProfile | null>(null)
   const [stats, setStats] = useState<MemberStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,59 +50,104 @@ export default function MemberHome() {
     }
   }, [])
 
-  const firstName = profile?.firstName || auth.username.split('@')[0] || 'there'
-  const completeness = profile?.profile_completeness ?? 0
-  const complete = auth.isProfileComplete || completeness >= 95
+  /**
+   * Saves a single inline edit and reflects the new completeness.
+   *
+   * Lives here rather than inside the profile view so the welcome band's ring
+   * and its call to action update the moment a field is filled in - which they
+   * did not when this view was a page of its own.
+   */
+  const saveField = useCallback(
+    async (step: number, patch: Record<string, unknown>): Promise<boolean> => {
+      try {
+        const response = await fetch('/api/profile/save-step', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step, ...patch }),
+        })
+
+        if (response.status === 401) {
+          auth.loginRequiredRedirect()
+          return false
+        }
+
+        const result = await response.json().catch(() => ({}))
+        if (!response.ok || !result.success) return false
+
+        // Re-read rather than trusting the local patch: the server normalises
+        // values (marital status, gender, dates) on the way in.
+        const fresh = await fetch('/api/profile/me')
+        if (fresh.ok) {
+          const data = await fresh.json()
+          setProfile(data)
+          auth.setProfileComplete(Boolean(data.is_complete))
+        }
+        return true
+      } catch {
+        return false
+      }
+    },
+    [auth],
+  )
+
+  /**
+   * Opens someone's profile, or your own view if the id turns out to be you -
+   * comparing yourself against yourself would report a perfect match.
+   */
+  const openProfile = useCallback(
+    (profileId: string) => {
+      if (profile?.profile_id && profileId === profile.profile_id) showMe()
+      else showMatch(profileId)
+    },
+    [profile?.profile_id, showMe, showMatch],
+  )
+
+  const fallbackName = auth.username.split('@')[0] || 'there'
 
   return (
     <div className="dashboard">
       <div className="container mx-auto px-4 py-8 sm:px-6">
-        <header className="welcome">
-          <div className="welcome-main">
-            {profile?.photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.photo} alt="" className="welcome-avatar" />
-            ) : (
-              <span className="welcome-avatar welcome-avatar-initial" aria-hidden="true">
-                {firstName.charAt(0).toUpperCase()}
-              </span>
-            )}
-
-            <div className="min-w-0">
-              <h1 className="welcome-greeting">Welcome back, {firstName}</h1>
-              <p className="welcome-sub">
-                {complete
-                  ? 'Your profile is live and visible to matches.'
-                  : 'Finish your profile to appear in other members’ matches.'}
-              </p>
-            </div>
-
-            {!complete && (
-              <Link href="/profile/register" className="btn-primary welcome-cta">
-                Complete profile
-              </Link>
-            )}
-          </div>
-
-          <div className="welcome-stats">
-            <StatTile value={stats?.profileViews ?? 0} label="Profile views" hint="last 30 days" />
-            <StatTile value={stats?.uniqueVisitors ?? 0} label="Visitors" hint="unique people" />
-            <StatTile value={stats?.matches ?? 0} label="Matches" hint="available now" />
-            <StatTile value={completeness} label="Profile complete" hint="all sections" suffix="%" />
-          </div>
-        </header>
+        <WelcomeHeader
+          profile={profile}
+          stats={stats}
+          fallbackName={fallbackName}
+          onViewProfile={showMe}
+        />
 
         <div className="dashboard-grid">
-          <aside className="dashboard-side dashboard-side-left">
-            <ProfileStrengthCard profile={profile} loading={loading} />
-          </aside>
-
           <main className="dashboard-main">
-            <MatchesSection />
+            {/* The matches grid stays mounted and is hidden rather than
+                unmounted: its filters, sort and fetched results are local
+                state, and discarding them on every profile open would refire
+                the request and silently clear the member's search. */}
+            <div className={view.kind === 'matches' ? undefined : 'hidden'}>
+              <MatchesSection onOpenProfile={openProfile} />
+            </div>
+
+            {view.kind === 'me' &&
+              (profile ? (
+                <MyProfileView profile={profile} onSave={saveField} />
+              ) : loading ? (
+                <div className="panel-skeleton" aria-hidden="true" />
+              ) : (
+                // The fetch finished without a profile, so waiting longer will
+                // not help; offer the way back rather than a permanent skeleton.
+                <div className="center-error">
+                  <p className="match-empty-title">Could not load your profile</p>
+                  <p className="match-empty-text">Check your connection and try again.</p>
+                  <button type="button" onClick={() => window.location.reload()} className="btn-primary mt-4">
+                    Retry
+                  </button>
+                </div>
+              ))}
+
+            {view.kind === 'match' && (
+              <MatchProfileView profileId={view.profileId} me={profile} onBack={showMatches} />
+            )}
           </main>
 
           <aside className="dashboard-side dashboard-side-right">
-            <InsightsPanel stats={stats} loading={loading} />
+            <InsightsPanel stats={stats} loading={loading} onOpenProfile={openProfile} />
           </aside>
         </div>
       </div>

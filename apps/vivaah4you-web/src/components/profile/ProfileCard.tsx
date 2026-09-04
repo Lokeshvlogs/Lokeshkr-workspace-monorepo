@@ -15,6 +15,11 @@ export type ProfileCardData = {
   details?: string[]
   /** Gallery size, surfaced as a small count over the photo. */
   photoCount?: number
+  /**
+   * Opens the profile in place instead of navigating. The card stays a real
+   * link either way, so modifier-clicks still open the standalone page.
+   */
+  onOpen?: (profileId: string) => void
 }
 
 function PinIcon() {
@@ -35,8 +40,21 @@ export default function ProfileCard({
   headline,
   details = [],
   photoCount = 0,
+  onOpen,
 }: ProfileCardData) {
   const href = profileId ? `/profile/${profileId}` : undefined
+
+  /**
+   * Intercept a plain left-click so the dashboard can show the profile in
+   * place, while leaving ⌘/ctrl/shift/middle-click to the browser - those mean
+   * "open in a new tab", and the standalone page is the right thing to get.
+   */
+  const handleOpen = (event: React.MouseEvent) => {
+    if (!onOpen || !profileId) return
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+    event.preventDefault()
+    onOpen(profileId)
+  }
   // Two pills read as a tidy row; more than that turns the card into a list.
   const shown = details.slice(0, 3)
   const extra = details.length - shown.length
@@ -84,7 +102,12 @@ export default function ProfileCard({
   return (
     <article className="card">
       {href ? (
-        <Link href={href} aria-label={`View ${name}'s profile`} className="card-media-link">
+        <Link
+          href={href}
+          aria-label={`View ${name}'s profile`}
+          className="card-media-link"
+          onClick={handleOpen}
+        >
           {media}
         </Link>
       ) : (
@@ -104,7 +127,7 @@ export default function ProfileCard({
         )}
 
         {href ? (
-          <Link href={href} className="card-cta">View profile</Link>
+          <Link href={href} className="card-cta" onClick={handleOpen}>View profile</Link>
         ) : (
           <button type="button" className="card-cta">Connect</button>
         )}

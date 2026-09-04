@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 
 import MatchesSection from '@/components/profile/MatchesSection'
@@ -210,5 +211,13 @@ export default function Home() {
     )
   }
 
-  return auth.isAuthenticated ? <MemberHome /> : <GuestHome />
+  // MemberHome reads the centre-column view out of the query string, and
+  // useSearchParams needs a Suspense boundary above it to prerender.
+  return auth.isAuthenticated ? (
+    <Suspense fallback={<div className="container mx-auto px-6 py-12"><div className="home-boot" aria-hidden="true" /></div>}>
+      <MemberHome />
+    </Suspense>
+  ) : (
+    <GuestHome />
+  )
 }

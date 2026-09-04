@@ -8,6 +8,7 @@ import {
   TextField,
 } from '@lokesh-workspace/ui'
 
+import FieldRow from '@/components/profile/FieldRow'
 import {
   HEIGHT_FEET_OPTIONS,
   HEIGHT_INCH_OPTIONS,
@@ -143,12 +144,12 @@ export default function EditableField({ def, profile, onSave }: Props) {
 
   if (!editing) {
     return (
-      <div className="group flex items-start justify-between gap-3 py-1.5 text-sm">
-        <dt className="shrink-0 pt-0.5 text-color-placeholder-text">{def.label}</dt>
-        <dd className="flex min-w-0 items-start gap-2 text-right">
-          <span className={`font-medium ${shown ? 'text-gray-900' : 'text-color-placeholder-text italic'}`}>
-            {shown || 'Not added'}
-          </span>
+      <FieldRow
+        fieldKey={def.key}
+        label={def.label}
+        value={shown}
+        emptyText="Not added"
+        action={
           <button
             type="button"
             onClick={beginEdit}
@@ -158,8 +159,8 @@ export default function EditableField({ def, profile, onSave }: Props) {
           >
             <PencilIcon />
           </button>
-        </dd>
-      </div>
+        }
+      />
     )
   }
 

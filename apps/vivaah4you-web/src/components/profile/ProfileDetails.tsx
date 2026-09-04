@@ -3,6 +3,7 @@
 import React from 'react'
 
 import EditableField, { displayValue } from '@/components/profile/EditableField'
+import FieldRow from '@/components/profile/FieldRow'
 import { fieldsBySection, type ProfileFieldDef } from '@/lib/profileFields'
 import type { PublicProfile } from '@/types/profile'
 
@@ -12,9 +13,19 @@ interface Props {
   editable?: boolean
   /** Required when editable. Resolves false if the save failed. */
   onSave?: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  /**
+   * Section columns. Two suits a full-width page; the dashboard's centre
+   * column is too narrow for two once each row carries an icon.
+   */
+  columns?: 1 | 2
 }
 
-export default function ProfileDetails({ profile, editable = false, onSave }: Props) {
+export default function ProfileDetails({
+  profile,
+  editable = false,
+  onSave,
+  columns = 2,
+}: Props) {
   const sections = fieldsBySection()
     .map((section) => ({
       ...section,
@@ -39,15 +50,17 @@ export default function ProfileDetails({ profile, editable = false, onSave }: Pr
       return <EditableField key={def.key} def={def} profile={profile} onSave={onSave} />
     }
     return (
-      <div key={def.key} className="flex justify-between gap-4 py-1.5 text-sm">
-        <dt className="shrink-0 text-color-placeholder-text">{def.label}</dt>
-        <dd className="text-right font-medium text-gray-900">{displayValue(def, profile)}</dd>
-      </div>
+      <FieldRow
+        key={def.key}
+        fieldKey={def.key}
+        label={def.label}
+        value={displayValue(def, profile)}
+      />
     )
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+    <div className={`grid grid-cols-1 gap-5 ${columns === 2 ? 'md:grid-cols-2' : ''}`}>
       {sections.map((section) => (
         <section key={section.title} className="form-section">
           <h3 className="form-section-title">{section.title}</h3>

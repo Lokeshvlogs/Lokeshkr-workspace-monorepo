@@ -113,7 +113,12 @@ function MatchSkeleton() {
   )
 }
 
-export default function MatchesSection() {
+interface MatchesSectionProps {
+  /** Opens a match in place. Absent on the signed-out marketing page. */
+  onOpenProfile?: (profileId: string) => void
+}
+
+export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = {}) {
   const auth = useAuth()
   const [entries, setEntries] = useState<MatchEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -188,7 +193,9 @@ export default function MatchesSection() {
       <div className="match-grid mt-6">
         {loading
           ? Array.from({ length: 6 }, (_, i) => <MatchSkeleton key={i} />)
-          : visible.map((entry) => <ProfileCard key={entry.card.profileId} {...entry.card} />)}
+          : visible.map((entry) => (
+              <ProfileCard key={entry.card.profileId} {...entry.card} onOpen={onOpenProfile} />
+            ))}
       </div>
 
       {!loading && entries.length === 0 && (

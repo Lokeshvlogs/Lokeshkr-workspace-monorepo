@@ -15,15 +15,18 @@ export default function Navbar() {
 
   const links = (
     <>
+      {/* Signed in, the matches grid is the dashboard's default centre view, so
+          this clears the ?view param rather than jumping to an anchor - the
+          hash link left the dashboard showing whatever it was already on. */}
       <Link
-        href={auth.isAuthenticated ? '/#profiles' : '/#register'}
+        href={auth.isAuthenticated ? '/' : '/#register'}
         className="text-gray-700 hover:text-gray-900"
       >
         {auth.isAuthenticated ? 'Matches' : 'Join free'}
       </Link>
       {auth.isAuthenticated ? (
         <>
-          <Link href="/profile/me" className="text-gray-700 hover:text-gray-900">My Profile</Link>
+          <Link href="/?view=me" className="text-gray-700 hover:text-gray-900">My Profile</Link>
           <Link href="/settings" className="text-gray-700 hover:text-gray-900">Settings</Link>
           <button
             type="button"
