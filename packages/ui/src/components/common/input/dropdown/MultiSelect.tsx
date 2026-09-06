@@ -7,6 +7,12 @@ import { SelectIconOption } from '../../../../types/select';
 interface Props {
   id?: string;
   label: string;
+  /**
+   * Drawn ahead of the floating label. Decorative only - it is sized in `em`
+   * so it shrinks with the label as the field fills, and `label` remains the
+   * accessible name.
+   */
+  icon?: React.ReactNode;
   options: SelectIconOption[];
   /**
    * The chosen values. `[]` is the canonical "nothing chosen".
@@ -48,6 +54,7 @@ interface Props {
 export default function MultiSelect({
   id,
   label,
+  icon,
   options,
   value: rawValue,
   onChange,
@@ -318,7 +325,21 @@ export default function MultiSelect({
           onClick={() => !disabled && setOpen(o => !o)}
           onKeyDown={onKeyDown}
         >
-          <label htmlFor={id} className="text-field-label">{label}</label>
+          {/* With an icon the label becomes a flex row, so the ellipsis that
+              `.text-field-label` applies to itself has to move onto the text
+              span instead - hence the modifier class rather than always-on
+              flex. */}
+          <label
+            htmlFor={id}
+            className={`text-field-label ${icon ? 'text-field-label-icon' : ''}`}
+          >
+            {icon && (
+              <span className="field-label-icon" aria-hidden="true">
+                {icon}
+              </span>
+            )}
+            {icon ? <span className="field-label-text">{label}</span> : label}
+          </label>
 
           <span className="select-label truncate">{summary}</span>
 

@@ -4,6 +4,12 @@ import React from "react";
 
 interface DualRangeSliderProps {
   label: string;
+  /**
+   * Stands in for the visible label. The readout beside it already spells the
+   * value out ("24 yrs - 30 yrs"), so the icon has enough context to carry the
+   * field on its own; `label` stays as the accessible name.
+   */
+  icon?: React.ReactNode;
   min: number;
   max: number;
   step?: number;
@@ -33,6 +39,7 @@ interface DualRangeSliderProps {
  */
 export default function DualRangeSlider({
   label,
+  icon,
   min,
   max,
   step = 1,
@@ -70,7 +77,19 @@ export default function DualRangeSlider({
   return (
     <div className={`dual-range ${disabled ? "dual-range-disabled" : ""} ${className}`}>
       <div className="dual-range-head">
-        <span className="dual-range-label" id={`${id}-label`}>{label}</span>
+        {/* The span keeps the text even when an icon replaces it visually -
+            both inputs point their `aria-labelledby` here, so emptying it
+            would strip their accessible names. */}
+        <span className="dual-range-label" id={`${id}-label`}>
+          {icon ? (
+            <>
+              <span className="dual-range-icon" aria-hidden="true">{icon}</span>
+              <span className="sr-only">{label}</span>
+            </>
+          ) : (
+            label
+          )}
+        </span>
         <span className="dual-range-readout">
           {untouched ? "Any" : `${format(lo)} – ${format(hi)}`}
         </span>

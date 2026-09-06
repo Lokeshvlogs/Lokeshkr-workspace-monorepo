@@ -3,6 +3,24 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  BookOpen,
+  Briefcase,
+  Cake,
+  Globe2,
+  GraduationCap,
+  Heart,
+  Home,
+  Landmark,
+  Languages,
+  MapPin,
+  Plane,
+  Ruler,
+  Salad,
+  SlidersHorizontal,
+  Users,
+  Users2,
+} from "lucide-react";
+import {
   AvatarCropper,
   BirthDateTimePicker,
   ChipGroup,
@@ -996,13 +1014,17 @@ export default function ProfileRegisterPage() {
                 </p>
 
                 <div className="form-section">
-                  <p className="form-section-title">Age &amp; height</p>
+                  <p className="form-section-title">
+                    <SlidersHorizontal size={17} className="form-section-icon" aria-hidden="true" />
+                    Age &amp; height
+                  </p>
                   <p className="form-section-hint mb-4">
                     Drag either end. Leave them alone if you have no preference.
                   </p>
                   <div className="flex flex-col gap-6">
                     <DualRangeSlider
                       label="Age"
+                      icon={<Cake />}
                       min={PARTNER_AGE_MIN}
                       max={PARTNER_AGE_MAX}
                       value={[toNum(form.partnerAgeMin), toNum(form.partnerAgeMax)]}
@@ -1019,6 +1041,7 @@ export default function ProfileRegisterPage() {
                         rather than a feet/inches pair. */}
                     <DualRangeSlider
                       label="Height"
+                      icon={<Ruler />}
                       min={PARTNER_HEIGHT_MIN_INCHES}
                       max={PARTNER_HEIGHT_MAX_INCHES}
                       value={[toNum(form.partnerHeightMin), toNum(form.partnerHeightMax)]}
@@ -1038,14 +1061,18 @@ export default function ProfileRegisterPage() {
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Background</p>
+                  <p className="form-section-title">
+                    <Users size={17} className="form-section-icon" aria-hidden="true" />
+                    Background
+                  </p>
                   <p className="form-section-hint mb-3">
                     Pick as many as you are open to — they widen your matches rather than narrowing them.
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <MultiSelect label="Marital status" options={PARTNER_MARITAL_CHOICES} value={form.partnerMaritalStatuses} onChange={(v) => setField("partnerMaritalStatuses", v)} exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Marital status" icon={<Heart />} options={PARTNER_MARITAL_CHOICES} value={form.partnerMaritalStatuses} onChange={(v) => setField("partnerMaritalStatuses", v)} exclusiveValue="any" maxSelected={5} />
                     <MultiSelect
                       label="Religion"
+                      icon={<Landmark />}
                       options={PARTNER_RELIGION_CHOICES}
                       value={form.partnerReligions}
                       onChange={(v) =>
@@ -1062,23 +1089,29 @@ export default function ProfileRegisterPage() {
                       exclusiveValue="any"
                       maxSelected={4}
                     />
-                    <MultiSelect label="Community" options={partnerCommunityOptions} value={form.partnerCommunities} onChange={(v) => setField("partnerCommunities", v)} searchable maxSelected={8} />
-                    <MultiSelect label="Mother tongue" options={PARTNER_MOTHER_TONGUE_CHOICES} value={form.partnerMotherTongues} onChange={(v) => setField("partnerMotherTongues", v)} searchable exclusiveValue="any" maxSelected={5} />
-                    <MultiSelect label="Country" options={PARTNER_COUNTRY_CHOICES} value={form.partnerCountries} onChange={(v) => setField("partnerCountries", v)} searchable exclusiveValue="any" maxSelected={5} />
-                    <MultiSelect label="Diet" options={PARTNER_DIET_CHOICES} value={form.partnerDiets} onChange={(v) => setField("partnerDiets", v)} exclusiveValue="any" maxSelected={4} />
+                    <MultiSelect label="Community" icon={<Users2 />} options={partnerCommunityOptions} value={form.partnerCommunities} onChange={(v) => setField("partnerCommunities", v)} searchable maxSelected={8} />
+                    <MultiSelect label="Mother tongue" icon={<Languages />} options={PARTNER_MOTHER_TONGUE_CHOICES} value={form.partnerMotherTongues} onChange={(v) => setField("partnerMotherTongues", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Country" icon={<Globe2 />} options={PARTNER_COUNTRY_CHOICES} value={form.partnerCountries} onChange={(v) => setField("partnerCountries", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Diet" icon={<Salad />} options={PARTNER_DIET_CHOICES} value={form.partnerDiets} onChange={(v) => setField("partnerDiets", v)} exclusiveValue="any" maxSelected={4} />
                   </div>
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Education &amp; work</p>
+                  <p className="form-section-title">
+                    <GraduationCap size={17} className="form-section-icon" aria-hidden="true" />
+                    Education &amp; work
+                  </p>
                   <div className="form-grid-2 mt-3">
-                    <MultiSelect label="Education" options={PARTNER_EDUCATION_CHOICES} value={form.partnerEducations} onChange={(v) => setField("partnerEducations", v)} searchable exclusiveValue="any" maxSelected={5} />
-                    <MultiSelect label="Profession" options={PARTNER_PROFESSION_CHOICES} value={form.partnerProfessions} onChange={(v) => setField("partnerProfessions", v)} searchable exclusiveValue="any" maxSelected={6} />
+                    <MultiSelect label="Education" icon={<BookOpen />} options={PARTNER_EDUCATION_CHOICES} value={form.partnerEducations} onChange={(v) => setField("partnerEducations", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Profession" icon={<Briefcase />} options={PARTNER_PROFESSION_CHOICES} value={form.partnerProfessions} onChange={(v) => setField("partnerProfessions", v)} searchable exclusiveValue="any" maxSelected={6} />
                   </div>
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">After marriage</p>
+                  <p className="form-section-title">
+                    <Home size={17} className="form-section-icon" aria-hidden="true" />
+                    After marriage
+                  </p>
                   <p className="form-section-hint mb-3">
                     Expectations about moving are worth settling early — they are a common
                     reason otherwise good matches do not work out.
@@ -1090,6 +1123,7 @@ export default function ProfileRegisterPage() {
                   <div className="mt-3 flex flex-col gap-5">
                     <MultiSelect
                       label="Should your partner be willing to relocate to your location?"
+                      icon={<MapPin />}
                       options={MOBILITY_CHOICES}
                       value={form.partnerRelocateAfterMarriage}
                       onChange={(v) => setField("partnerRelocateAfterMarriage", v)}
@@ -1097,6 +1131,7 @@ export default function ProfileRegisterPage() {
                     />
                     <MultiSelect
                       label="Would you like a partner interested in settling abroad?"
+                      icon={<Plane />}
                       options={MOBILITY_CHOICES}
                       value={form.partnerSettleAbroad}
                       onChange={(v) => setField("partnerSettleAbroad", v)}
