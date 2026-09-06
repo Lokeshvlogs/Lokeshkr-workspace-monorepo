@@ -53,45 +53,81 @@ const DIGIT_WORD_PATTERN = new RegExp(`\\b(${Object.keys(DIGIT_WORDS).join('|')}
 const PHONE_MIN_DIGITS = 7
 
 /**
- * A digit run held together only by the punctuation phone numbers use. "+91 98
- * 765-43210" is one run; "born 1990, 2 brothers" is not, because the letters
- * between the numbers break it.
+ * How many words may sit between two digit groups before they stop counting as
+ * one number.
+ *
+ * This is the whole point of scanning sequentially rather than matching a run:
+ * "9968 26 14 and 19" and "99 then 68 then 26 then 14 then 19" are the same
+ * number typed with filler in the gaps, and no amount of punctuation-only
+ * matching sees them. Two words is enough for "and", "then", "dash", "my number
+ * is" - and short enough that two facts in a sentence stay separate.
  */
-const PHONE_RUN = /\+?\d[\d\s().+-]{4,}\d/g
-
-/**
- * Filler words used to break a number up so it stops looking like one -
- * "9968 26 14 and 19". Collapsed only where they sit BETWEEN two digits, so
- * ordinary prose either side of a number is left alone.
- */
-const DIGIT_JOINER = /(\d)\s*\b(?:and|dash|hyphen|space|point)\b\s*(\d)/gi
+const MAX_GAP_WORDS = 2
 
 /** 1800-2099, the range a written year realistically falls in. */
 const YEAR = /^(?:1[89]\d{2}|20\d{2})$/
 
 /**
- * Joiners are collapsed one pass at a time because each match consumes the
- * digit that starts the next one - "1 and 2 and 3" needs two passes. Bounded so
- * a pathological input cannot spin here.
+ * Units and ordinal suffixes that mark a number as a measurement.
+ *
+ * A quantity is never part of a phone number, so one of these both excludes its
+ * own digits and cuts the sequence in two - "Born 1992, 5 ft 6 in, 75 kg" is
+ * four numbers with nothing to do with each other, and without this it totals
+ * eight digits and reads as a phone number.
  */
-function collapseJoiners(text: string): string {
-  let current = text
-  for (let pass = 0; pass < 8; pass += 1) {
-    const next = current.replace(DIGIT_JOINER, '$1 $2')
-    if (next === current) break
-    current = next
-  }
-  return current
-}
+const MEASUREMENT_SUFFIX =
+  /^\s*(?:%|st|nd|rd|th|ft|feet|foot|in|inch|inches|cm|mm|kg|kgs|km|kms|lbs|yr|yrs|year|years|month|months|week|weeks|day|days|hr|hrs|hour|hours|min|mins|am|pm|lakh|lakhs|lac|lacs|crore|crores|lpa|cgpa|gpa|bhk|acre|acres|kmph|rs|inr|usd)\b/i
 
-/** Whether one digit run is long enough, and shaped enough, to be a number. */
-function looksLikePhone(run: string): boolean {
-  const groups = run.match(/\d+/g) ?? []
+/**
+ * Whether one accumulated sequence of digit groups reads as a phone number.
+ */
+function looksLikePhone(groups: string[]): boolean {
   if (groups.join('').length < PHONE_MIN_DIGITS) return false
   // A string of four-digit years - "1990 and 2015 and 2019" - is a life story,
   // not a phone number. No real number is made solely of them.
   if (groups.every((group) => YEAR.test(group))) return false
   return true
+}
+
+/**
+ * Walk the text left to right, gathering digits into a running sequence.
+ *
+ * A sequence continues while the next group is close behind the last one, and
+ * is abandoned the moment the gap grows, a line ends, or a measurement turns up.
+ * Each finished sequence is tested on its own, so a number assembled across a
+ * sentence is caught while unrelated figures in ordinary prose are not.
+ */
+function hasPhoneSequence(text: string): boolean {
+  let sequence: string[] = []
+  let previousEnd = -1
+
+  for (const match of text.matchAll(/\d+/g)) {
+    const group = match[0]
+    const start = match.index ?? 0
+    const gap = previousEnd < 0 ? '' : text.slice(previousEnd, start)
+
+    // A measurement is not part of anyone's number, and it separates whatever
+    // sat either side of it.
+    if (MEASUREMENT_SUFFIX.test(text.slice(start + group.length))) {
+      if (looksLikePhone(sequence)) return true
+      sequence = []
+      previousEnd = -1
+      continue
+    }
+
+    const gapWords = (gap.match(/\p{L}+/gu) ?? []).length
+    const broken = previousEnd >= 0 && (gapWords > MAX_GAP_WORDS || /[\n\r]/.test(gap))
+
+    if (broken) {
+      if (looksLikePhone(sequence)) return true
+      sequence = []
+    }
+
+    sequence.push(group)
+    previousEnd = start + group.length
+  }
+
+  return looksLikePhone(sequence)
 }
 
 /**
@@ -169,15 +205,9 @@ export function hasContactDetails(text: string): boolean {
 
   if (OBFUSCATED_EMAIL.test(normaliseForEmail(unwrapped))) return true
 
-  const asDigits = collapseJoiners(
-    unwrapped.replace(DIGIT_WORD_PATTERN, (word) => DIGIT_WORDS[word.toLowerCase()]),
-  )
+  // Digit words become digits first, so "nine eight seven 6 5" is one sequence
+  // rather than two kinds of thing to track.
+  const asDigits = unwrapped.replace(DIGIT_WORD_PATTERN, (word) => DIGIT_WORDS[word.toLowerCase()])
 
-  // `PHONE_RUN` is global, so its lastIndex has to be reset between calls.
-  PHONE_RUN.lastIndex = 0
-  for (const match of asDigits.matchAll(PHONE_RUN)) {
-    if (looksLikePhone(match[0])) return true
-  }
-
-  return false
+  return hasPhoneSequence(asDigits)
 }
