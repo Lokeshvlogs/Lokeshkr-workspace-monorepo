@@ -1487,6 +1487,14 @@ button.chip-selected:hover {
   100% { background-position: 0 50%; }
 }
 
+/* The HorizontalFormSlider track. The width and transform are per-step and stay
+   inline; the presentation lives here so a reduced-motion user can opt out of
+   the slide, which an inline `transition` could never be overridden for. */
+.hfs-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .match-skeleton-media,
   .match-skeleton-line,
@@ -1500,7 +1508,8 @@ button.chip-selected:hover {
   .card:hover .card-img {
     transform: none;
   }
-  .strength-ring-value {
+  .strength-ring-value,
+  .hfs-track {
     transition: none;
   }
 }

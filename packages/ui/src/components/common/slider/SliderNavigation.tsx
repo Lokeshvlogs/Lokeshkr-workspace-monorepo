@@ -44,18 +44,18 @@ export default function SliderNavigation({
   const isLast = step === total - 1;
 
   return (
-    <div className="mt-6 flex items-center justify-between gap-4 border-t border-color-border pt-4">
+    <div className="wiz-nav">
       <button
         type="button"
         onClick={onBack}
         disabled={step === 0 || busy}
-        className="flex items-center gap-1.5 rounded-md border border-color-border px-3 py-2 text-sm font-medium text-color-primary transition hover:bg-color-primary-surface disabled:cursor-not-allowed disabled:opacity-40"
+        className="wiz-btn wiz-btn-ghost"
       >
         <ChevronLeft />
         Back
       </button>
 
-      <span className="text-xs text-color-placeholder-text" aria-live="polite">
+      <span className="wiz-nav-count" aria-live="polite">
         Step {step + 1} of {total}
       </span>
 
@@ -64,7 +64,7 @@ export default function SliderNavigation({
           type="button"
           onClick={onSubmit}
           disabled={!submitEnabled || busy}
-          className="flex items-center gap-1.5 rounded-md bg-color-primary px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="wiz-btn wiz-btn-primary"
         >
           {busy ? busyLabel : submitLabel}
         </button>
@@ -73,7 +73,7 @@ export default function SliderNavigation({
           type="button"
           onClick={onNext}
           disabled={!nextEnabled || busy}
-          className="flex items-center gap-1.5 rounded-md bg-color-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="wiz-btn wiz-btn-primary"
         >
           {busy ? busyLabel : nextLabel}
           {!busy && <ChevronRight />}

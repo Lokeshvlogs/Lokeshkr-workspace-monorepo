@@ -630,58 +630,82 @@ export default function ProfileRegisterPage() {
   const active = STEPS[step];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-color-primary-surface/40 px-4 py-10 sm:py-16">
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="rounded-2xl border border-color-border bg-white p-5 shadow-[0_20px_40px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] sm:p-8">
+    <div className="wiz-page px-4 py-10 sm:py-16">
+      <div className="wiz-shell">
+        <div className="wiz-card">
 
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Complete your profile</h1>
-            <p className="mt-1 text-sm text-color-placeholder-text">
+          <div className="wiz-head">
+            <span className="wiz-eyebrow">
+              <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden="true">
+                <path d="M12 2l2.4 6.4L21 10l-5.2 4.2L17 21l-5-3.2L7 21l1.2-6.8L3 10l6.6-1.6z" />
+              </svg>
+              Your profile
+            </span>
+            <h1 className="wiz-title">Complete your profile</h1>
+            <p className="wiz-subtitle">
               Profiles that are 95% complete get shown to matches.
             </p>
-            <div className="mx-auto mt-4 max-w-sm">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-color-primary-tint">
-                <div
-                  className="h-full rounded-full bg-color-primary transition-all duration-500"
-                  style={{ width: `${Math.min(completeness, 100)}%` }}
-                />
-              </div>
-              <p className="mt-1 text-xs text-color-placeholder-text">{completeness}% complete</p>
+          </div>
+
+          <div className="wiz-progress">
+            <div className="wiz-progress-head">
+              <span className="wiz-progress-label">Completeness</span>
+              <span className="wiz-progress-value">{completeness}%</span>
+            </div>
+            <div
+              className="wiz-progress-rail"
+              role="progressbar"
+              aria-valuenow={completeness}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Profile completeness"
+            >
+              <div
+                className="wiz-progress-fill"
+                style={{ width: `${Math.min(completeness, 100)}%` }}
+              />
             </div>
           </div>
 
-          <div className="mb-6">
-            <div className="flex items-center">
-              {STEPS.map((s, idx) => (
-                <React.Fragment key={s.title}>
-                  <button
-                    type="button"
-                    onClick={() => handleJumpToStep(idx)}
-                    aria-label={s.title}
-                    aria-current={step === idx ? "step" : undefined}
-                    title={s.title}
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors
-                      ${step === idx
-                        ? "border-color-primary bg-color-primary text-white"
-                        : idx < step
-                          ? "border-color-primary bg-color-primary-tint text-color-primary"
-                          : "border-color-border bg-white text-color-primary-light"}
-                      focus:outline-none focus:ring-2 focus:ring-color-primary-light`}
-                  >
-                    {STEP_ICONS[idx]}
-                  </button>
-                  {idx < STEPS.length - 1 && (
-                    <div className={`mx-1 h-1 flex-1 rounded-full ${idx < step ? "bg-color-primary" : "bg-color-border"}`} />
+          <div className="wiz-steps">
+            {STEPS.map((s, idx) => (
+              <React.Fragment key={s.title}>
+                <button
+                  type="button"
+                  onClick={() => handleJumpToStep(idx)}
+                  aria-label={s.title}
+                  aria-current={step === idx ? "step" : undefined}
+                  title={s.title}
+                  className={`wiz-step ${
+                    step === idx
+                      ? "wiz-step-active"
+                      : idx < step
+                        ? "wiz-step-done"
+                        : "wiz-step-todo"
+                  }`}
+                >
+                  {/* A completed step shows a tick rather than its own icon -
+                      the icon says which step, which only matters while it is
+                      still ahead of you or under way. */}
+                  {idx < step ? (
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  ) : (
+                    STEP_ICONS[idx]
                   )}
-                </React.Fragment>
-              ))}
-            </div>
-            <div className="mt-4">
-              <h2 className="text-lg font-semibold text-color-primary">{active.title}</h2>
-              <p className="text-sm text-color-placeholder-text">{active.hint}</p>
-            </div>
+                </button>
+                {idx < STEPS.length - 1 && (
+                  <div className={`wiz-step-line ${idx < step ? "wiz-step-line-done" : ""}`} />
+                )}
+              </React.Fragment>
+            ))}
           </div>
 
+          <div className="wiz-step-heading">
+            <h2 className="wiz-step-title">{active.title}</h2>
+            <p className="wiz-step-hint">{active.hint}</p>
+          </div>
           <HorizontalFormSlider
             busyLabel={saveState === "saving" ? "Saving…" : "Saved"}
             statusSlot={

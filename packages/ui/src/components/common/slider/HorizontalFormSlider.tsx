@@ -74,11 +74,10 @@ export default function HorizontalFormSlider({
     <div style={width ? { width, overflow: "hidden" } : { width: "100%", overflow: "hidden" }}>
       {/* Sliding container */}
       <div
+        className="hfs-track"
         style={{
-          display: "flex",
           width: `${totalSteps * 100}%`,
           transform: `translateX(-${step * (100 / totalSteps)}%)`,
-          transition: "transform 0.4s ease",
         }}
       >
         {steps.map((content, index) => (

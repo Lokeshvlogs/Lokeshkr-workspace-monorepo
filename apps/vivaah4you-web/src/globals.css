@@ -357,6 +357,479 @@ body,
       transform: translateY(0) rotate(-1deg);
     }
   }
+
+/* ---------------------------------------------------------------------------
+ * The registration wizard
+ *
+ * A layered glass treatment: an ambient tinted backdrop, a translucent card
+ * that lets it show through, and translucent sub-panels inside that card. The
+ * depth comes from stacked shadows rather than borders - one ambient brand-
+ * tinted shadow for the lift, one tight neutral one for contact, and an inset
+ * top highlight so each surface catches light along its upper edge.
+ *
+ * Everything is prefixed `wiz-` and scoped to this page. The one exception is
+ * `.wiz-card .form-section`, which restyles the sixteen existing sections in
+ * place - `.form-section` is shared with the dashboard profile views, so it is
+ * scoped by ancestor rather than changed globally.
+ *
+ * `backdrop-filter` is on the card only. The step track holds all seven steps
+ * at once, so blurring each sub-panel would mean compositing dozens of blurred
+ * layers on every drag of a slider; the sub-panels use plain alpha instead,
+ * which is visually near-identical over a backdrop this soft.
+ * ------------------------------------------------------------------------ */
+
+.wiz-page {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: linear-gradient(180deg, #fffdfe 0%, #fdf5f9 42%, #fef7f2 100%);
+}
+
+/* Two soft colour blooms. These are what the transparency actually reveals -
+   over a flat white page, glass reads as plain grey. `fixed` keeps them still
+   while the form scrolls, so the card feels like it is moving over a lit
+   surface. */
+.wiz-page::before,
+.wiz-page::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 9999px;
+  filter: blur(72px);
+}
+
+.wiz-page::before {
+  top: -12rem;
+  left: -8rem;
+  width: 38rem;
+  height: 38rem;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-primary) 30%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.wiz-page::after {
+  right: -10rem;
+  bottom: -14rem;
+  width: 34rem;
+  height: 34rem;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-secondary) 26%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.wiz-shell {
+  position: relative;
+  z-index: 1;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 48rem;
+}
+
+.wiz-card {
+  position: relative;
+  border-radius: 28px;
+  padding: 1.5rem;
+  background-color: color-mix(in srgb, #ffffff 72%, transparent);
+  /* Unprefixed only. lightningcss adds -webkit- from the build targets; a
+     hand-written prefix after the standard property made it collapse the pair
+     down to the prefixed one alone. */
+  backdrop-filter: blur(28px) saturate(180%);
+  /* A near-white translucent border, not a grey one: on glass the edge should
+     read as a highlight catching light, which is also what keeps the card
+     legible where it overlaps a colour bloom. */
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 32px 64px -16px color-mix(in srgb, var(--color-primary) 24%, transparent),
+    0 12px 28px -12px rgba(17, 24, 39, 0.12),
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+@media (min-width: 640px) {
+  .wiz-card {
+    padding: 2.25rem;
+  }
+}
+
+/* The signature edge: a brand gradient hairline along the top of the card,
+   inset so it reads as part of the glass rather than a stripe on top of it. */
+.wiz-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1.75rem;
+  right: 1.75rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-primary-light) 18%,
+    var(--color-primary) 50%,
+    var(--color-secondary) 82%,
+    transparent
+  );
+  opacity: 0.9;
+}
+
+/* ---- Header ---- */
+
+.wiz-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  text-align: center;
+}
+
+.wiz-eyebrow {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-strong);
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.wiz-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--color-primary-text);
+}
+
+.wiz-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-placeholder-text);
+}
+
+/* ---- Completeness ---- */
+
+.wiz-progress {
+  margin-top: 1.25rem;
+}
+
+.wiz-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.wiz-progress-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-placeholder-text);
+}
+
+/* Gradient text. `background-clip: text` needs a transparent fill, and the
+   fallback `color` matters: if the clip is unsupported the number still shows
+   in solid primary instead of vanishing. */
+.wiz-progress-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.wiz-progress-rail {
+  position: relative;
+  height: 0.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  box-shadow: inset 0 1px 2px rgba(17, 24, 39, 0.08);
+}
+
+.wiz-progress-fill {
+  position: relative;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-light),
+    var(--color-primary) 55%,
+    var(--color-secondary)
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A slow sheen travelling along the filled portion. Clipped by the fill, so it
+   reads as light moving over the bar rather than a separate element. */
+.wiz-progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent
+  );
+  animation: wiz-sheen 2.6s ease-in-out infinite;
+}
+
+@keyframes wiz-sheen {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---- Stepper ---- */
+
+.wiz-steps {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 1.75rem;
+}
+
+.wiz-step {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+}
+
+.wiz-step:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+/* Upcoming: translucent, so it sits back without needing a grey fill. */
+.wiz-step-todo {
+  background-color: rgba(255, 255, 255, 0.55);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+.wiz-step-todo:hover {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--color-primary);
+}
+
+/* Done: filled, but a shade back from the active step so the eye still lands
+   on where you are rather than on the longest run of colour. */
+.wiz-step-done {
+  background: linear-gradient(140deg, var(--color-primary-light), var(--color-primary));
+  border: 1px solid transparent;
+  color: #ffffff;
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+/* Active: white on a coloured ring with a bloom, plus a slight lift. The ring
+   is a box-shadow rather than a border so it does not change the box size and
+   make the row of dots shift by a pixel as you advance. */
+.wiz-step-active {
+  background-color: #ffffff;
+  border: 1px solid transparent;
+  color: var(--color-primary);
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 0 0 6px color-mix(in srgb, var(--color-primary) 14%, transparent),
+    0 6px 16px -4px color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+.wiz-step-line {
+  flex: 1 1 0%;
+  height: 3px;
+  margin-inline: 0.375rem;
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  overflow: hidden;
+}
+
+.wiz-step-line-done {
+  background: linear-gradient(90deg, var(--color-primary-light), var(--color-primary));
+}
+
+.wiz-step-heading {
+  margin-top: 1.25rem;
+}
+
+.wiz-step-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--color-primary-text);
+}
+
+.wiz-step-hint {
+  margin-top: 0.125rem;
+  font-size: 0.875rem;
+  color: var(--color-placeholder-text);
+}
+
+/* ---- Sections inside the wizard ---- */
+
+.wiz-card .form-section {
+  border-radius: 18px;
+  padding: 1.25rem;
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 16px -8px rgba(17, 24, 39, 0.14),
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+/* Nested repeaters (education entries, achievements) sit inside a section that
+   is already translucent. Stacking a third translucent layer turns to mud, so
+   these stay solid and lean on the shadow alone for separation. */
+.wiz-card .education-card,
+.wiz-card .achievement-row {
+  background-color: #ffffff;
+  border-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow: 0 2px 8px -4px rgba(17, 24, 39, 0.14);
+}
+
+/* ---- Navigation ---- */
+
+.wiz-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  /* A gradient rule, fading at both ends - a full-width hairline across glass
+     looks like a crack. */
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-primary) 22%, transparent),
+      transparent
+    )
+    1;
+}
+
+.wiz-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    background-color 0.18s ease, opacity 0.18s ease;
+}
+
+.wiz-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  transform: none;
+  box-shadow: none;
+}
+
+.wiz-btn-ghost {
+  padding: 0.5rem 0.875rem;
+  color: var(--color-primary-strong);
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.wiz-btn-ghost:hover:not(:disabled) {
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px -6px rgba(17, 24, 39, 0.2);
+}
+
+.wiz-btn-primary {
+  padding: 0.625rem 1.25rem;
+  color: #ffffff;
+  border: 1px solid transparent;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light),
+    var(--color-primary) 55%,
+    var(--color-primary-strong)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 8px 20px -6px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+.wiz-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 12px 26px -6px color-mix(in srgb, var(--color-primary) 65%, transparent);
+}
+
+.wiz-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.wiz-nav-count {
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--color-placeholder-text);
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiz-progress-fill {
+    transition: none;
+  }
+  .wiz-progress-fill::after {
+    animation: none;
+  }
+  .wiz-step-active {
+    transform: none;
+  }
+}
+
+/* Glass depends on a backdrop showing through. Where it is unsupported the
+   card would be 72% white over a gradient - washed out and low contrast - so
+   fall back to a solid surface. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .wiz-card {
+    background-color: #ffffff;
+  }
+  .wiz-card .form-section {
+    background-color: #fffdfe;
+  }
+}
 }
 
 /* ---------------------------------------------------------------------------
