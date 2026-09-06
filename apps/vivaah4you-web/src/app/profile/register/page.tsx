@@ -14,6 +14,7 @@ import {
 } from "@lokesh-workspace/ui";
 
 import PhotoGallery from "@/components/profile/PhotoGallery";
+import CompletenessRing from "@/components/profile/CompletenessRing";
 import { coerceToFormShape } from "@/lib/profileFormShape";
 import EducationList, { type EducationEntry } from "@/components/profile/EducationList";
 import AchievementList, { type AchievementEntry } from "@/components/profile/AchievementList";
@@ -648,23 +649,7 @@ export default function ProfileRegisterPage() {
           </div>
 
           <div className="wiz-progress">
-            <div className="wiz-progress-head">
-              <span className="wiz-progress-label">Completeness</span>
-              <span className="wiz-progress-value">{completeness}%</span>
-            </div>
-            <div
-              className="wiz-progress-rail"
-              role="progressbar"
-              aria-valuenow={completeness}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Profile completeness"
-            >
-              <div
-                className="wiz-progress-fill"
-                style={{ width: `${Math.min(completeness, 100)}%` }}
-              />
-            </div>
+            <CompletenessRing value={completeness} label={`Profile ${completeness}% complete`} />
           </div>
 
           <div className="wiz-steps">

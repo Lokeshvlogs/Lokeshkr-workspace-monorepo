@@ -19,13 +19,13 @@
   --radius: 8px;
 
   /* Brand ramp, lightest to darkest. */
-  --color-primary-surface: #fdf2f8;
-  --color-primary-tint: #fce7f3;
-  --color-border: #fbcfe8;
-  --color-primary-extra-light: #fab2dd;
-  --color-primary-light: #f96cba;
-  --color-primary: #ec4899;
-  --color-primary-strong: #be185d;
+  --color-primary-surface: #fff0f8;
+  --color-primary-tint: #ffe4f1;
+  --color-border: #ffcbe5;
+  --color-primary-extra-light: #ffadd6;
+  --color-primary-light: #ff66b3;
+  --color-primary: #ff1f8f;
+  --color-primary-strong: #cb0b6b;
 
   /* The other half of every brand gradient. The only non-pink accent. */
   --color-secondary: #fb923c;
@@ -515,91 +515,16 @@ body,
   color: var(--color-placeholder-text);
 }
 
-/* ---- Completeness ---- */
+/* ---- Completeness ----
+   Shares the .strength-ring markup with the home welcome band via the
+   CompletenessRing component, so both read as the same control. */
 
 .wiz-progress {
+  display: flex;
+  justify-content: center;
   margin-top: 1.25rem;
 }
 
-.wiz-progress-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.wiz-progress-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-placeholder-text);
-}
-
-/* Gradient text. `background-clip: text` needs a transparent fill, and the
-   fallback `color` matters: if the clip is unsupported the number still shows
-   in solid primary instead of vanishing. */
-.wiz-progress-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-primary);
-  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.wiz-progress-rail {
-  position: relative;
-  height: 0.5rem;
-  border-radius: 9999px;
-  overflow: hidden;
-  background-color: color-mix(in srgb, var(--color-primary) 9%, transparent);
-  box-shadow: inset 0 1px 2px rgba(17, 24, 39, 0.08);
-}
-
-.wiz-progress-fill {
-  position: relative;
-  height: 100%;
-  border-radius: 9999px;
-  background: linear-gradient(
-    90deg,
-    var(--color-primary-light),
-    var(--color-primary) 55%,
-    var(--color-secondary)
-  );
-  box-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 55%, transparent);
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* A slow sheen travelling along the filled portion. Clipped by the fill, so it
-   reads as light moving over the bar rather than a separate element. */
-.wiz-progress-fill::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.5) 50%,
-    transparent
-  );
-  animation: wiz-sheen 2.6s ease-in-out infinite;
-}
-
-@keyframes wiz-sheen {
-  0% {
-    transform: translateX(-100%);
-  }
-  60%,
-  100% {
-    transform: translateX(100%);
-  }
-}
 
 /* ---- Stepper ---- */
 
@@ -773,26 +698,13 @@ body,
   padding: 0.625rem 1.25rem;
   color: #ffffff;
   border: 1px solid transparent;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary-light),
-    var(--color-primary) 55%,
-    var(--color-primary-strong)
-  );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 8px 20px -6px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  background-color: var(--color-primary);
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
 .wiz-btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 12px 26px -6px color-mix(in srgb, var(--color-primary) 65%, transparent);
-}
-
-.wiz-btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+  background-color: var(--color-primary-strong);
+  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--color-primary) 55%, transparent);
 }
 
 .wiz-nav-count {
@@ -808,12 +720,6 @@ body,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wiz-progress-fill {
-    transition: none;
-  }
-  .wiz-progress-fill::after {
-    animation: none;
-  }
   .wiz-step-active {
     transform: none;
   }

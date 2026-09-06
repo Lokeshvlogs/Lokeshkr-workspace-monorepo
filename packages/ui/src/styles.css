@@ -11,18 +11,18 @@
 :root {
   /* The brand ramp, lightest to darkest:
      surface -> tint -> border -> extra-light -> light -> primary -> strong. */
-  --color-primary: #ec4899;
-  --color-primary-strong: #be185d;
-  --color-primary-light: #f96cba;
-  --color-primary-extra-light: #fab2dd;
+  --color-primary: #ff1f8f;
+  --color-primary-strong: #cb0b6b;
+  --color-primary-light: #ff66b3;
+  --color-primary-extra-light: #ffadd6;
   /* Hover fills, active rows and unfilled slider track. One step darker than
      `surface`, which is reserved for large calm areas like panel backgrounds. */
-  --color-primary-tint: #fce7f3;
-  --color-primary-surface: #fdf2f8;
+  --color-primary-tint: #ffe4f1;
+  --color-primary-surface: #fff0f8;
   /* The other half of every brand gradient. The only non-pink accent. */
   --color-secondary: #fb923c;
   --color-bg: #ffffff;
-  --color-border: #fbcfe8;
+  --color-border: #ffcbe5;
   --color-error: #ef4444;
   --color-success: #22c55e;
   --color-placeholder-text: #6b7280;
@@ -1490,8 +1490,17 @@ button.chip-selected:hover {
 /* The HorizontalFormSlider track. The width and transform are per-step and stay
    inline; the presentation lives here so a reduced-motion user can opt out of
    the slide, which an inline `transition` could never be overridden for. */
+.hfs-viewport {
+  overflow: hidden;
+  transition: height 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .hfs-track {
   display: flex;
+  /* Essential, not cosmetic. Flex items stretch to the tallest sibling by
+     default, so every step would measure as tall as the longest one and the
+     adaptive height in HorizontalFormSlider would always return the maximum. */
+  align-items: flex-start;
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1509,7 +1518,8 @@ button.chip-selected:hover {
     transform: none;
   }
   .strength-ring-value,
-  .hfs-track {
+  .hfs-track,
+  .hfs-viewport {
     transition: none;
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode, ReactElement } from "react";
+import { useState, useEffect, useRef, ReactNode, ReactElement } from "react";
 import SliderNavigation from "./SliderNavigation";
 
 interface HorizontalFormSliderProps {
@@ -42,6 +42,36 @@ export default function HorizontalFormSlider({
   const setStep = controlledSetStep || internalSetStep;
   const totalSteps = steps.length;
 
+  /**
+   * The viewport takes its height from the step being shown, not from the
+   * tallest one.
+   *
+   * All the steps sit side by side in one flex row so they can slide, which
+   * normally means the row - and therefore the viewport - is as tall as the
+   * longest step. A short step then renders with a screenful of dead space
+   * under it. Measuring the active step and setting an explicit height on the
+   * clipping viewport lets the container follow the content instead.
+   *
+   * The observer matters as much as the initial measurement: steps grow and
+   * shrink while you are on them (adding an education entry, a conditional
+   * field appearing), and a fixed height taken once would clip the new content.
+   */
+  const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const el = stepRefs.current[step];
+    if (!el) return;
+
+    const measure = () => setViewportHeight(el.offsetHeight);
+    measure();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [step, steps]);
+
   async function next(): Promise<void> {
     setBusy(true);
     try {
@@ -71,29 +101,50 @@ export default function HorizontalFormSlider({
   }
 
   return (
-    <div style={width ? { width, overflow: "hidden" } : { width: "100%", overflow: "hidden" }}>
-      {/* Sliding container */}
+    /* Only the track wrapper below clips and animates on height; this outer
+       element owns width alone, so the nav row that follows is never inside
+       the clipped box (it previously was, and Back / step count / Continue
+       were invisible on any step shorter than the tallest one). */
+    <div style={width ? { width } : { width: "100%" }}>
       <div
-        className="hfs-track"
-        style={{
-          width: `${totalSteps * 100}%`,
-          transform: `translateX(-${step * (100 / totalSteps)}%)`,
-        }}
+        className="hfs-viewport"
+        /* Height is undefined until the first measurement lands, so the initial
+           paint is auto-height rather than zero. `auto` is not interpolable, so
+           that first jump to a pixel height is instant - only step-to-step
+           changes animate, which is what we want. */
+        style={{ height: viewportHeight }}
       >
-        {steps.map((content, index) => (
-          <div
-            key={index}
-            /* The track is overflow:hidden so it can slide; the padding keeps
-               focus rings and shadows on the outermost fields off that edge. */
-            style={{
-              ...(width ? { width } : { width: `${100 / totalSteps}%` }),
-              padding: "6px 4px",
-            }}
-            aria-hidden={index !== step}
-          >
-            {content}
-          </div>
-        ))}
+        {/* Sliding container */}
+        <div
+          className="hfs-track"
+          style={{
+            width: `${totalSteps * 100}%`,
+            transform: `translateX(-${step * (100 / totalSteps)}%)`,
+          }}
+        >
+          {steps.map((content, index) => (
+            <div
+              key={index}
+              ref={(node) => {
+                stepRefs.current[index] = node;
+              }}
+              /* The viewport is overflow:hidden so the track can slide; the
+                 padding keeps focus rings and shadows on the outermost fields off
+                 that edge. */
+              style={{
+                ...(width ? { width } : { width: `${100 / totalSteps}%` }),
+                padding: "6px 4px",
+              }}
+              aria-hidden={index !== step}
+              /* Off-screen steps are clipped out of view, but their inputs stayed
+                 in the tab order - so tabbing off the last field jumped into a
+                 step nobody could see. */
+              inert={index !== step}
+            >
+              {content}
+            </div>
+          ))}
+        </div>
       </div>
 
       {statusSlot}

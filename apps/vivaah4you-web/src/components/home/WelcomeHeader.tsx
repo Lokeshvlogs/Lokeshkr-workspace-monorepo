@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { VerifiedBadge } from '@lokesh-workspace/ui'
 
 import Avatar from '@/components/profile/Avatar'
+import CompletenessRing from '@/components/profile/CompletenessRing'
 import { firstIncompleteStep, missingFields } from '@/lib/profileCompletion'
 import type { MemberStats } from '@/components/home/InsightsPanel'
 import type { MyProfile } from '@/types/profile'
@@ -19,31 +20,6 @@ function StatTile({
       <span className="stat-value">{value}</span>
       <span className="stat-label">{label}</span>
       {hint && <span className="stat-hint">{hint}</span>}
-    </div>
-  )
-}
-
-/** The completeness ring, previously the head of the profile strength panel. */
-function CompletenessRing({ value }: { value: number }) {
-  const radius = 26
-  const circumference = 2 * Math.PI * radius
-  const clamped = Math.max(0, Math.min(100, value))
-
-  return (
-    <div className="strength-ring strength-ring-sm" role="img" aria-label={`Profile ${clamped}% complete`}>
-      <svg viewBox="0 0 64 64" className="strength-ring-svg" aria-hidden="true">
-        <circle className="strength-ring-track" cx="32" cy="32" r={radius} />
-        <circle
-          className="strength-ring-value"
-          cx="32"
-          cy="32"
-          r={radius}
-          strokeDasharray={circumference}
-          /* Offset is the unfilled remainder, so 100% closes the ring. */
-          strokeDashoffset={circumference * (1 - clamped / 100)}
-        />
-      </svg>
-      <span className="strength-ring-label">{clamped}%</span>
     </div>
   )
 }
