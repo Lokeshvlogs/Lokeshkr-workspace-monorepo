@@ -25,8 +25,8 @@
   --color-border: #ffcbe5;
   --color-error: #ef4444;
   --color-success: #22c55e;
-  --color-placeholder-text: #6b7280;
-  --color-primary-text: #111827;
+  --color-placeholder-text: #2c2b2b;
+  --color-primary-text: #5a5f6c;
   /* Derived, so it follows primary. Custom properties resolve lazily, so
      overriding --color-primary on <html> re-resolves this too. */
   --color-focus-ring: color-mix(in srgb, var(--color-primary) 16%, transparent);
