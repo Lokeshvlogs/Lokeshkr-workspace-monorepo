@@ -58,6 +58,7 @@ import {
 import PhotoGallery from "@/components/profile/PhotoGallery";
 import CompletenessRing from "@/components/profile/CompletenessRing";
 import { coerceToFormShape } from "@/lib/profileFormShape";
+import { fieldIssue } from "@/lib/validation/schemas/profileWizardSchema";
 import EducationList, { isEducationComplete, type EducationEntry } from "@/components/profile/EducationList";
 import AchievementList, { type AchievementEntry } from "@/components/profile/AchievementList";
 import EmployerPicker from "@/components/profile/EmployerPicker";
@@ -374,6 +375,8 @@ function LongText({
   hint,
   value,
   onChange,
+  onBlur,
+  errorValue,
   maxLength = 600,
 }: {
   id: string;
@@ -382,6 +385,8 @@ function LongText({
   hint?: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
+  errorValue?: string;
   maxLength?: number;
 }) {
   return (
@@ -393,11 +398,17 @@ function LongText({
       {hint && <p className="mb-2 text-xs text-color-placeholder-text">{hint}</p>}
       <textarea
         id={id}
-        className="textarea-field"
+        className={`textarea-field ${errorValue ? "input-error" : ""}`}
         value={value}
         maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        aria-invalid={errorValue ? "true" : "false"}
+        aria-describedby={errorValue ? `${id}-error` : undefined}
       />
+      {errorValue && (
+        <p id={`${id}-error`} className="error-text" role="alert">{errorValue}</p>
+      )}
       <p className="textarea-count">{value.length} / {maxLength}</p>
     </div>
   );
@@ -678,16 +689,23 @@ export default function ProfileRegisterPage() {
     const need = (ok: boolean, key: string, message = "Required") => {
       if (!ok) gaps[key] = message;
     };
+    /* Fields with a rule beyond "not empty" are parsed instead of tested, so
+       the schema owns the message and the wizard only decides where it goes. */
+    const check = (key: "firstName" | "surname" | "aboutMe" | "familyAbout" | "partnerAbout") => {
+      const issue = fieldIssue(key, form[key]);
+      if (issue) gaps[key] = issue;
+    };
 
     if (s === 0) {
-      need(form.firstName.trim() !== "", "firstName");
-      need(form.surname.trim() !== "", "surname");
+      check("firstName");
+      check("surname");
       need(form.dob !== "", "dob", "Your date of birth is required");
       need(form.gender !== "", "gender", "Pick one");
       // Inches stays optional: a plain "5 ft" is a real answer, and the
       // picker's own 0 is indistinguishable from an untouched one.
       need(form.heightFeet !== "", "heightFeet");
       need(form.maritalStatus !== "", "maritalStatus", "Pick one");
+      check("aboutMe");
       return gaps;
     }
 
@@ -735,6 +753,7 @@ export default function ProfileRegisterPage() {
       need(form.familyIncome !== "", "familyIncome");
       need(form.fatherOccupation !== "", "fatherOccupation");
       need(form.motherOccupation !== "", "motherOccupation");
+      check("familyAbout");
       return gaps;
     }
 
@@ -757,6 +776,7 @@ export default function ProfileRegisterPage() {
       need(form.partnerDiets.length > 0, "partnerDiets", pick);
       need(form.partnerEducations.length > 0, "partnerEducations", pick);
       need(form.partnerProfessions.length > 0, "partnerProfessions", pick);
+      check("partnerAbout");
       return gaps;
     }
 
@@ -924,6 +944,8 @@ export default function ProfileRegisterPage() {
 
                 <LongText
                   id="aboutMe"
+                  errorValue={err("aboutMe")}
+                  onBlur={touch("aboutMe")}
                   label="About yourself"
                   icon={<PenLine />}
                   hint="Optional. A few lines in your own words — what you enjoy, what matters to you."
@@ -1152,6 +1174,8 @@ export default function ProfileRegisterPage() {
 
                 <LongText
                   id="familyAbout"
+                  errorValue={err("familyAbout")}
+                  onBlur={touch("familyAbout")}
                   label="About your family"
                   icon={<PenLine />}
                   hint="Optional. Values, background, anything a family would want to know."
@@ -1372,6 +1396,8 @@ export default function ProfileRegisterPage() {
 
                 <LongText
                   id="partnerAbout"
+                  errorValue={err("partnerAbout")}
+                  onBlur={touch("partnerAbout")}
                   label="What are you looking for?"
                   icon={<PenLine />}
                   hint="Optional. Qualities that matter to you in a partner."

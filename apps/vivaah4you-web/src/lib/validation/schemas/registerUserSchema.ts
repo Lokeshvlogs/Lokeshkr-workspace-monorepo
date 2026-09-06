@@ -1,18 +1,13 @@
 import { z } from "zod"
 import { PROFILE_FOR_VALUES, LOOKING_FOR_VALUES, MANAGED_BY_VALUES } from "@/app/Register/constants/RegisterUserOptions"
 import { COUNTRY_DIAL_CODES } from "@/constants/selectOptions/places"
+// Shared with the profile wizard, which asks for the same two names.
+import { NAME_MESSAGE, NAME_PATTERN } from "@/lib/validation/rules"
 
 const emptyToUndefined = (val: unknown) => {
   if (typeof val === 'string' && val.trim() === '') return undefined
   return val
 }
-
-// The old rule was /^[A-Za-z]+$/, which rejected every space, hyphen and
-// apostrophe - "Ram Kumar", "Anne-Marie" and "D'Souza" could not sign up at all.
-// \p{L} also admits accented and non-Latin scripts. Still anchored on a letter,
-// so a name cannot be punctuation alone.
-const NAME_PATTERN = /^\p{L}[\p{L}\p{M}\s'’.-]*$/u
-const NAME_MESSAGE = "Use letters, spaces, hyphens or apostrophes."
 
 // Field-level schema: keeps `.shape` reachable so useZodForm can validate one
 // input at a time on blur.
