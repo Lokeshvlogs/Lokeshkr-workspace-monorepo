@@ -66,14 +66,14 @@ export default function MonthSelector({ value, onMonthChange, inputClassName = '
         }}
         
         onChange={handleInputChange}
-        className={inputClassName || 'p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300'}
+        className={inputClassName || 'p-3 border border-color-primary-extra-light rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-color-primary-extra-light'}
       />
       {open && style && createPortal(
-        <div ref={popupRef} style={style} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto grid grid-cols-3 gap-2 hide-scrollbar">
+        <div ref={popupRef} style={style} className="z-50 bg-white border border-color-primary-tint rounded-md p-2 shadow max-h-72 overflow-y-auto grid grid-cols-3 gap-2 hide-scrollbar">
           {months.map((mo) => (
             <button
               key={mo.value}
-              className={`p-2 min-w-[50px] text-sm rounded-md ${value === mo.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
+              className={`p-2 min-w-[50px] text-sm rounded-md ${value === mo.value ? 'bg-color-primary text-white' : 'hover:bg-color-primary-light hover:text-white'}`}
               onClick={() => handleMonthSelect(mo.value)}
             >
               {mo.label}

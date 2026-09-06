@@ -630,9 +630,9 @@ export default function ProfileRegisterPage() {
   const active = STEPS[step];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-pink-50/40 px-4 py-10 sm:py-16">
+    <div className="min-h-screen bg-gradient-to-b from-white to-color-primary-surface/40 px-4 py-10 sm:py-16">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="rounded-2xl border border-color-border bg-white p-5 shadow-[0_20px_40px_rgba(219,39,119,0.10)] sm:p-8">
+        <div className="rounded-2xl border border-color-border bg-white p-5 shadow-[0_20px_40px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] sm:p-8">
 
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-gray-900">Complete your profile</h1>
@@ -640,7 +640,7 @@ export default function ProfileRegisterPage() {
               Profiles that are 95% complete get shown to matches.
             </p>
             <div className="mx-auto mt-4 max-w-sm">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-pink-100">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-color-primary-tint">
                 <div
                   className="h-full rounded-full bg-color-primary transition-all duration-500"
                   style={{ width: `${Math.min(completeness, 100)}%` }}
@@ -664,14 +664,14 @@ export default function ProfileRegisterPage() {
                       ${step === idx
                         ? "border-color-primary bg-color-primary text-white"
                         : idx < step
-                          ? "border-color-primary bg-pink-100 text-color-primary"
-                          : "border-pink-200 bg-white text-pink-400"}
+                          ? "border-color-primary bg-color-primary-tint text-color-primary"
+                          : "border-color-border bg-white text-color-primary-light"}
                       focus:outline-none focus:ring-2 focus:ring-color-primary-light`}
                   >
                     {STEP_ICONS[idx]}
                   </button>
                   {idx < STEPS.length - 1 && (
-                    <div className={`mx-1 h-1 flex-1 rounded-full ${idx < step ? "bg-color-primary" : "bg-pink-200"}`} />
+                    <div className={`mx-1 h-1 flex-1 rounded-full ${idx < step ? "bg-color-primary" : "bg-color-border"}`} />
                   )}
                 </React.Fragment>
               ))}

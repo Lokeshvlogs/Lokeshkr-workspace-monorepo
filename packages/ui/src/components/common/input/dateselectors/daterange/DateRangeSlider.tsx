@@ -131,9 +131,9 @@ export default function DateRangeSlider({ initialMonth, onRangeChange }: Props) 
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
-        <button onClick={handlePrev} aria-label="Previous month" className="p-2 rounded-md hover:bg-pink-100">◀</button>
+        <button onClick={handlePrev} aria-label="Previous month" className="p-2 rounded-md hover:bg-color-primary-tint">◀</button>
         <div className="flex-1 text-center font-medium">Select Date Range</div>
-        <button onClick={handleNext} aria-label="Next month" className="p-2 rounded-md hover:bg-pink-100">▶</button>
+        <button onClick={handleNext} aria-label="Next month" className="p-2 rounded-md hover:bg-color-primary-tint">▶</button>
       </div>
 
       <div className="overflow-hidden">
@@ -160,7 +160,7 @@ export default function DateRangeSlider({ initialMonth, onRangeChange }: Props) 
                             tabIndex={0}
                             onKeyDown={(e) => onDayKeyDown(e, d)}
                             onClick={() => onDayClick(d)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${inRange(d) ? 'bg-pink-500 text-white' : 'hover:bg-pink-100'} `}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${inRange(d) ? 'bg-color-primary text-white' : 'hover:bg-color-primary-tint'} `}
                           >
                             {d.getDate()}
                           </button>

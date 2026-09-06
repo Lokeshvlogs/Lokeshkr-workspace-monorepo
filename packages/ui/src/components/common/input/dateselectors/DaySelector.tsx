@@ -62,16 +62,16 @@ export default function DaySelector({ value, onDayChange, inputClassName = '', p
           setOpen(v => !v);
         }}
         onChange={handleInputChange}
-        className={inputClassName || 'p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300'}
+        className={inputClassName || 'p-3 border border-color-primary-extra-light rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-color-primary-extra-light'}
       />
       {open && style && createPortal(
-        <div ref={popupRef} style={style} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-5 gap-2 hide-scrollbar">
+        <div ref={popupRef} style={style} className="z-50 bg-white border border-color-primary-tint rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6 grid grid-cols-5 gap-2 hide-scrollbar">
           {Array.from({ length: maxDays }, (_, i) => {
             const v = String(i + 1).padStart(2, '0');
             return (
               <button
                 key={v}
-                className={`p-1 text-sm min-w-[32px] text-center text-lg rounded-md ${value === v ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'}`}
+                className={`p-1 text-sm min-w-[32px] text-center text-lg rounded-md ${value === v ? 'bg-color-primary text-white' : 'hover:bg-color-primary-light hover:text-white'}`}
                 onClick={() => handleDaySelect(v)}
               >
                 {i + 1}

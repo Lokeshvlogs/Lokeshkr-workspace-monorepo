@@ -110,7 +110,7 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
       <button
         ref={btnRef}
         type="button"
-        className={`p-2 border border-pink-200 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-pink-300 ${selectedValue ? 'text-black' : 'text-gray-400'}`}
+        className={`p-2 border border-color-border rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-color-primary-extra-light ${selectedValue ? 'text-black' : 'text-gray-400'}`}
         onClick={() => { setOpen(true); setSearch(''); }}
         aria-label={label}
       >
@@ -120,11 +120,11 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
         <div
           ref={popupRef}
           style={style}
-          className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-60 overflow-y-auto hide-scrollbar"
+          className="z-50 bg-white border border-color-primary-tint rounded-md p-2 shadow max-h-60 overflow-y-auto hide-scrollbar"
         >
           <input
             type="text"
-            className="mb-2 p-2 w-full border border-pink-200 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-300"
+            className="mb-2 p-2 w-full border border-color-border rounded-md focus:outline-none focus:ring-2 focus:ring-color-primary-extra-light"
             placeholder={`Search ${label.toLowerCase()}...`}
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -134,11 +134,11 @@ const ScrollableDropdown: React.FC<ScrollableDropdownProps> = ({ options, label,
             <div className="text-gray-400 p-2">No options found</div>
           )}
 
-          <div className="mt-2 divide-y divide-pink-50">
+          <div className="mt-2 divide-y divide-color-primary-surface">
             {filteredOptions.map(option => (
               <div key={option.value}>
                 <button
-                  className={`block w-full text-left p-2 first:rounded-t-md last:rounded-b-md ${selectedValue === option.value ? 'bg-pink-500 text-white' : 'bg-white text-black hover:bg-pink-100'} ${optionButtonClassName}`}
+                  className={`block w-full text-left p-2 first:rounded-t-md last:rounded-b-md ${selectedValue === option.value ? 'bg-color-primary text-white' : 'bg-white text-black hover:bg-color-primary-tint'} ${optionButtonClassName}`}
                   onClick={() => handleSelect(option.value)}
                 >
                   {option.label}

@@ -4,17 +4,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * The palette.
+ *
+ * The UI package declares the same tokens so it renders standalone; this block
+ * is imported after it and wins. Every token is repeated here, including the
+ * ones the package used to own alone, so this file is a complete and readable
+ * description of the theme rather than half of one.
+ *
+ * Nothing outside this block should hardcode a brand colour - see the ramp
+ * comment in packages/ui/src/styles.css for what each step is for.
+ */
 :root {
   --radius: 8px;
-  --color-primary: #ec4899;
-  --color-primary-light: #f96cba;
-  --color-primary-extra-light: #fab2dd;
+
+  /* Brand ramp, lightest to darkest. */
+  --color-primary-surface: #fdf2f8;
+  --color-primary-tint: #fce7f3;
   --color-border: #fbcfe8;
+  --color-primary-extra-light: #fab2dd;
+  --color-primary-light: #f96cba;
+  --color-primary: #ec4899;
+  --color-primary-strong: #be185d;
+
+  /* The other half of every brand gradient. The only non-pink accent. */
+  --color-secondary: #fb923c;
+
   --color-bg: #ffffff;
+  --color-primary-text: #111827;
+  --color-placeholder-text: #6b7280;
+  /* Derived, so it follows primary. Custom properties resolve lazily, so
+     overriding --color-primary on <html> re-resolves this too. */
+  --color-focus-ring: color-mix(in srgb, var(--color-primary) 16%, transparent);
+
   --color-error: #ef4444;
   --color-success: #22c55e;
-  --color-placeholder-text: #6b7280;
-  --color-primary-text: #111827;
+
   /* Verification marks. Kept distinct from each other on purpose: the blue is
      reserved for a real identity check so it never comes to mean "complete". */
   --color-verified-complete: #94a3b8;
@@ -81,7 +106,7 @@ body,
 
   .btn-primary {
     @apply btn bg-color-primary text-white;
-    box-shadow: 0 1px 2px rgba(236, 72, 153, 0.24);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-primary) 24%, transparent);
   }
 
   .btn-primary:hover:not(:disabled) {
@@ -103,13 +128,13 @@ body,
 
   .hero-bg {
     background:
-      radial-gradient(1200px 400px at 10% 20%, rgba(236, 72, 153, 0.10), transparent 12%),
-      radial-gradient(900px 300px at 90% 80%, rgba(255, 184, 199, 0.06), transparent 12%),
-      linear-gradient(180deg, #fff 0%, #fff6fb 100%);
+      radial-gradient(1200px 400px at 10% 20%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 12%),
+      radial-gradient(900px 300px at 90% 80%, color-mix(in srgb, var(--color-primary-extra-light) 6%, transparent), transparent 12%),
+      linear-gradient(180deg, var(--color-bg) 0%, var(--color-primary-surface) 100%);
   }
 
   .glow {
-    box-shadow: 0 8px 36px rgba(236, 72, 153, 0.10), 0 3px 10px rgba(255, 184, 199, 0.06);
+    box-shadow: 0 8px 36px color-mix(in srgb, var(--color-primary) 10%, transparent), 0 3px 10px color-mix(in srgb, var(--color-primary-extra-light) 6%, transparent);
   }
 
   .card-flashy {
@@ -139,7 +164,12 @@ body,
   /* Gradient on the second half of the headline, so the accent reads as part of
      the sentence rather than a separately-coloured word. */
   .hero-title-accent {
-    background: linear-gradient(100deg, var(--color-primary) 0%, #f472b6 55%, #fb923c 100%);
+    background: linear-gradient(
+      100deg,
+      var(--color-primary) 0%,
+      var(--color-primary-light) 55%,
+      var(--color-secondary) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -179,8 +209,8 @@ body,
   .collage-item {
     @apply relative m-0 overflow-hidden rounded-2xl;
     aspect-ratio: 1 / 1.15;
-    background: linear-gradient(140deg, var(--color-primary-surface), #fde7f1);
-    box-shadow: 0 16px 40px rgba(236, 72, 153, 0.14);
+    background: linear-gradient(140deg, var(--color-primary-surface), var(--color-primary-tint));
+    box-shadow: 0 16px 40px color-mix(in srgb, var(--color-primary) 14%, transparent);
     animation: collage-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
@@ -279,7 +309,7 @@ body,
 
   .feature-card:hover {
     border-color: var(--color-primary-light);
-    box-shadow: 0 14px 34px rgba(236, 72, 153, 0.10);
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 
   .feature-icon-wrap {
@@ -327,4 +357,197 @@ body,
       transform: translateY(0) rotate(-1deg);
     }
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * TEMPORARY: development theme panel
+ *
+ * Deliberately uses NO theme tokens. The panel has to stay readable while you
+ * are setting the background to something dark, so it carries its own fixed
+ * neutral palette - a control that disappears when you use it is worse than no
+ * control.
+ *
+ * TO REMOVE: delete this block, src/components/dev/ThemePanel.tsx, and the two
+ * lines that mount it in src/app/layout.tsx.
+ * ------------------------------------------------------------------------ */
+
+/* Bottom RIGHT, not left: Next's own dev-tools indicator sits in the
+   bottom-left corner and covered this completely.
+   The z-index clears everything in the app - navbar (40), photo lightbox (50)
+   and the portaled dropdown popups (9999) - because being able to tweak the
+   palette while a dropdown or modal is open is the point, and because no
+   stacking context in the page can then hide it. */
+.theme-panel-fab,
+.theme-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2147483000;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  color-scheme: light;
+}
+
+/* A labelled pill rather than a bare icon - a lone dark circle in a corner is
+   easy to read as part of the browser chrome and miss entirely. */
+.theme-panel-fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.theme-panel-fab:hover {
+  background-color: #111827;
+}
+
+.theme-panel {
+  width: 20rem;
+  max-height: min(80vh, 40rem);
+  overflow-y: auto;
+  padding: 0.875rem;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  font-size: 0.8125rem;
+  color: #111827;
+}
+
+.theme-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.theme-panel-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.theme-panel-note {
+  color: #6b7280;
+  font-size: 0.6875rem;
+  margin-top: 0.125rem;
+}
+
+.theme-panel-head button {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.theme-panel-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.theme-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.theme-panel-row input[type="color"] {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.theme-panel-label {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.theme-panel-hint {
+  color: #6b7280;
+  font-size: 0.625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-panel-hex {
+  width: 5.5rem;
+  flex-shrink: 0;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: #111827;
+  background-color: #ffffff;
+}
+
+.theme-panel-warn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 8px;
+  background-color: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+.theme-panel-foot {
+  margin-top: 0.75rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid #e5e7eb;
+  line-height: 1.45;
+}
+
+.theme-panel-foot code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.625rem;
+  background-color: #f3f4f6;
+  padding: 0 0.1875rem;
+  border-radius: 3px;
+}
+
+.theme-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.theme-panel-actions button {
+  flex: 1 1 0;
+  padding: 0.4375rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+}
+
+.theme-panel-actions button:hover {
+  background-color: #f3f4f6;
 }

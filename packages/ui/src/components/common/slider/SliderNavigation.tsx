@@ -49,7 +49,7 @@ export default function SliderNavigation({
         type="button"
         onClick={onBack}
         disabled={step === 0 || busy}
-        className="flex items-center gap-1.5 rounded-md border border-color-border px-3 py-2 text-sm font-medium text-color-primary transition hover:bg-pink-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex items-center gap-1.5 rounded-md border border-color-border px-3 py-2 text-sm font-medium text-color-primary transition hover:bg-color-primary-surface disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronLeft />
         Back

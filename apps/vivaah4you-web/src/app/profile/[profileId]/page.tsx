@@ -68,7 +68,7 @@ export default function PublicProfilePage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-pink-50/40 px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-b from-white to-color-primary-surface/40 px-4 py-10">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         <ProfileHeader
           profile={profile}

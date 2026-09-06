@@ -85,14 +85,14 @@ export default function YearSelector({ value, onYearChange, inputClassName = '' 
           setOpen(v => !v);
         }}
         onChange={handleInputChange}
-        className={inputClassName || 'p-3 border border-pink-300 rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-pink-300'}
+        className={inputClassName || 'p-3 border border-color-primary-extra-light rounded-md bg-white text-left w-20 focus:outline-none focus:ring-0 focus:border-color-primary-extra-light'}
       />
       {open && style && createPortal(
-        <div ref={popupRef} style={style} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6  grid grid-cols-1 gap-2 hide-scrollbar">
+        <div ref={popupRef} style={style} className="z-50 bg-white border border-color-primary-tint rounded-md p-2 shadow max-h-72 overflow-y-auto pb-6  grid grid-cols-1 gap-2 hide-scrollbar">
           {(inputText ? years.filter(y => y.value.startsWith(inputText)) : years).map((y) => (
             <button
               key={y.value}
-              className={`p-2 text-sm rounded-md ${value === y.value ? 'bg-pink-500 text-white' : 'hover:bg-pink-400 hover:text-white'} text-left`}
+              className={`p-2 text-sm rounded-md ${value === y.value ? 'bg-color-primary text-white' : 'hover:bg-color-primary-light hover:text-white'} text-left`}
               onClick={() => handleYearSelect(y.value)}
             >
               {y.label}

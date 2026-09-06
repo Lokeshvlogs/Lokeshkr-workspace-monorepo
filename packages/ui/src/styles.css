@@ -9,17 +9,27 @@
  * consumer that defines only some of these still gets a usable component.
  */
 :root {
+  /* The brand ramp, lightest to darkest:
+     surface -> tint -> border -> extra-light -> light -> primary -> strong. */
   --color-primary: #ec4899;
+  --color-primary-strong: #be185d;
   --color-primary-light: #f96cba;
   --color-primary-extra-light: #fab2dd;
+  /* Hover fills, active rows and unfilled slider track. One step darker than
+     `surface`, which is reserved for large calm areas like panel backgrounds. */
+  --color-primary-tint: #fce7f3;
   --color-primary-surface: #fdf2f8;
+  /* The other half of every brand gradient. The only non-pink accent. */
+  --color-secondary: #fb923c;
   --color-bg: #ffffff;
   --color-border: #fbcfe8;
   --color-error: #ef4444;
   --color-success: #22c55e;
   --color-placeholder-text: #6b7280;
   --color-primary-text: #111827;
-  --color-focus-ring: rgba(236, 72, 153, 0.16);
+  /* Derived, so it follows primary. Custom properties resolve lazily, so
+     overriding --color-primary on <html> re-resolves this too. */
+  --color-focus-ring: color-mix(in srgb, var(--color-primary) 16%, transparent);
   --radius: 8px;
   /* One height and one corner radius for every field-shaped control, so a text
      input, a select and the date trigger line up pixel for pixel in a grid. */
@@ -112,7 +122,7 @@
 .select-button.select-button[aria-expanded="true"] {
   outline: none;
   border-color: var(--color-primary, #ec4899);
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 .input:disabled,
@@ -249,7 +259,7 @@
 .select-search-input:focus {
   outline: none;
   border-color: var(--color-primary, #ec4899);
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 /* min-height:0 lets this shrink inside the flex column instead of forcing the
@@ -276,7 +286,7 @@
 @supports (-moz-appearance: none) {
   .select-options {
     scrollbar-width: thin;
-    scrollbar-color: #f5cfe4 transparent;
+    scrollbar-color: var(--color-border, #fbcfe8) transparent;
   }
 }
 
@@ -299,7 +309,7 @@
 /* The transparent border plus content-box clip is what makes the thumb read as
    a slim inset pill instead of a full-width bar. */
 .select-options::-webkit-scrollbar-thumb {
-  background-color: #f5cfe4;
+  background-color: var(--color-border, #fbcfe8);
   border-radius: 9999px;
   border: 3px solid transparent;
   background-clip: content-box;
@@ -414,7 +424,7 @@
    active index, so both land here. */
 .select-option:hover,
 .select-option-active {
-  background-color: #fce7f3;
+  background-color: var(--color-primary-tint, #fce7f3);
 }
 
 /* The chosen value inside the button. Sits in the same slot as an input's
@@ -459,63 +469,7 @@
   display: none;
 }
 
-.pink-range {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  background: #fdebf5;
-  border-radius: 9999px;
-}
 
-.pink-range:focus {
-  outline: none;
-}
-
-.pink-range::-webkit-slider-runnable-track {
-  height: 6px;
-  background: #fdebf5;
-  border-radius: 9999px;
-}
-
-.pink-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: #ec4899;
-  box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
-  margin-top: -5px;
-}
-
-.pink-range::-moz-range-track {
-  height: 6px;
-  background: #fdebf5;
-  border-radius: 9999px;
-}
-
-.pink-range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: #ec4899;
-  box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
-  border: none;
-}
-
-.pink-range::-ms-track {
-  background: transparent;
-  border-color: transparent;
-  color: transparent;
-  height: 6px;
-}
-
-.pink-range::-ms-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: #ec4899;
-  border: none;
-}
 
 /* --- Chip group (single-select pills) --- */
 .chip-group {
@@ -572,7 +526,7 @@ button.chip-selected:hover {
   background-color: var(--color-primary, #ec4899);
   border-color: var(--color-primary, #ec4899);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.30);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 /* Chips are pills by default. This squares them off to the standard button
@@ -628,8 +582,8 @@ button.chip-selected:hover {
     to right,
     var(--color-primary, #ec4899) 0%,
     var(--color-primary, #ec4899) var(--range-progress, 0%),
-    #fce7f3 var(--range-progress, 0%),
-    #fce7f3 100%
+    var(--color-primary-tint, #fce7f3) var(--range-progress, 0%),
+    var(--color-primary-tint, #fce7f3) 100%
   );
 }
 
@@ -657,7 +611,7 @@ button.chip-selected:hover {
   border-radius: 9999px;
   background: #ffffff;
   border: 3px solid var(--color-primary, #ec4899);
-  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.35);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-primary) 35%, transparent);
   transition: transform 0.12s ease;
 }
 
@@ -677,7 +631,7 @@ button.chip-selected:hover {
   border-radius: 9999px;
   background: #ffffff;
   border: 3px solid var(--color-primary, #ec4899);
-  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.35);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 .range-slider-ticks {
@@ -744,7 +698,7 @@ button.chip-selected:hover {
 .avatar-dropzone:hover,
 .avatar-dropzone-active {
   border-color: var(--color-primary, #ec4899);
-  background-color: #fce7f3;
+  background-color: var(--color-primary-tint, #fce7f3);
 }
 
 .avatar-dropzone:focus-visible {
@@ -757,7 +711,7 @@ button.chip-selected:hover {
   cursor: grab;
   touch-action: none;               /* pointer drags must not scroll the page */
   background-color: var(--color-primary-surface, #fdf2f8);
-  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.18);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .avatar-stage-dragging {
@@ -949,7 +903,7 @@ button.chip-selected:hover {
 .dob-trigger:focus-visible {
   outline: none;
   border-color: var(--color-primary, #ec4899);
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 .dob-trigger-value {
@@ -1115,7 +1069,7 @@ button.chip-selected:hover {
 .textarea-field:focus {
   outline: none;
   border-color: var(--color-primary, #ec4899);
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 .textarea-count {
@@ -1154,7 +1108,7 @@ button.chip-selected:hover {
 .otp-box:focus {
   outline: none;
   border-color: var(--color-primary, #ec4899);
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 .otp-box:disabled {
@@ -1251,7 +1205,7 @@ button.chip-selected:hover {
 
 .auth-provider-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 .auth-provider-btn:disabled {
@@ -1337,7 +1291,7 @@ button.chip-selected:hover {
 .card:hover {
   transform: translateY(-6px);
   border-color: var(--color-primary-light, #f96cba);
-  box-shadow: 0 22px 44px rgba(236, 72, 153, 0.18);
+  box-shadow: 0 22px 44px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .card-media-link {
@@ -1346,7 +1300,7 @@ button.chip-selected:hover {
 
 .card-media {
   @apply relative aspect-[4/5] w-full overflow-hidden;
-  background: linear-gradient(150deg, var(--color-primary-surface, #fdf2f8), #fce7f3);
+  background: linear-gradient(150deg, var(--color-primary-surface, #fdf2f8), var(--color-primary-tint, #fce7f3));
 }
 
 .card-img {
@@ -1391,9 +1345,9 @@ button.chip-selected:hover {
 .card-media-empty .card-scrim {
   background: linear-gradient(
     to top,
-    rgba(190, 24, 93, 0.92) 0%,
-    rgba(219, 39, 119, 0.55) 45%,
-    rgba(236, 72, 153, 0) 100%
+    color-mix(in srgb, var(--color-primary-strong) 92%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary) 55%, transparent) 45%,
+    color-mix(in srgb, var(--color-primary) 0%, transparent) 100%
   );
 }
 
@@ -1433,7 +1387,7 @@ button.chip-selected:hover {
   @apply rounded-full px-2.5 py-1 text-xs font-medium;
   background-color: var(--color-primary-surface, #fdf2f8);
   color: #6b7280;
-  border: 1px solid rgba(251, 207, 232, 0.7);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
 .card-pill-more {
@@ -1459,7 +1413,7 @@ button.chip-selected:hover {
 
 .card-cta:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 /* --- Match empty / gated / loading states --- */
@@ -1521,7 +1475,7 @@ button.chip-selected:hover {
   background: linear-gradient(
     90deg,
     var(--color-primary-surface, #fdf2f8) 25%,
-    #fce7f3 37%,
+    var(--color-primary-tint, #fce7f3) 37%,
     var(--color-primary-surface, #fdf2f8) 63%
   );
   background-size: 400% 100%;
@@ -1554,8 +1508,8 @@ button.chip-selected:hover {
 /* --- Member dashboard --- */
 .dashboard {
   background:
-    radial-gradient(900px 320px at 8% -5%, rgba(236, 72, 153, 0.07), transparent 60%),
-    radial-gradient(700px 280px at 95% 0%, rgba(251, 146, 60, 0.05), transparent 60%);
+    radial-gradient(900px 320px at 8% -5%, color-mix(in srgb, var(--color-primary) 7%, transparent), transparent 60%),
+    radial-gradient(700px 280px at 95% 0%, color-mix(in srgb, var(--color-secondary) 5%, transparent), transparent 60%);
 }
 
 /* Welcome band. */
@@ -1573,12 +1527,12 @@ button.chip-selected:hover {
 .welcome-avatar {
   @apply h-14 w-14 shrink-0 rounded-full object-cover;
   border: 3px solid var(--color-bg, #ffffff);
-  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.24);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
 .welcome-avatar-initial {
   @apply flex items-center justify-center text-xl font-bold text-white;
-  background: linear-gradient(135deg, var(--color-primary, #ec4899), #fb923c);
+  background: linear-gradient(135deg, var(--color-primary, #ec4899), var(--color-secondary, #fb923c));
 }
 
 .welcome-greeting {
@@ -1847,7 +1801,7 @@ button.chip-selected:hover {
 
 .profile-hero-avatar-initial {
   @apply flex items-center justify-center text-3xl font-bold text-white;
-  background: linear-gradient(135deg, var(--color-primary, #ec4899), #fb923c);
+  background: linear-gradient(135deg, var(--color-primary, #ec4899), var(--color-secondary, #fb923c));
 }
 
 .profile-hero-name {
@@ -1884,7 +1838,7 @@ button.chip-selected:hover {
   @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
   background-color: var(--color-primary-surface, #fdf2f8);
   color: #4b5563;
-  border: 1px solid rgba(251, 207, 232, 0.7);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
 .profile-chip-icon {
@@ -1913,14 +1867,38 @@ button.chip-selected:hover {
   border: 1px solid var(--color-border, #fbcfe8);
 }
 
+/* The hour / minute triggers in TimePicker.
+   These were the last inline colours in the package: an inline `background`
+   cannot read a CSS variable, so the control stayed pink whatever the theme
+   said. The open state is a data attribute now. */
+.timepicker-unit {
+  @apply w-12 rounded-md px-2 py-1 text-center;
+  background: transparent;
+  color: var(--color-primary-text, #111827);
+}
+
+.timepicker-unit:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-extra-light, #fab2dd);
+}
+
+.timepicker-unit[data-open="true"] {
+  background-color: var(--color-primary-extra-light, #fab2dd);
+  color: var(--color-bg, #ffffff);
+}
+
 /* --- Education & achievement repeaters --- */
 
 /* One qualification. Bordered rather than plain-stacked so it is obvious where
    a row starts and ends once someone has three of them. */
+/* White and lifted, not tinted. Three qualifications stacked as three filled
+   blocks turned the step into a wall of colour; a neutral elevation shadow
+   separates them just as clearly without adding any. */
 .education-card {
   @apply rounded-xl p-4;
   border: 1px solid var(--color-border, #fbcfe8);
-  background-color: var(--color-primary-surface, #fdf2f8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
 }
 
 .education-card-head {
@@ -1974,9 +1952,13 @@ button.chip-selected:hover {
   accent-color: var(--color-primary, #ec4899);
 }
 
+/* Matches .education-card - the two repeaters sit in the same step and were
+   inconsistent, one tinted and one with no background at all. */
 .achievement-row {
   @apply rounded-xl p-4;
   border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
 }
 
 /* --- Multi-select --- */
@@ -2003,7 +1985,7 @@ button.chip-selected:hover {
 }
 
 .dual-range-head {
-  @apply flex items-baseline justify-between gap-3;
+  @apply flex items-center justify-between gap-3;
 }
 
 .dual-range-label {
@@ -2012,8 +1994,11 @@ button.chip-selected:hover {
 }
 
 .dual-range-readout {
-  @apply text-sm font-semibold;
-  color: var(--color-primary, #ec4899);
+  @apply inline-flex items-center rounded-full text-sm font-semibold;
+  padding: 0.1875rem 0.625rem;
+  background-color: var(--color-bg, #ffffff);
+  border: 1px solid var(--color-border, #fbcfe8);
+  color: #374151;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2034,8 +2019,7 @@ button.chip-selected:hover {
 .dual-range-rail {
   left: 0;
   right: 0;
-  background-color: var(--color-primary-surface, #fdf2f8);
-  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: #e5e7eb;
 }
 
 .dual-range-fill {
@@ -2096,11 +2080,11 @@ button.chip-selected:hover {
 }
 
 .dual-range-input:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 .dual-range-input:focus-visible::-moz-range-thumb {
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 .dual-range-ends {
@@ -2113,11 +2097,12 @@ button.chip-selected:hover {
 }
 
 .dual-range-clear {
-  @apply text-sm font-semibold;
-  color: var(--color-primary, #ec4899);
+  @apply text-sm font-medium;
+  color: var(--color-placeholder-text, #6b7280);
 }
 
 .dual-range-clear:hover {
+  color: var(--color-primary, #ec4899);
   text-decoration: underline;
 }
 
@@ -2466,7 +2451,7 @@ button.chip-selected:hover {
 .search-bar-input:focus {
   outline: none;
   border-color: var(--color-primary, #ec4899);
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 /* Native clear affordance on type=search, hidden so it does not fight the
@@ -2587,7 +2572,7 @@ button.chip-selected:hover {
 .search-sort-select:focus {
   outline: none;
   border-color: var(--color-primary, #ec4899);
-  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 /* Unit on a stat figure - smaller and lighter, so "14%" reads as one number

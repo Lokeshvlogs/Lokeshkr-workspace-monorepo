@@ -25,7 +25,7 @@ export default function ProfileHeader({ profile, actions }: Props) {
 
   return (
     <div className="flex flex-col items-center gap-5 rounded-2xl border border-color-border bg-white p-6 sm:flex-row sm:items-start">
-      <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-pink-100 bg-pink-50">
+      <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-color-primary-tint bg-color-primary-surface">
         <Avatar
           src={profile.photo}
           name={name}

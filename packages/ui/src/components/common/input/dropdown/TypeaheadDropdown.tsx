@@ -72,18 +72,18 @@ export default function TypeaheadDropdown({ label, options, initialValue = '', p
         type="text"
         value={value}
         placeholder={placeholder || label}
-        className="p-2 border border-pink-200 rounded-md w-full"
+        className="p-2 border border-color-border rounded-md w-full"
         onFocus={() => { setFiltered(options); setOpen(true); }}
         onChange={(e) => handleInput(e.target.value)}
         aria-label={label}
       />
 
       {open && style && createPortal(
-        <div ref={popupRef} style={style} className="z-50 bg-white border border-pink-100 rounded-md p-2 shadow max-h-60 overflow-y-auto">
+        <div ref={popupRef} style={style} className="z-50 bg-white border border-color-primary-tint rounded-md p-2 shadow max-h-60 overflow-y-auto">
           {filtered.length === 0 && <div className="text-gray-400 p-2">No matches</div>}
-          <div className="divide-y divide-pink-50">
+          <div className="divide-y divide-color-primary-surface">
             {filtered.map((o) => (
-              <button key={o.value} className="w-full text-left p-2 hover:bg-pink-50" onClick={() => handleSelect(o)}>
+              <button key={o.value} className="w-full text-left p-2 hover:bg-color-primary-surface" onClick={() => handleSelect(o)}>
                 {o.label}
               </button>
             ))}

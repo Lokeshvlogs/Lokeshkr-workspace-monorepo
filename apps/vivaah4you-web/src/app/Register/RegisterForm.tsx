@@ -101,7 +101,7 @@ export default function RegisterForm() {
   }, [values.profile_for])
 
   return (
-    <form action={action} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-pink-50 focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)' }} onKeyDown={blockEnterKeySubmit}>
+    <form action={action} className="bg-white p-6 rounded-lg max-w-md mx-auto border-2 focus-within:ring-4 focus-within:ring-color-primary-surface focus-within:ring-opacity-40" style={{ boxShadow: '0 20px 40px rgba(14, 13, 13, 0.14), 0 6px 12px rgba(20, 20, 20, 0.08)' }} onKeyDown={blockEnterKeySubmit}>
       <div className="grid grid-cols-1 gap-3">
         <div className="relative mt-6">
           <TextField

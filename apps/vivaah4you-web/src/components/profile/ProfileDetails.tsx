@@ -66,7 +66,7 @@ export default function ProfileDetails({
       {sections.map((section) => (
         <section key={section.title} className="form-section">
           <h3 className="form-section-title">{section.title}</h3>
-          <dl className="mt-2 divide-y divide-pink-50">{section.fields.map(renderRow)}</dl>
+          <dl className="mt-2 divide-y divide-color-primary-surface">{section.fields.map(renderRow)}</dl>
         </section>
       ))}
     </div>
