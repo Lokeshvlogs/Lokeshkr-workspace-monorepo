@@ -11,6 +11,7 @@ from ninja.errors import HttpError
 from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import RefreshToken
 
+from apps.profiles import managed_by as managed_by_rules
 from apps.profiles.models import Profile
 
 from .models import OtpCode
@@ -33,10 +34,6 @@ from .schema import (
 )
 
 router = Router(tags=["auth_api"])
-
-# Mirrors PROFILE_COMPLETE_THRESHOLD in apps.profiles.api - a profile below this
-# is still in setup and the client routes to the wizard rather than the home page.
-PROFILE_COMPLETE_THRESHOLD = 95
 
 # Whose profile is being created -> that person's gender.
 GENDER_BY_PROFILE_FOR = {
@@ -127,6 +124,11 @@ def register(request, data: RegisterSchema):
         profile.profile_for = data.profile_for
         profile.looking_for = data.looking_for or ""
         profile.age = data.age
+        # Cosmetic only. Note it is NOT passed to derive_gender below: that
+        # decides `gender`, which is baked into the permanent profile_id.
+        profile.managed_by = data.managed_by or managed_by_rules.default_for(
+            data.profile_for
+        )
         profile.gender = derive_gender(data.profile_for, data.looking_for)
         # Saving with gender + age present is what mints `profile_id`.
         profile.save()

@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     #internal apps
     'apps.auth_api', #For authentication APIs
     'apps.profiles',
+    'apps.catalog',
 ]
 
 MIDDLEWARE = [

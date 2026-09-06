@@ -3,6 +3,11 @@ from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User  # built-in user
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
+
+from . import education
+from .constants import PROFILE_COMPLETE_THRESHOLD
+from .verification import VerificationLevel, compute_level
 
 class Profile(models.Model):
 
@@ -43,6 +48,45 @@ class Profile(models.Model):
     # until then, so an unverified number cannot hold an account hostage.
     phone_verified = models.BooleanField(default=False)
 
+    # ---- Verification ----
+    #
+    # Derived from the evidence flags below by apps.profiles.verification. Never
+    # write it directly: Profile.save() recomputes it, and every read surface
+    # (API payload, badge, match ordering) reads this column rather than
+    # re-deriving the rule.
+    verification_level = models.PositiveSmallIntegerField(
+        choices=VerificationLevel.choices,
+        default=VerificationLevel.NONE,
+        db_index=True,
+    )
+    # When the profile first reached COMPLETE or above. Never cleared, so a
+    # later edit that drops the level does not erase when it was earned.
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    # Independent evidence, kept as separate booleans rather than folded into
+    # one level, so that changing how evidence maps to a level is a code change
+    # in verification.py and never a migration.
+    email_verified = models.BooleanField(default=False)
+    work_email_verified = models.BooleanField(default=False)   # employer domain
+    edu_email_verified = models.BooleanField(default=False)    # institution domain
+    photo_verified = models.BooleanField(default=False)        # liveness / selfie
+    id_document_verified = models.BooleanField(default=False)  # DigiLocker et al
+
+    # ---- Identity check results ----
+    #
+    # Populated by nothing today; the provider integration is deliberately out
+    # of scope. Designed now so that turning it on needs no schema change.
+    #
+    # We store the ASSERTION, never the document: no Aadhaar number, no scan, no
+    # raw provider payload. An opaque provider reference plus the match results
+    # is what is defensible to hold in India, and it survives swapping
+    # DigiLocker for a passport or driving-licence provider.
+    id_provider = models.CharField(max_length=30, blank=True)   # digilocker|passport|...
+    id_reference = models.CharField(max_length=64, blank=True)  # provider txn id ONLY
+    id_name_match = models.BooleanField(default=False)
+    id_dob_match = models.BooleanField(default=False)
+    id_verified_at = models.DateTimeField(null=True, blank=True)
+
     # Captured at sign-up (see apps.auth_api.api.register)
     PROFILE_FOR_CHOICES = [
         ("son", "Son"),
@@ -57,6 +101,26 @@ class Profile(models.Model):
     ]
     profile_for = models.CharField(max_length=20, choices=PROFILE_FOR_CHOICES, blank=True)
     looking_for = models.CharField(max_length=20, choices=LOOKING_FOR_CHOICES, blank=True)
+
+    # Who actually answers the messages.
+    #
+    # `profile_for` implies this for its five values, but cannot express a
+    # cousin, a friend or a guardian - and in arranged-marriage conversations,
+    # knowing whether you are speaking to the person or to their father is
+    # genuinely useful before the first message.
+    #
+    # STRICTLY COSMETIC. It must never feed `derive_gender`: that function
+    # decides `gender`, which is baked into `profile_id` permanently, so a
+    # change here would rewrite someone's public URL.
+    MANAGED_BY_CHOICES = [
+        ("self", "The member"),
+        ("parent", "Parent"),
+        ("sibling", "Sibling"),
+        ("relative", "Relative"),
+        ("guardian", "Guardian"),
+        ("friend", "Friend"),
+    ]
+    managed_by = models.CharField(max_length=20, choices=MANAGED_BY_CHOICES, blank=True)
     country_code = models.CharField(max_length=8, blank=True)
     age = models.PositiveIntegerField(
         null=True,
@@ -111,13 +175,75 @@ class Profile(models.Model):
     family_income = models.CharField(max_length=100, blank=True)
 
     # Optional Additional Fields
+    # DERIVED from the ProfileEducation rows - do not write these directly.
+    # `refresh_derived_education()` sets them from the highest qualification.
+    #
+    # Kept as columns rather than replaced by the related table because
+    # everything downstream expects a single value: completeness scoring, the
+    # match search filter, the compatibility panel and the card headline. One
+    # cache here is far less risky than teaching all of those about a list.
     education_level = models.CharField(max_length=200, blank=True)
     field_of_study = models.CharField(max_length=200, blank=True)
     college_university = models.CharField(max_length=200, blank=True)
+    # Best tier across the non-school qualifications. Internal - never
+    # serialised, and used only for match ranking.
+    education_reputation_tier = models.PositiveSmallIntegerField(default=9)
     profession = models.CharField(max_length=150, blank=True)
     employed_in = models.CharField(max_length=150, blank=True)
     employed_as = models.CharField(max_length=150, blank=True)
     annual_income = models.CharField(max_length=100, blank=True)
+    # Tri-state as text: "" unanswered, "yes", "no". A boolean could not tell
+    # "no" from "not asked", and this is a question many members leave blank.
+    settle_abroad = models.CharField(max_length=10, blank=True)
+
+    # ---- Employer ----
+    #
+    # Same FK-plus-denormalised-name shape as ProfileEducation, for the same
+    # reasons: "Other / not listed" has to survive without minting catalog rows
+    # from user input, and a deactivated catalog row must not blank a profile.
+    #
+    # `employer.email_domains` is the hook a work-email OTP will use to turn a
+    # claimed job into a verified one.
+    employer = models.ForeignKey(
+        "catalog.Employer",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    employer_name = models.CharField(max_length=200, blank=True)
+    employer_is_other = models.BooleanField(default=False)
+    # Internal, never serialised - the employer counterpart of
+    # education_reputation_tier.
+    employer_reputation_tier = models.PositiveSmallIntegerField(default=9)
+
+    # Where the job is, which is what makes the visa question answerable at all.
+    work_country = models.CharField(max_length=2, blank=True)  # ISO-2
+    # A value from apps.catalog.visa for `work_country`.
+    visa_status = models.CharField(max_length=40, blank=True)
+
+    # Free-form accomplishments: [{"title", "year", "detail"}]. Display only -
+    # no joins, no filtering - so a JSON list rather than another table.
+    achievements = models.JSONField(default=list, blank=True)
+
+    # ---- Interests ----
+    #
+    # One column per category rather than a single nested blob. The wizard
+    # PATCHes a step at a time and `apply_payload` is key-to-column, so a nested
+    # object would need a deep merge - and without one, saving the step would
+    # silently clear every category the payload happened not to mention.
+    #
+    # The shape (category -> list of slugs) maps straight onto a
+    # ProfileTag(profile, category, value) table if "find people who also like
+    # X" ever needs an index. That is a data migration, not a redesign.
+    interests_music = models.JSONField(default=list, blank=True)
+    interests_movies = models.JSONField(default=list, blank=True)
+    interests_books = models.JSONField(default=list, blank=True)
+    interests_cuisines = models.JSONField(default=list, blank=True)
+    interests_travel = models.JSONField(default=list, blank=True)
+    interests_hobbies = models.JSONField(default=list, blank=True)
+    # The one free-text escape hatch, for whatever the lists cannot express.
+    interests_other = models.TextField(blank=True)
     #lifestyle choices
     diet = models.CharField(max_length=100, blank=True)
     smoking_habits = models.CharField(max_length=100, blank=True)  
@@ -165,6 +291,38 @@ class Profile(models.Model):
     partner_diet = models.CharField(max_length=100, blank=True)
     partner_about = models.TextField(blank=True)
 
+    # ---- Partner preferences, multi-value ----
+    #
+    # "Hindu or Jain" is a normal thing to want and the singular columns above
+    # cannot say it. These supersede them.
+    #
+    # Added alongside rather than converting the CharFields in place: on SQLite
+    # an ALTER to JSON is a table rebuild, and the existing value "hindu" would
+    # become a JSON *string* rather than a one-element list. The singular
+    # columns are kept for one release so a client that has not picked up the
+    # new payload keeps working, and are dropped in a later migration.
+    #
+    # An empty list is the canonical "no preference" - the literal "any" is
+    # stripped on the way in (see mapping._to_str_list), so there is exactly one
+    # representation of it rather than two to keep in sync.
+    partner_marital_statuses = models.JSONField(default=list, blank=True)
+    partner_religions = models.JSONField(default=list, blank=True)
+    partner_communities = models.JSONField(default=list, blank=True)
+    partner_mother_tongues = models.JSONField(default=list, blank=True)
+    partner_countries = models.JSONField(default=list, blank=True)
+    partner_educations = models.JSONField(default=list, blank=True)
+    partner_professions = models.JSONField(default=list, blank=True)
+    partner_diets = models.JSONField(default=list, blank=True)
+
+    # Mobility expectations, the counterpart to `settle_abroad`.
+    #
+    # Lists, not single answers: someone open to a partner who says "yes" is
+    # usually equally happy with "open to discussion", and forcing one choice
+    # made them exclude matches they would have wanted. Every selected value is
+    # accepted by the matcher; an empty list means no preference at all.
+    partner_relocate_after_marriage = models.JSONField(default=list, blank=True)
+    partner_settle_abroad = models.JSONField(default=list, blank=True)
+
     # Display Picture (DP)
     display_picture = models.ImageField(upload_to="profile_pics/", null=True, blank=True)
 
@@ -177,13 +335,28 @@ class Profile(models.Model):
     hide_display_picture_from_search = models.BooleanField(default=False)
     profile_completeness = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
 
-    # Fields scored for `profile_completeness`. Optional sections (family
-    # background, partner preference, the free-text intros) are excluded so a
-    # member who skips them can still reach 100%.
-    # Also excludes fields whose
-    # zero value is a real answer (marital_status, manglik_level, family_type,
-    # exercise_habits) - there is no way to tell "Never Married" from "unanswered",
-    # so counting them would make 100% unreachable or inflate every new profile.
+    # ---- Core completeness ----
+    #
+    # FROZEN. These are the fields that decide ELIGIBILITY - whether a member
+    # appears in matches and whether login bounces them into the wizard, via
+    # `core_completeness()` against PROFILE_COMPLETE_THRESHOLD.
+    #
+    # New profile fields must NOT be added here. They go in the EXTRA_* lists
+    # below, which feed the headline percentage only. Adding one here changes
+    # the denominator for every existing member at once: there is a single slot
+    # of headroom at the 95 threshold (28/29 = 97 passes, 27/29 = 93 fails), so
+    # one addition drops everyone currently sitting at 97 out of match results
+    # and back into the wizard on their next login.
+    #
+    # The client mirrors this list in
+    # apps/vivaah4you-web/src/lib/profileCompletion.ts - edit both together.
+    #
+    # Optional sections (family background, partner preference, the free-text
+    # intros) are excluded so a member who skips them can still reach 100%.
+    # Also excludes fields whose zero value is a real answer (marital_status,
+    # manglik_level, family_type, exercise_habits) - there is no way to tell
+    # "Never Married" from "unanswered", so counting them would make 100%
+    # unreachable or inflate every new profile.
     COMPLETENESS_TEXT_FIELDS = [
         "first_name", "surname",
         "religion", "community", "mother_tongue",
@@ -200,15 +373,53 @@ class Profile(models.Model):
         "height_feet",
     ]
 
-    def compute_completeness(self) -> int:
-        """Percentage of the profile-registration wizard that has real answers."""
+    # ---- Extra completeness ----
+    #
+    # Everything the wizard asks for beyond the core. These count towards the
+    # headline percentage the member sees, and towards nothing else: they can
+    # be added and removed freely without moving anybody's eligibility.
+    #
+    # Adding here DOES lower every existing member's displayed percentage, which
+    # is intended - the profile genuinely asks for more now. What it must never
+    # do is change `is_complete`; `manage.py check_profile_drift` verifies that.
+    EXTRA_TEXT_FIELDS: list[str] = [
+        "daily_routine",
+        "settle_abroad",
+    ]
+    # JSON list columns; a non-empty list counts as one answered slot.
+    #
+    # `interests_other` is deliberately absent: it is the free-text escape
+    # hatch, and scoring it would push people to write something just to move a
+    # number.
+    EXTRA_LIST_FIELDS: list[str] = [
+        "interests_music",
+        "interests_movies",
+        "interests_books",
+        "interests_cuisines",
+        "interests_travel",
+        "interests_hobbies",
+    ]
+
+    def _count_filled(self, text_fields, positive_fields=(), list_fields=()) -> int:
         filled = 0
-        for name in self.COMPLETENESS_TEXT_FIELDS:
+        for name in text_fields:
             if str(getattr(self, name, "") or "").strip():
                 filled += 1
-        for name in self.COMPLETENESS_POSITIVE_FIELDS:
+        for name in positive_fields:
             if (getattr(self, name, 0) or 0) > 0:
                 filled += 1
+        for name in list_fields:
+            if getattr(self, name, None):
+                filled += 1
+        return filled
+
+    # dob_time, age, gender, display_picture - counted by hand below.
+    CORE_EXTRA_SLOTS = 4
+
+    def _core_filled(self) -> int:
+        filled = self._count_filled(
+            self.COMPLETENESS_TEXT_FIELDS, self.COMPLETENESS_POSITIVE_FIELDS
+        )
         if self.dob_time is not None:
             filled += 1
         if self.age:
@@ -217,13 +428,69 @@ class Profile(models.Model):
             filled += 1
         if self.display_picture:
             filled += 1
+        return filled
 
-        total = (
+    def _core_total(self) -> int:
+        return (
             len(self.COMPLETENESS_TEXT_FIELDS)
             + len(self.COMPLETENESS_POSITIVE_FIELDS)
-            + 4  # dob_time, age, gender, display_picture
+            + self.CORE_EXTRA_SLOTS
+        )
+
+    def core_completeness(self) -> int:
+        """Percentage of the CORE field set that has real answers.
+
+        This is what eligibility is measured against, and it is deliberately
+        blind to every field added after launch - see the comment on
+        COMPLETENESS_TEXT_FIELDS for why.
+        """
+        return round(self._core_filled() * 100 / self._core_total())
+
+    @property
+    def is_complete(self) -> bool:
+        """Whether the member is eligible for match results."""
+        return self.core_completeness() >= PROFILE_COMPLETE_THRESHOLD
+
+    def compute_completeness(self) -> int:
+        """The headline percentage the member sees.
+
+        Core plus every extra field the wizard has grown. While the EXTRA_*
+        lists are empty this is identical to `core_completeness()`, so adding
+        the first extra field is the moment percentages start moving - which is
+        exactly why nothing reads this number to decide eligibility.
+        """
+        filled = self._core_filled() + self._count_filled(
+            self.EXTRA_TEXT_FIELDS, list_fields=self.EXTRA_LIST_FIELDS
+        )
+        total = (
+            self._core_total()
+            + len(self.EXTRA_TEXT_FIELDS)
+            + len(self.EXTRA_LIST_FIELDS)
         )
         return round(filled * 100 / total)
+
+    def refresh_derived_education(self) -> None:
+        """Recompute the cached education columns from the related rows.
+
+        Must run BEFORE save(), because completeness scores `education_level`
+        and would otherwise read the previous value.
+
+        Deliberately a no-op when a member has no education rows at all: that is
+        every profile created before the education table existed, and blanking
+        their `education_level` would drop their completeness - and with it
+        their eligibility - for no reason.
+        """
+        entries = list(self.educations.select_related("institution").all())
+        if not entries:
+            return
+
+        best = education.best_entry(entries)
+        if best is not None:
+            self.education_level = best.level
+            self.field_of_study = best.field_of_study
+            self.college_university = best.institution_name
+
+        self.education_reputation_tier = education.best_reputation_tier(entries)
 
     def build_profile_id(self) -> str:
         """Public id: brand + gender + age + row number, e.g. V4UF28000042."""
@@ -240,15 +507,87 @@ class Profile(models.Model):
         if self.pk and (force or not self.profile_id) and self.gender and self.age:
             self.profile_id = self.build_profile_id()
 
+    # Columns recomputed on every save. Any caller passing `update_fields` has
+    # these folded in for it - otherwise the recompute happens in memory and is
+    # then dropped on the way to the database. Three callers in auth_api do
+    # exactly that (change_phone, change_email, verify), and the bug is silent.
+    DERIVED_FIELDS = ("profile_completeness", "verification_level", "verified_at")
+
     def save(self, *args, **kwargs):
         self.profile_completeness = self.compute_completeness()
+
+        # Order matters: compute_level reads profile_completeness, so the line
+        # above has to run first.
+        self.verification_level = compute_level(self)
+        if self.verified_at is None and self.verification_level >= VerificationLevel.COMPLETE:
+            # Stamped once and never cleared - a later edit that drops the level
+            # should not erase the fact that it was earned.
+            self.verified_at = timezone.now()
+
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            kwargs["update_fields"] = set(update_fields) | set(self.DERIVED_FIELDS)
+
         super().save(*args, **kwargs)
+
         if not self.profile_id and self.gender and self.age:
             self.assign_profile_id()
+            # Calls super() directly, so it does not re-enter this method.
             super().save(update_fields=["profile_id"])
 
     def __str__(self):
         return f"{self.user.username} {self.surname} ({self.dob_time.strftime('%Y-%m-%d') if self.dob_time else 'DOB not set'})"
+
+
+class ProfileEducation(models.Model):
+    """One qualification. A member may list several.
+
+    The institution is stored twice on purpose: an FK to the catalog when it was
+    picked from the list, and the name denormalised alongside it always.
+
+    - "Other / not listed" has to survive, and a pure FK could only represent it
+      by minting catalog rows from user input - which would pollute everybody
+      else's typeahead with typos and joke entries.
+    - The denormalised name means serialising never joins and never null-checks,
+      and deactivating or merging a catalog row cannot blank someone's profile.
+    """
+
+    MAX_PER_PROFILE = 5
+
+    profile = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="educations"
+    )
+    # Display order, exactly like ProfilePhoto.position. NOT the level order:
+    # someone may want their most recent qualification first regardless of rank.
+    position = models.PositiveSmallIntegerField(default=0)
+
+    level = models.CharField(max_length=40)  # an `educationOptions` value
+    field_of_study = models.CharField(max_length=120, blank=True)
+    country = models.CharField(max_length=2, blank=True)  # ISO-2
+
+    # SET_NULL, never CASCADE: removing reference data must never delete a
+    # member's history.
+    institution = models.ForeignKey(
+        "catalog.Institution",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    institution_name = models.CharField(max_length=200, blank=True)
+    institution_country = models.CharField(max_length=2, blank=True)
+    is_other = models.BooleanField(default=False)
+    # Only meaningful when is_other. The member's own claim that the place is
+    # well regarded; unverified, and ranked accordingly (see education.tier_for).
+    reputation_claimed = models.BooleanField(default=False)
+
+    completion_year = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["position", "id"]
+
+    def __str__(self):
+        return f"{self.level} @ {self.institution_name or 'unspecified'}"
 
 
 class ProfilePhoto(models.Model):

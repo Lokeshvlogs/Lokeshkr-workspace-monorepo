@@ -1,6 +1,7 @@
 from datetime import timedelta
 from typing import List
 
+from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -14,10 +15,6 @@ from .models import Profile, ProfileView
 from .schemas import ProfileUpdateSchema
 
 router = Router(tags=["profiles"])
-
-# A profile below this is still considered "in setup" and is bounced back into
-# the registration wizard after login.
-PROFILE_COMPLETE_THRESHOLD = 95
 
 # Window for the "recent activity" figures on the member dashboard.
 STATS_WINDOW_DAYS = 30
@@ -62,8 +59,12 @@ def validate_sibling_counts(profile: Profile) -> None:
 
 @router.get("/profiles", auth=JWTAuth())
 def profiles_list(request):
-    qs = Profile.objects.exclude(user=request.user).exclude(hide=True).exclude(
-        hide_profile_from_search=True
+    qs = (
+        Profile.objects.exclude(user=request.user)
+        .exclude(hide=True)
+        .exclude(hide_profile_from_search=True)
+        # profile_to_api reads profile.photos per row.
+        .prefetch_related("photos")
     )
     return [profile_to_api(p, request, public=True) for p in qs]
 
@@ -72,7 +73,7 @@ def profiles_list(request):
 def my_profile(request):
     profile = get_object_or_404(Profile, user=request.user)
     data = profile_to_api(profile, request)
-    data["is_complete"] = profile.profile_completeness >= PROFILE_COMPLETE_THRESHOLD
+    data["is_complete"] = profile.is_complete
     return data
 
 
@@ -97,7 +98,16 @@ def matches(request):
     A real compatibility algorithm replaces the ordering here later.
     """
     profile = get_object_or_404(Profile, user=request.user)
-    qs = eligible_matches(profile).order_by("-profile_completeness", "-created_at")[:12]
+    qs = (
+        eligible_matches(profile)
+        # profile_to_api reads profile.photos per row.
+        .prefetch_related("photos")
+        # Verification outranks completeness deliberately. Under today's rule
+        # the two agree, so this costs nothing now - but it is what we want the
+        # day identity checks decouple them, when an ID-verified 96% profile
+        # should beat an unverified 100% one.
+        .order_by("-verification_level", "-profile_completeness", "-created_at")[:12]
+    )
 
     return [profile_to_api(p, request, public=True) for p in qs]
 
@@ -112,6 +122,7 @@ def visitor_card(profile: Profile, request, last_seen) -> dict:
             photo = None
     return {
         "profile_id": profile.profile_id or "",
+        "verification_level": profile.verification_level,
         "first_name": profile.first_name,
         "surname": profile.surname,
         "age": profile.age,
@@ -150,7 +161,8 @@ def profile_visitors(request):
         ProfileView.objects.filter(viewed=profile)
         .exclude(viewer__hide=True)
         .exclude(viewer__hide_profile_from_search=True)
-        .select_related("viewer")[: VISITOR_LIMIT * 20]
+        .select_related("viewer")
+        .prefetch_related("viewer__photos")[: VISITOR_LIMIT * 20]
     )
     for view in views:
         if view.viewer_id not in seen:
@@ -196,17 +208,28 @@ def update_profile_step(request, data: ProfileUpdateSchema):
         raise HttpError(400, "Invalid step value")
 
     profile = get_object_or_404(Profile, user=request.user)
-    apply_payload(profile, payload)
-    validate_sibling_counts(profile)
-    # Profile.save() recomputes completeness and mints profile_id when possible.
-    profile.save()
+
+    # One step already writes the profile row and its gallery, and will soon
+    # write related education rows too. Without a transaction a validation
+    # failure part-way leaves the photos committed and the rest rolled back.
+    with transaction.atomic():
+        try:
+            apply_payload(profile, payload)
+        except ValueError as exc:
+            # apply_payload raises this for a payload whose shape is wrong
+            # (e.g. an object where a list belongs). Silently coercing it is
+            # what produced the current class of write bugs.
+            raise HttpError(400, str(exc)) from exc
+        validate_sibling_counts(profile)
+        # Profile.save() recomputes completeness and mints profile_id when possible.
+        profile.save()
 
     return {
         "success": True,
         "step": step,
         "profile_id": profile.profile_id or "",
         "profile_completeness": profile.profile_completeness,
-        "is_complete": profile.profile_completeness >= PROFILE_COMPLETE_THRESHOLD,
+        "is_complete": profile.is_complete,
     }
 
 

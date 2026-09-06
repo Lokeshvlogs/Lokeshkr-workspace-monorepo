@@ -1,0 +1,224 @@
+# Hand-curated employers, with the domains a work-email check will need.
+#
+# `profession_tags` uses the values from the frontend `professionOptions` list.
+# An empty or absent list means the employer is offered for every profession,
+# which is right for large conglomerates that hire across the board.
+#
+# Tiers here mean employer recognisability, not desirability as a workplace.
+
+- name: Google
+  aliases: [Alphabet, Google India]
+  country: IN
+  industry: Technology
+  tier: 1
+  domains: [google.com]
+  professions: [software_engineer, data_scientist, product_manager, ux_designer, graphic_designer]
+
+- name: Microsoft
+  country: IN
+  industry: Technology
+  tier: 1
+  domains: [microsoft.com]
+  professions: [software_engineer, data_scientist, product_manager]
+
+- name: Amazon
+  country: IN
+  industry: Technology
+  tier: 1
+  domains: [amazon.com]
+  professions: [software_engineer, data_scientist, product_manager]
+
+- name: Tata Consultancy Services
+  aliases: [TCS]
+  country: IN
+  industry: IT Services
+  tier: 2
+  domains: [tcs.com]
+  professions: [software_engineer, consultant]
+
+- name: Infosys
+  country: IN
+  industry: IT Services
+  tier: 2
+  domains: [infosys.com]
+  professions: [software_engineer, consultant]
+
+- name: Wipro
+  country: IN
+  industry: IT Services
+  tier: 2
+  domains: [wipro.com]
+  professions: [software_engineer, consultant]
+
+- name: HCLTech
+  aliases: [HCL Technologies, HCL]
+  country: IN
+  industry: IT Services
+  tier: 2
+  domains: [hcltech.com]
+  professions: [software_engineer, consultant]
+
+- name: Tech Mahindra
+  country: IN
+  industry: IT Services
+  tier: 2
+  domains: [techmahindra.com]
+  professions: [software_engineer, consultant]
+
+- name: Accenture
+  country: IN
+  industry: Consulting
+  tier: 2
+  domains: [accenture.com]
+  professions: [consultant, software_engineer]
+
+- name: Deloitte
+  country: IN
+  industry: Consulting
+  tier: 1
+  domains: [deloitte.com]
+  professions: [consultant, chartered_accountant]
+
+- name: Ernst & Young
+  aliases: [EY]
+  country: IN
+  industry: Consulting
+  tier: 1
+  domains: [ey.com]
+  professions: [consultant, chartered_accountant]
+
+- name: KPMG
+  country: IN
+  industry: Consulting
+  tier: 1
+  domains: [kpmg.com]
+  professions: [consultant, chartered_accountant]
+
+- name: PricewaterhouseCoopers
+  aliases: [PwC]
+  country: IN
+  industry: Consulting
+  tier: 1
+  domains: [pwc.com]
+  professions: [consultant, chartered_accountant]
+
+- name: Reliance Industries
+  aliases: [Reliance]
+  country: IN
+  industry: Conglomerate
+  tier: 1
+  domains: [ril.com]
+
+- name: Tata Group
+  country: IN
+  industry: Conglomerate
+  tier: 1
+  domains: [tata.com]
+
+- name: State Bank of India
+  aliases: [SBI]
+  country: IN
+  industry: Banking
+  tier: 2
+  domains: [sbi.co.in]
+  professions: [banker, government_employee]
+
+- name: HDFC Bank
+  country: IN
+  industry: Banking
+  tier: 2
+  domains: [hdfcbank.com]
+  professions: [banker]
+
+- name: ICICI Bank
+  country: IN
+  industry: Banking
+  tier: 2
+  domains: [icicibank.com]
+  professions: [banker]
+
+- name: Indian Railways
+  country: IN
+  industry: Government
+  tier: 2
+  professions: [government_employee, engineer]
+
+- name: Apollo Hospitals
+  country: IN
+  industry: Healthcare
+  tier: 2
+  domains: [apollohospitals.com]
+  professions: [doctor, nurse]
+
+- name: Fortis Healthcare
+  country: IN
+  industry: Healthcare
+  tier: 2
+  domains: [fortishealthcare.com]
+  professions: [doctor, nurse]
+
+- name: Apple
+  country: US
+  industry: Technology
+  tier: 1
+  domains: [apple.com]
+  professions: [software_engineer, ux_designer, graphic_designer, product_manager]
+
+- name: Meta
+  aliases: [Facebook]
+  country: US
+  industry: Technology
+  tier: 1
+  domains: [meta.com, fb.com]
+  professions: [software_engineer, data_scientist, product_manager]
+
+- name: Goldman Sachs
+  country: US
+  industry: Banking
+  tier: 1
+  domains: [gs.com]
+  professions: [banker, consultant]
+
+- name: JPMorgan Chase
+  aliases: [JP Morgan]
+  country: US
+  industry: Banking
+  tier: 1
+  domains: [jpmorgan.com, jpmchase.com]
+  professions: [banker, consultant]
+
+- name: McKinsey & Company
+  aliases: [McKinsey]
+  country: US
+  industry: Consulting
+  tier: 1
+  domains: [mckinsey.com]
+  professions: [consultant]
+
+- name: National Health Service
+  aliases: [NHS]
+  country: GB
+  industry: Healthcare
+  tier: 1
+  domains: [nhs.uk, nhs.net]
+  professions: [doctor, nurse]
+
+- name: Barclays
+  country: GB
+  industry: Banking
+  tier: 2
+  domains: [barclays.com]
+  professions: [banker]
+
+- name: Shopify
+  country: CA
+  industry: Technology
+  tier: 2
+  domains: [shopify.com]
+  professions: [software_engineer, ux_designer, graphic_designer, product_manager]
+
+- name: Emirates
+  country: AE
+  industry: Aviation
+  tier: 1
+  domains: [emirates.com]

@@ -20,6 +20,7 @@ export async function GET() {
             city: visitor.city ?? '',
             photo: visitor.photo ?? null,
             lastSeen: visitor.last_seen ?? null,
+            verificationLevel: visitor.verification_level ?? 0,
         })),
         { status: 200 },
     )

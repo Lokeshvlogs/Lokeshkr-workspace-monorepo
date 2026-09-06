@@ -5,9 +5,12 @@ export { default as MonthSelector } from './components/common/input/dateselector
 export { default as YearSelector } from './components/common/input/dateselectors/YearSelector';
 export { default as DateRangeSlider } from './components/common/input/dateselectors/daterange/DateRangeSlider';
 export { default as AvatarCropper } from './components/common/media/AvatarCropper';
+export { default as VerifiedBadge, VERIFICATION } from './components/common/media/VerifiedBadge';
 export { default as ChipGroup } from './components/common/input/choice/ChipGroup';
 export type { ChipOption } from './components/common/input/choice/ChipGroup';
 export { default as RangeSlider } from './components/common/input/slider/RangeSlider';
+export { default as DualRangeSlider } from './components/common/input/slider/DualRangeSlider';
+export { default as MultiSelect } from './components/common/input/dropdown/MultiSelect';
 export { default as AgeDropdown } from './components/common/input/dropdown/AgeDropdown';
 export { default as DropdownInput } from './components/common/input/dropdown/DropdownInput';
 export { default as ScrollableDropdown } from './components/common/input/dropdown/ScrollableDropdown';

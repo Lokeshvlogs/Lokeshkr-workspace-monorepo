@@ -10,6 +10,9 @@ from ninja import Schema
 # apps/vivaah4you-web/src/app/Register/constants/RegisterUserOptions.ts.
 ProfileFor = Literal["son", "daughter", "brother", "sister", "self"]
 LookingFor = Literal["bride", "groom"]
+# Who answers the messages. Pre-filled from profile_for on the form, and
+# deliberately never used to derive gender - see apps.profiles.managed_by.
+ManagedBy = Literal["self", "parent", "sibling", "relative", "guardian", "friend"]
 
 
 class RegisterSchema(Schema):
@@ -20,6 +23,8 @@ class RegisterSchema(Schema):
     age: int
     # Only collected when profile_for == "self"; the sign-up form hides it otherwise.
     looking_for: Optional[LookingFor] = None
+    # Optional: defaults from profile_for when the form does not send it.
+    managed_by: Optional[ManagedBy] = None
     country_code: str
     phone: str
     password: str

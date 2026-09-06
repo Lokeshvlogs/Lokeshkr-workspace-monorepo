@@ -3,6 +3,8 @@
 import React from 'react'
 import Link from 'next/link'
 
+import NameWithBadge from '@/components/profile/NameWithBadge'
+
 export type ProfileCardData = {
   /** Present for real profiles; absent for the sample/placeholder cards. */
   profileId?: string
@@ -15,6 +17,8 @@ export type ProfileCardData = {
   details?: string[]
   /** Gallery size, surfaced as a small count over the photo. */
   photoCount?: number
+  /** Drives the verification mark beside the name. */
+  verificationLevel?: number
   /**
    * Opens the profile in place instead of navigating. The card stays a real
    * link either way, so modifier-clicks still open the standalone page.
@@ -40,6 +44,7 @@ export default function ProfileCard({
   headline,
   details = [],
   photoCount = 0,
+  verificationLevel = 0,
   onOpen,
 }: ProfileCardData) {
   const href = profileId ? `/profile/${profileId}` : undefined
@@ -85,9 +90,10 @@ export default function ProfileCard({
       {/* Name sits on the photo behind a gradient rather than a floating chip,
           so it stays legible over a light image without hiding it. */}
       <div className="card-scrim">
-        <p className="card-name">
-          {name}
-          {age ? <span className="card-age">{age}</span> : null}
+        <p>
+          <NameWithBadge name={name} level={verificationLevel} size="sm" className="card-name">
+            {age ? <span className="card-age">{age}</span> : null}
+          </NameWithBadge>
         </p>
         {location && (
           <p className="card-location">

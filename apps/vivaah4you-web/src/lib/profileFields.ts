@@ -15,6 +15,7 @@ import {
   feetOptions,
   inchOptions,
   physiqueOptions,
+  routineOptions,
   smokingOptions,
 } from '@/constants/selectOptions/person'
 import { COUNTRY_OPTIONS } from '@/constants/selectOptions/places'
@@ -26,18 +27,18 @@ import {
   religiosityDetailOptions,
 } from '@/constants/selectOptions/beliefs'
 import {
-  ANY_OPTION,
   PARTNER_AGE_OPTIONS,
-  PARTNER_COUNTRY_OPTIONS,
-  PARTNER_DIET_OPTIONS,
-  PARTNER_EDUCATION_OPTIONS,
+  PARTNER_COUNTRY_CHOICES,
+  PARTNER_DIET_CHOICES,
+  PARTNER_EDUCATION_CHOICES,
   PARTNER_HEIGHT_OPTIONS,
-  PARTNER_MARITAL_OPTIONS,
-  PARTNER_MOTHER_TONGUE_OPTIONS,
-  PARTNER_PROFESSION_OPTIONS,
-  PARTNER_RELIGION_OPTIONS,
+  PARTNER_MARITAL_CHOICES,
+  PARTNER_MOTHER_TONGUE_CHOICES,
+  PARTNER_PROFESSION_CHOICES,
+  PARTNER_RELIGION_CHOICES,
 } from '@/constants/selectOptions/partner'
 import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from '@/lib/profileDisplay'
+import { INTEREST_CATEGORIES } from '@/constants/selectOptions/interests'
 import type { PublicProfile } from '@/types/profile'
 
 /**
@@ -49,8 +50,11 @@ import type { PublicProfile } from '@/types/profile'
  * wizard cannot drift apart on which control a field uses.
  */
 export type EditorKind =
+  /** Shown, never editable here - a value derived from something else. */
+  | 'readonly'
   | 'text'
   | 'select'
+  | 'multiselect'
   | 'chips'
   | 'textarea'
   | 'bool'
@@ -97,6 +101,13 @@ const MANGLIK_OPTIONS: SelectOption[] = [
   { value: '3', label: 'Yes' },
 ]
 
+/** Mirrors the wizard's list; "" stays distinguishable from an explicit "no". */
+const YES_NO_MAYBE_OPTIONS: SelectOption[] = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'open', label: 'Open to it' },
+  { value: 'no', label: 'No' },
+]
+
 const FAMILY_TYPE_OPTIONS: SelectOption[] = [
   { value: '0', label: 'Nuclear' },
   { value: '1', label: 'Joint' },
@@ -111,8 +122,25 @@ export const SECTIONS = [
   'Education & Career',
   'Family',
   'Lifestyle',
+  'Interests',
   'Partner Preference',
 ] as const
+
+/**
+ * Communities across every religion a member is open to.
+ *
+ * Community values are namespaced per religion, so several religions means
+ * several lists concatenated - de-duplicated, because a handful of values
+ * appear under more than one.
+ */
+function communitiesForAny(religions: string[] | undefined): SelectOption[] {
+  const seen = new Set<string>()
+  return (religions ?? []).flatMap((religion) =>
+    communitiesFor(religion).filter((option) =>
+      seen.has(option.value) ? false : (seen.add(option.value), true),
+    ),
+  )
+}
 
 export const PROFILE_FIELDS: ProfileFieldDef[] = [
   // ---- About (step 0) ----
@@ -182,9 +210,19 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'placeOfBirthCity', label: 'Born in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.placeOfBirthCountry) },
 
   // ---- Education & Career (step 2) ----
-  { key: 'educationLevel', label: 'Education', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: educationOptions },
-  { key: 'fieldOfStudy', label: 'Field of study', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: fieldOfStudyOptions },
-  { key: 'collegeUniversity', label: 'College', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: collegeOptions },
+  // educationLevel / fieldOfStudy / collegeUniversity are DERIVED from the
+  // education rows, so they are shown read-only here and edited in the wizard.
+  // Offering a pencil on them would let an inline edit be silently overwritten
+  // the next time the education step is saved.
+  { key: 'educationLevel', label: 'Education', section: 'Education & Career', step: 2, editor: 'readonly', options: educationOptions },
+  { key: 'fieldOfStudy', label: 'Field of study', section: 'Education & Career', step: 2, editor: 'readonly', options: fieldOfStudyOptions },
+  { key: 'collegeUniversity', label: 'College', section: 'Education & Career', step: 2, editor: 'readonly' },
+  // employerName mirrors the education fields: written through the wizard's
+  // picker, which resolves it against the catalog, so no pencil here.
+  { key: 'employerName', label: 'Employer', section: 'Education & Career', step: 2, editor: 'readonly' },
+  { key: 'workCountry', label: 'Works in', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: COUNTRY_OPTIONS },
+  { key: 'visaStatus', label: 'Residency status', section: 'Education & Career', step: 2, editor: 'readonly' },
+  { key: 'settleAbroad', label: 'Settling abroad', section: 'Education & Career', step: 2, editor: 'chips', options: YES_NO_MAYBE_OPTIONS },
   { key: 'profession', label: 'Profession', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: professionOptions },
   { key: 'employedIn', label: 'Employed in', section: 'Education & Career', step: 2, editor: 'select', options: employedInOptions },
   { key: 'employedAs', label: 'Employed as', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: employedAsOptions },
@@ -201,20 +239,36 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'diet', label: 'Diet', section: 'Lifestyle', step: 4, editor: 'select', options: dietOptions },
   { key: 'smoking', label: 'Smoking', section: 'Lifestyle', step: 4, editor: 'select', options: smokingOptions },
   { key: 'drinking', label: 'Drinking', section: 'Lifestyle', step: 4, editor: 'select', options: drinkingOptions },
+  { key: 'dailyRoutine', label: 'Rhythm', section: 'Lifestyle', step: 4, editor: 'chips', options: routineOptions },
+
+  // ---- Interests (step 4) ----
+  ...INTEREST_CATEGORIES.map((category) => ({
+    key: category.key,
+    label: category.label,
+    section: 'Interests',
+    step: 4,
+    editor: 'multiselect' as EditorKind,
+    searchable: true,
+    options: category.options as SelectOption[],
+  })),
+  { key: 'interestsOther', label: 'More about me', section: 'Interests', step: 4, editor: 'textarea' },
 
   // ---- Partner preference (step 5, all optional) ----
   { key: 'partnerAgeMin', label: 'Age from', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_AGE_OPTIONS },
   { key: 'partnerAgeMax', label: 'Age to', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_AGE_OPTIONS },
   { key: 'partnerHeightMin', label: 'Height from', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_HEIGHT_OPTIONS },
   { key: 'partnerHeightMax', label: 'Height to', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_HEIGHT_OPTIONS },
-  { key: 'partnerMaritalStatus', label: 'Marital status', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_MARITAL_OPTIONS },
-  { key: 'partnerReligion', label: 'Religion', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_RELIGION_OPTIONS, resets: ['partnerCommunity'] },
-  { key: 'partnerCommunity', label: 'Community', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, optionsFor: (p) => [ANY_OPTION, ...communitiesFor(p.partnerReligion)] },
-  { key: 'partnerMotherTongue', label: 'Mother tongue', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_MOTHER_TONGUE_OPTIONS },
-  { key: 'partnerCountry', label: 'Country', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_COUNTRY_OPTIONS },
-  { key: 'partnerEducation', label: 'Education', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_EDUCATION_OPTIONS },
-  { key: 'partnerProfession', label: 'Profession', section: 'Partner Preference', step: 5, editor: 'select', searchable: true, options: PARTNER_PROFESSION_OPTIONS },
-  { key: 'partnerDiet', label: 'Diet', section: 'Partner Preference', step: 5, editor: 'select', options: PARTNER_DIET_OPTIONS },
+  // Multi-value from here on; these mirror the wizard's step 5 exactly. The
+  // singular partnerXxx keys still exist on the payload for one release but are
+  // no longer edited anywhere, so nothing can write the two out of agreement.
+  { key: 'partnerMaritalStatuses', label: 'Marital status', section: 'Partner Preference', step: 5, editor: 'multiselect', options: PARTNER_MARITAL_CHOICES },
+  { key: 'partnerReligions', label: 'Religion', section: 'Partner Preference', step: 5, editor: 'multiselect', options: PARTNER_RELIGION_CHOICES, resets: ['partnerCommunities'] },
+  { key: 'partnerCommunities', label: 'Community', section: 'Partner Preference', step: 5, editor: 'multiselect', searchable: true, optionsFor: (p) => communitiesForAny(p.partnerReligions) },
+  { key: 'partnerMotherTongues', label: 'Mother tongue', section: 'Partner Preference', step: 5, editor: 'multiselect', searchable: true, options: PARTNER_MOTHER_TONGUE_CHOICES },
+  { key: 'partnerCountries', label: 'Country', section: 'Partner Preference', step: 5, editor: 'multiselect', searchable: true, options: PARTNER_COUNTRY_CHOICES },
+  { key: 'partnerEducations', label: 'Education', section: 'Partner Preference', step: 5, editor: 'multiselect', searchable: true, options: PARTNER_EDUCATION_CHOICES },
+  { key: 'partnerProfessions', label: 'Profession', section: 'Partner Preference', step: 5, editor: 'multiselect', searchable: true, options: PARTNER_PROFESSION_CHOICES },
+  { key: 'partnerDiets', label: 'Diet', section: 'Partner Preference', step: 5, editor: 'multiselect', options: PARTNER_DIET_CHOICES },
   { key: 'partnerAbout', label: 'Looking for', section: 'Partner Preference', step: 5, editor: 'textarea' },
 ]
 

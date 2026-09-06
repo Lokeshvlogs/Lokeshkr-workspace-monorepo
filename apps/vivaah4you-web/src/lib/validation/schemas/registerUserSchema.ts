@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { PROFILE_FOR_VALUES, LOOKING_FOR_VALUES } from "@/app/Register/constants/RegisterUserOptions"
+import { PROFILE_FOR_VALUES, LOOKING_FOR_VALUES, MANAGED_BY_VALUES } from "@/app/Register/constants/RegisterUserOptions"
 import { COUNTRY_DIAL_CODES } from "@/constants/selectOptions/places"
 
 const emptyToUndefined = (val: unknown) => {
@@ -36,6 +36,8 @@ export const registerFieldSchema = z.object({
   // Only asked when the profile is the user's own - the cross-field rule below
   // enforces it for profile_for === "self" and leaves it optional otherwise.
   looking_for: z.preprocess(emptyToUndefined, z.enum(LOOKING_FOR_VALUES).optional()),
+  // Optional: the server derives it from profile_for when absent.
+  managed_by: z.preprocess(emptyToUndefined, z.enum(MANAGED_BY_VALUES).optional()),
 
   country_code: z.preprocess(emptyToUndefined, z.enum(Object.keys(COUNTRY_DIAL_CODES)).optional().refine((val) => val !== undefined, {
     message: "Please select a country",

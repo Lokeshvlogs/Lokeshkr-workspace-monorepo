@@ -5,6 +5,8 @@ import Link from 'next/link'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import PhotoStrip from '@/components/profile/PhotoStrip'
+import Avatar from '@/components/profile/Avatar'
+import NameWithBadge from '@/components/profile/NameWithBadge'
 import { formatHeight, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
 import { iconFor } from '@/lib/profileIcons'
 import type { MyProfile } from '@/types/profile'
@@ -42,19 +44,21 @@ export default function MyProfileView({ profile, onSave }: Props) {
   return (
     <div className="flex flex-col gap-5">
       <section className="profile-hero">
-        {profile.photo ? (
-          // Avatars are user uploads of unknown size.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.photo} alt="" className="profile-hero-avatar" />
-        ) : (
-          <span className="profile-hero-avatar profile-hero-avatar-initial" aria-hidden="true">
-            {name.charAt(0).toUpperCase()}
-          </span>
-        )}
+        <Avatar src={profile.photo} name={name} className="profile-hero-avatar" decorative />
 
         <div className="min-w-0 flex-1">
-          <h2 className="profile-hero-name">{name}</h2>
+          <h2>
+            <NameWithBadge
+              name={name}
+              level={profile.verification_level}
+              size="lg"
+              className="profile-hero-name"
+            />
+          </h2>
           {profile.profile_id && <p className="profile-hero-id">{profile.profile_id}</p>}
+          {profile.managedByLabel && (
+            <p className="managed-by">{profile.managedByLabel}</p>
+          )}
 
           <ul className="profile-chips">
             <HeroChip fieldKey="age" label="Age" value={profile.age ? `${profile.age} yrs` : ''} />

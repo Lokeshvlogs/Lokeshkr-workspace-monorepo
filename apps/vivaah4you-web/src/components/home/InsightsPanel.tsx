@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { VerifiedBadge } from '@lokesh-workspace/ui'
+
+import Avatar from '@/components/profile/Avatar'
 
 export interface MemberStats {
   windowDays: number
@@ -20,6 +23,7 @@ interface Visitor {
   city: string
   photo: string | null
   lastSeen: string | null
+  verificationLevel?: number
 }
 
 /** "3 days ago" from an ISO timestamp, without pulling in a date library. */
@@ -97,18 +101,17 @@ export default function InsightsPanel({ stats, loading, onOpenProfile }: Insight
                     onOpenProfile(visitor.profileId)
                   }}
                 >
-                  {visitor.photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={visitor.photo} alt="" className="visitor-avatar" />
-                  ) : (
-                    <span className="visitor-avatar visitor-avatar-initial" aria-hidden="true">
-                      {(visitor.name || '?').charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  <Avatar
+                    src={visitor.photo}
+                    name={visitor.name || 'Vivah4U member'}
+                    className="visitor-avatar"
+                    decorative
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="visitor-name">
                       {visitor.name || 'Vivah4U member'}
                       {visitor.age ? `, ${visitor.age}` : ''}
+                      <VerifiedBadge level={(visitor.verificationLevel ?? 0) as 0 | 1 | 2 | 3} size="sm" />
                     </span>
                     <span className="visitor-meta">
                       {[visitor.city, relativeTime(visitor.lastSeen)].filter(Boolean).join(' · ')}

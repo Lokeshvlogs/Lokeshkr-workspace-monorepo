@@ -55,9 +55,29 @@ interface Props {
   typeahead?: boolean;
   /** Milliseconds before the typed prefix resets. */
   typeaheadTimeout?: number;
+  /**
+   * Lift the current selection to the top of the list, so reopening a long
+   * dropdown shows what is already chosen instead of scrolling to find it.
+   *
+   * Turn this OFF wherever the order itself carries meaning - height in feet,
+   * sibling counts, any numeric ladder - because moving one rung out of
+   * sequence reads as broken rather than helpful.
+   */
+  selectedFirst?: boolean;
+  /**
+   * Called as the member types, for lists too large to ship to the browser.
+   *
+   * Providing it makes the search server-driven: the local substring filter is
+   * skipped, because `options` is already the answer to the current term and
+   * filtering it again would drop rows the server matched on something not in
+   * the label (an alias, say).
+   */
+  onSearchChange?: (term: string) => void;
+  /** Shown in place of the empty state while a server search is in flight. */
+  loading?: boolean;
 }
 
-export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName, zIndex = 10, searchable = false, emptyText = 'No options found', typeahead = true, typeaheadTimeout = 800 }: Props) {
+export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName, zIndex = 10, searchable = false, emptyText = 'No options found', typeahead = true, typeaheadTimeout = 800, selectedFirst = true, onSearchChange, loading = false }: Props) {
   
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -67,6 +87,8 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
   const popupRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
+  /** The selection the option order is frozen against while the popup is open. */
+  const [pinnedValue, setPinnedValue] = useState<any>(undefined);
   const typedRef = useRef<string>('');
   const typedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -163,9 +185,28 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
     if (typedTimer.current) clearTimeout(typedTimer.current);
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    const selectedIdx = options.findIndex(o => o.value === value);
+  // A layout effect, not a passive one. The positioning effect above sets
+  // popupStyle, which is what makes the popup render at all - if the pin were
+  // set passively it would land one commit later, so the list would paint in
+  // its natural order and then visibly reshuffle.
+  useLayoutEffect(() => {
+    if (!open) {
+      setPinnedValue(undefined);
+      return;
+    }
+
+    // Freeze the selection the list is ordered around for as long as it is
+    // open, so choosing a row cannot reshuffle the rows beneath the cursor.
+    setPinnedValue(value);
+
+    // With selectedFirst the chosen row is index 0 by construction. Without it,
+    // find it in the list actually being rendered: the old code searched the
+    // raw `options`, which for a searchable field could return an index that
+    // does not exist in the filtered list.
+    const selectedIdx = selectedFirst
+      ? (value === undefined || value === null || value === '' ? -1 : 0)
+      : uniqueOptions.findIndex(o => o.value === value);
+
     setActiveIndex(selectedIdx);
     if (selectedIdx >= 0) requestAnimationFrame(() => scrollOptionIntoView(selectedIdx));
   }, [open]);
@@ -201,10 +242,40 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
     });
   }, [options]);
 
-  const visibleOptions = searchable && search
-    ? uniqueOptions.filter(o =>
+  /**
+   * The selected option lifted to the top of the list.
+   *
+   * Ordered against `pinnedValue` - the selection captured when the popup
+   * opened - rather than the live `value`. Reordering while the list is on
+   * screen would shift every row under the cursor, and because hovering a row
+   * sets `activeIndex`, the keyboard highlight would jump with it.
+   *
+   * Runs after the de-dupe (pinning a duplicate would pin an unreachable row)
+   * and before the search filter, so it only ever reorders the rows a search
+   * has already kept - a selected row that does not match the query stays
+   * hidden, which is what a reader expects.
+   */
+  const orderedOptions = useMemo(() => {
+    if (!selectedFirst || pinnedValue === undefined || pinnedValue === null || pinnedValue === '') {
+      return uniqueOptions;
+    }
+    const index = uniqueOptions.findIndex(o => o.value === pinnedValue);
+    if (index <= 0) return uniqueOptions;
+    const picked = uniqueOptions[index];
+    return [picked, ...uniqueOptions.slice(0, index), ...uniqueOptions.slice(index + 1)];
+  }, [uniqueOptions, pinnedValue, selectedFirst]);
+
+  // With a server-driven search, `options` IS the result for the current term;
+  // re-filtering locally would discard rows matched on an alias or a city that
+  // never appears in the label.
+  const visibleOptions = searchable && search && !onSearchChange
+    ? orderedOptions.filter(o =>
         `${o.label ?? ''} ${o.extra_label ?? ''}`.toLowerCase().includes(search.toLowerCase()))
-    : uniqueOptions;
+    : orderedOptions;
+
+  /** Whether a row is the pinned one sitting out of its natural position. */
+  const isPinnedRow = (index: number, optionValue: any) =>
+    selectedFirst && !search && index === 0 && optionValue === pinnedValue && pinnedValue !== '';
 
   /** Text a typed prefix is matched against, most human-readable first. */
   function searchableTextsFor(option: any): string[] {
@@ -384,7 +455,10 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
                 className="select-search-input"
                 placeholder={`Search ${label.toLowerCase()}...`}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  onSearchChange?.(e.target.value);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     setOpen(false);
@@ -407,7 +481,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
               passed behind the search header cannot be drawn above it. */}
           <div ref={listRef} role="listbox" aria-label={label} className="select-options">
           {visibleOptions.length === 0 && (
-            <div className="select-empty">{emptyText}</div>
+            <div className="select-empty">{loading ? 'Searching…' : emptyText}</div>
           )}
           {visibleOptions.map((option, index) => {
             const isSelected = value === option.value;
@@ -417,7 +491,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
                 data-option-index={index}
                 role="option"
                 aria-selected={isSelected}
-                className={`select-option ${isSelected ? 'select-selected-option' : ''} ${index === activeIndex ? 'select-option-active' : ''}`}
+                className={`select-option ${isSelected ? 'select-selected-option' : ''} ${index === activeIndex ? 'select-option-active' : ''} ${isPinnedRow(index, option.value) ? 'select-option-pinned' : ''}`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => doSelect(option)}
               >

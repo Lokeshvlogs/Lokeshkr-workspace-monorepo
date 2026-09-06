@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import {
+  Activity,
   Baby,
   Banknote,
   BookOpen,
@@ -9,6 +10,7 @@ import {
   CalendarDays,
   Cigarette,
   Dumbbell,
+  Film,
   Flame,
   Globe2,
   GraduationCap,
@@ -17,6 +19,9 @@ import {
   Landmark,
   Languages,
   MapPin,
+  Music,
+  Palette,
+  Plane,
   Ruler,
   School,
   Sparkles,
@@ -90,6 +95,25 @@ export const FIELD_ICONS: Record<string, FieldIcon> = {
   diet: Utensils,
   smoking: Cigarette,
   drinking: Wine,
+  dailyRoutine: Activity,
+
+  // Interests
+  interestsMusic: Music,
+  interestsMovies: Film,
+  interestsBooks: BookOpen,
+  interestsCuisines: Utensils,
+  interestsTravel: Plane,
+  interestsHobbies: Palette,
+  // interestsOther is free text under its own heading - no icon.
+
+  employerName: Building2,
+  workCountry: Globe2,
+  visaStatus: Landmark,
+
+  // Career extras
+  settleAbroad: Plane,
+  partnerSettleAbroad: Plane,
+  partnerRelocateAfterMarriage: Home,
 
   // Partner preference reuses the icon of the field it constrains.
   partnerAgeMin: Cake,

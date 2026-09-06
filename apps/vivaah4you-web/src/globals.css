@@ -15,6 +15,10 @@
   --color-success: #22c55e;
   --color-placeholder-text: #6b7280;
   --color-primary-text: #111827;
+  /* Verification marks. Kept distinct from each other on purpose: the blue is
+     reserved for a real identity check so it never comes to mean "complete". */
+  --color-verified-complete: #94a3b8;
+  --color-verified-id: #1d9bf0;
 }
 
 html,

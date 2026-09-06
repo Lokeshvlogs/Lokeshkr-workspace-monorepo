@@ -82,6 +82,46 @@ class ProfileUpdateSchema(Schema):
     partnerDiet: Optional[str] = None
     partnerAbout: Optional[str] = None
 
+    # Multi-value partner preferences. An empty list is a real answer ("no
+    # preference"), which is why these are distinct from the singular keys
+    # above rather than replacing them in place.
+    partnerMaritalStatuses: Optional[List[str]] = None
+    partnerReligions: Optional[List[str]] = None
+    partnerCommunities: Optional[List[str]] = None
+    partnerMotherTongues: Optional[List[str]] = None
+    partnerCountries: Optional[List[str]] = None
+    partnerEducations: Optional[List[str]] = None
+    partnerProfessions: Optional[List[str]] = None
+    partnerDiets: Optional[List[str]] = None
+
+    interestsMusic: Optional[List[str]] = None
+    interestsMovies: Optional[List[str]] = None
+    interestsBooks: Optional[List[str]] = None
+    interestsCuisines: Optional[List[str]] = None
+    interestsTravel: Optional[List[str]] = None
+    interestsHobbies: Optional[List[str]] = None
+    interestsOther: Optional[str] = None
+    dailyRoutine: Optional[str] = None
+
+    employerSlug: Optional[str] = None
+    employerName: Optional[str] = None
+    workCountry: Optional[str] = None
+    visaStatus: Optional[str] = None
+
+    managedBy: Optional[str] = None
+    settleAbroad: Optional[str] = None
+    # Lists: a member may accept several answers, and every one selected is
+    # matched against. Empty means no preference.
+    partnerRelocateAfterMarriage: Optional[List[str]] = None
+    partnerSettleAbroad: Optional[List[str]] = None
+
+    # The complete desired education history - omitting a row deletes it, the
+    # same contract `photos` uses. Entries are validated in mapping.py rather
+    # than here so the institution slug can be resolved against the catalog in
+    # the same pass.
+    educations: Optional[List[dict]] = None
+    achievements: Optional[List[dict]] = None
+
     # Step 3 - lifestyle and preferences
     diet: Optional[str] = None
     smoking: Optional[str] = None

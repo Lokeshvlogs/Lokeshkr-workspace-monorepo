@@ -46,7 +46,9 @@ export default function ProfileDetails({
   }
 
   const renderRow = (def: ProfileFieldDef) => {
-    if (editable && onSave) {
+    // Derived values have no pencil even for the owner: the wizard step that
+    // produces them would overwrite an inline edit on its next save.
+    if (editable && onSave && def.editor !== 'readonly') {
       return <EditableField key={def.key} def={def} profile={profile} onSave={onSave} />
     }
     return (

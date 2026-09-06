@@ -5,6 +5,8 @@ import React, { useEffect, useState } from 'react'
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
+import Avatar from '@/components/profile/Avatar'
+import NameWithBadge from '@/components/profile/NameWithBadge'
 import { compareProfiles } from '@/lib/compatibility'
 import { fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
 import type { MyProfile, PublicProfile } from '@/types/profile'
@@ -107,20 +109,22 @@ export default function MatchProfileView({ profileId, me, onBack }: Props) {
       {backBar}
 
       <section className="profile-hero">
-        {profile.photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.photo} alt={name} className="profile-hero-avatar" />
-        ) : (
-          <span className="profile-hero-avatar profile-hero-avatar-initial" aria-hidden="true">
-            {name.charAt(0).toUpperCase()}
-          </span>
-        )}
+        <Avatar src={profile.photo} name={name} className="profile-hero-avatar" />
 
         <div className="min-w-0 flex-1">
-          <h2 className="profile-hero-name">
-            {name}
-            {profile.age ? <span className="profile-hero-age">{profile.age}</span> : null}
+          <h2>
+            <NameWithBadge
+              name={name}
+              level={profile.verification_level}
+              size="lg"
+              className="profile-hero-name"
+            >
+              {profile.age ? <span className="profile-hero-age">{profile.age}</span> : null}
+            </NameWithBadge>
           </h2>
+          {profile.managedByLabel && (
+            <p className="managed-by">{profile.managedByLabel}</p>
+          )}
           <p className="profile-hero-sub">
             {[
               labelFor('profession', profile.profession),

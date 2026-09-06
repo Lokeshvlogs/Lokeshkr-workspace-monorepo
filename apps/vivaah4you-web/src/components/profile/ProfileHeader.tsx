@@ -2,6 +2,8 @@
 
 import React, { ReactNode } from 'react'
 
+import Avatar from '@/components/profile/Avatar'
+import NameWithBadge from '@/components/profile/NameWithBadge'
 import { formatHeight, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
 import type { PublicProfile } from '@/types/profile'
 
@@ -24,21 +26,28 @@ export default function ProfileHeader({ profile, actions }: Props) {
   return (
     <div className="flex flex-col items-center gap-5 rounded-2xl border border-color-border bg-white p-6 sm:flex-row sm:items-start">
       <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-pink-100 bg-pink-50">
-        {profile.photo ? (
-          // Remote/base64 avatars of unknown dimensions - plain img keeps this simple.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.photo} alt={name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-color-primary">
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <Avatar
+          src={profile.photo}
+          name={name}
+          className="h-full w-full object-cover"
+          initialClassName="flex items-center justify-center text-3xl font-semibold text-color-primary"
+        />
       </div>
 
       <div className="flex-1 text-center sm:text-left">
-        <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
+        <h1>
+          <NameWithBadge
+            name={name}
+            level={profile.verification_level}
+            size="lg"
+            className="inline-flex items-center gap-2 text-2xl font-bold text-gray-900"
+          />
+        </h1>
         {profile.profile_id && (
           <p className="mt-0.5 font-mono text-xs text-color-placeholder-text">{profile.profile_id}</p>
+        )}
+        {profile.managedByLabel && (
+          <p className="managed-by">{profile.managedByLabel}</p>
         )}
         <p className="mt-2 text-sm text-gray-600">{summary.join('  ·  ')}</p>
       </div>

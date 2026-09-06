@@ -1,0 +1,354 @@
+# Hand-curated institution tiers.
+#
+# This file is the authority: `seed_catalog` writes reputation_source="curated"
+# for everything here, and a later bulk import refuses to overwrite that. Bulk
+# sources fill in the long tail at tier 9 (UNRANKED); this file supplies the
+# judgement calls.
+#
+# Tiers: 1 elite, 2 strong, 3 standard, 4 basic. See ReputationTier.
+#
+# QS and THE rankings are NOT redistributable, so international tiers here are
+# our own editorial judgement based on general recognition, not a copied table.
+# Indian tiers follow NIRF rank bands, which are published openly.
+
+- name: Indian Institute of Technology Bombay
+  aliases: [IIT Bombay, IITB]
+  country: IN
+  city: Mumbai
+  kind: institute
+  tier: 1
+  domains: [iitb.ac.in]
+
+- name: Indian Institute of Technology Delhi
+  aliases: [IIT Delhi, IITD]
+  country: IN
+  city: New Delhi
+  kind: institute
+  tier: 1
+  domains: [iitd.ac.in]
+
+- name: Indian Institute of Technology Madras
+  aliases: [IIT Madras, IITM]
+  country: IN
+  city: Chennai
+  kind: institute
+  tier: 1
+  domains: [iitm.ac.in]
+
+- name: Indian Institute of Technology Kanpur
+  aliases: [IIT Kanpur, IITK]
+  country: IN
+  city: Kanpur
+  kind: institute
+  tier: 1
+  domains: [iitk.ac.in]
+
+- name: Indian Institute of Technology Kharagpur
+  aliases: [IIT Kharagpur, IITKGP]
+  country: IN
+  city: Kharagpur
+  kind: institute
+  tier: 1
+  domains: [iitkgp.ac.in]
+
+- name: Indian Institute of Science
+  aliases: [IISc, IISc Bangalore]
+  country: IN
+  city: Bengaluru
+  kind: institute
+  tier: 1
+  domains: [iisc.ac.in]
+
+- name: Indian Institute of Management Ahmedabad
+  aliases: [IIM Ahmedabad, IIMA]
+  country: IN
+  city: Ahmedabad
+  kind: institute
+  tier: 1
+  domains: [iima.ac.in]
+
+- name: Indian Institute of Management Bangalore
+  aliases: [IIM Bangalore, IIMB]
+  country: IN
+  city: Bengaluru
+  kind: institute
+  tier: 1
+  domains: [iimb.ac.in]
+
+- name: Indian Institute of Management Calcutta
+  aliases: [IIM Calcutta, IIMC]
+  country: IN
+  city: Kolkata
+  kind: institute
+  tier: 1
+  domains: [iimcal.ac.in]
+
+- name: All India Institute of Medical Sciences Delhi
+  aliases: [AIIMS Delhi, AIIMS]
+  country: IN
+  city: New Delhi
+  kind: institute
+  tier: 1
+  domains: [aiims.edu]
+
+- name: Indian School of Business
+  aliases: [ISB, ISB Hyderabad]
+  country: IN
+  city: Hyderabad
+  kind: institute
+  tier: 1
+  domains: [isb.edu]
+
+- name: National Law School of India University
+  aliases: [NLSIU, National Law School]
+  country: IN
+  city: Bengaluru
+  kind: university
+  tier: 1
+  domains: [nls.ac.in]
+
+- name: Birla Institute of Technology and Science Pilani
+  aliases: [BITS Pilani, BITS]
+  country: IN
+  city: Pilani
+  kind: institute
+  tier: 2
+  domains: [bits-pilani.ac.in]
+
+- name: Delhi Technological University
+  aliases: [DTU, Delhi College of Engineering]
+  country: IN
+  city: New Delhi
+  kind: university
+  tier: 2
+  domains: [dtu.ac.in]
+
+- name: Vellore Institute of Technology
+  aliases: [VIT, VIT Vellore]
+  country: IN
+  city: Vellore
+  kind: institute
+  tier: 2
+  domains: [vit.ac.in]
+
+- name: Manipal Academy of Higher Education
+  aliases: [Manipal University, MAHE]
+  country: IN
+  city: Manipal
+  kind: university
+  tier: 2
+  domains: [manipal.edu]
+
+- name: University of Delhi
+  aliases: [Delhi University, DU]
+  country: IN
+  city: New Delhi
+  kind: university
+  tier: 2
+  domains: [du.ac.in]
+
+- name: Jawaharlal Nehru University
+  aliases: [JNU]
+  country: IN
+  city: New Delhi
+  kind: university
+  tier: 2
+  domains: [jnu.ac.in]
+
+- name: University of Mumbai
+  aliases: [Mumbai University]
+  country: IN
+  city: Mumbai
+  kind: university
+  tier: 2
+  domains: [mu.ac.in]
+
+- name: Anna University
+  country: IN
+  city: Chennai
+  kind: university
+  tier: 2
+  domains: [annauniv.edu]
+
+- name: SRM Institute of Science and Technology
+  aliases: [SRM University, SRM]
+  country: IN
+  city: Chennai
+  kind: institute
+  tier: 3
+  domains: [srmist.edu.in]
+
+- name: Amity University
+  country: IN
+  city: Noida
+  kind: university
+  tier: 3
+  domains: [amity.edu]
+
+# ---- International ----
+
+- name: Massachusetts Institute of Technology
+  aliases: [MIT]
+  country: US
+  city: Cambridge
+  kind: institute
+  tier: 1
+  domains: [mit.edu]
+
+- name: Stanford University
+  aliases: [Stanford]
+  country: US
+  city: Stanford
+  kind: university
+  tier: 1
+  domains: [stanford.edu]
+
+- name: Harvard University
+  aliases: [Harvard]
+  country: US
+  city: Cambridge
+  kind: university
+  tier: 1
+  domains: [harvard.edu]
+
+- name: Carnegie Mellon University
+  aliases: [CMU]
+  country: US
+  city: Pittsburgh
+  kind: university
+  tier: 1
+  domains: [cmu.edu]
+
+- name: University of California, Berkeley
+  aliases: [UC Berkeley, Berkeley]
+  country: US
+  city: Berkeley
+  kind: university
+  tier: 1
+  domains: [berkeley.edu]
+
+- name: Georgia Institute of Technology
+  aliases: [Georgia Tech]
+  country: US
+  city: Atlanta
+  kind: institute
+  tier: 2
+  domains: [gatech.edu]
+
+- name: University of Texas at Austin
+  aliases: [UT Austin]
+  country: US
+  city: Austin
+  kind: university
+  tier: 2
+  domains: [utexas.edu]
+
+- name: University of Oxford
+  aliases: [Oxford]
+  country: GB
+  city: Oxford
+  kind: university
+  tier: 1
+  domains: [ox.ac.uk]
+
+- name: University of Cambridge
+  aliases: [Cambridge]
+  country: GB
+  city: Cambridge
+  kind: university
+  tier: 1
+  domains: [cam.ac.uk]
+
+- name: Imperial College London
+  aliases: [Imperial]
+  country: GB
+  city: London
+  kind: college
+  tier: 1
+  domains: [imperial.ac.uk]
+
+- name: London School of Economics and Political Science
+  aliases: [LSE]
+  country: GB
+  city: London
+  kind: college
+  tier: 1
+  domains: [lse.ac.uk]
+
+- name: University College London
+  aliases: [UCL]
+  country: GB
+  city: London
+  kind: college
+  tier: 2
+  domains: [ucl.ac.uk]
+
+- name: University of Toronto
+  aliases: [UofT]
+  country: CA
+  city: Toronto
+  kind: university
+  tier: 1
+  domains: [utoronto.ca]
+
+- name: University of Waterloo
+  aliases: [Waterloo]
+  country: CA
+  city: Waterloo
+  kind: university
+  tier: 1
+  domains: [uwaterloo.ca]
+
+- name: University of British Columbia
+  aliases: [UBC]
+  country: CA
+  city: Vancouver
+  kind: university
+  tier: 2
+  domains: [ubc.ca]
+
+- name: University of Melbourne
+  country: AU
+  city: Melbourne
+  kind: university
+  tier: 1
+  domains: [unimelb.edu.au]
+
+- name: University of Sydney
+  country: AU
+  city: Sydney
+  kind: university
+  tier: 1
+  domains: [sydney.edu.au]
+
+- name: National University of Singapore
+  aliases: [NUS]
+  country: SG
+  city: Singapore
+  kind: university
+  tier: 1
+  domains: [nus.edu.sg]
+
+- name: Nanyang Technological University
+  aliases: [NTU, NTU Singapore]
+  country: SG
+  city: Singapore
+  kind: university
+  tier: 1
+  domains: [ntu.edu.sg]
+
+- name: Technical University of Munich
+  aliases: [TUM]
+  country: DE
+  city: Munich
+  kind: university
+  tier: 1
+  domains: [tum.de]
+
+- name: Trinity College Dublin
+  aliases: [TCD, Trinity]
+  country: IE
+  city: Dublin
+  kind: college
+  tier: 2
+  domains: [tcd.ie]

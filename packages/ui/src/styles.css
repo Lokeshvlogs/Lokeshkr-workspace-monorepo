@@ -341,6 +341,24 @@
   margin-top: 1px;
 }
 
+/* The current selection, lifted to the top of the list.
+   The rule below it is not decoration: these lists run to ~1,600 alphabetical
+   entries, and one row sitting out of sequence with nothing to explain it reads
+   as corrupted data rather than a convenience. */
+.select-option-pinned {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.select-option-pinned::after {
+  content: "";
+  position: absolute;
+  left: 0.625rem;
+  right: 0.625rem;
+  bottom: -0.25rem;
+  border-bottom: 1px solid var(--color-border, #fbcfe8);
+}
+
 .select-option-label {
   @apply truncate;
 }
@@ -357,15 +375,26 @@
 }
 
 /* Reserved on every row, so choosing one never reflows the list. */
+/* Sized explicitly. Lucide defaults to 24px, which next to 15px text read as a
+   tick stamped on the row rather than part of it. */
 .select-option-check {
   flex: 0 0 auto;
+  height: 1rem;
+  width: 1rem;
+  margin-left: auto;
   opacity: 0;
   color: var(--color-primary, #ec4899);
   transition: opacity 0.12s ease;
 }
 
+/* The chosen row: the chip's colours inverted - primary text and tick on a
+   plain white ground, rather than white on a solid fill.
+   Deliberately a single class, so the hover/cursor rule below (same
+   specificity, declared later) still wins and repaints the row when the cursor
+   lands on it. That is what keeps the keyboard highlight visible on the very
+   row it starts from. */
 .select-selected-option {
-  background-color: var(--color-primary-surface, #fdf2f8);
+  background-color: var(--color-bg, #ffffff);
   color: var(--color-primary, #ec4899);
   font-weight: 600;
 }
@@ -379,8 +408,10 @@
 }
 
 /* Declared after the selected rule on purpose: same specificity, so the cursor
-   wins and stays visible when it lands on the already-selected row. Pointer
-   hover and the keyboard cursor are one state - hovering sets the active index. */
+   wins and stays visible when it lands on the already-selected row - which is
+   where it starts, since opening the list points it at the current value.
+   Pointer hover and the keyboard cursor are one state: hovering sets the
+   active index, so both land here. */
 .select-option:hover,
 .select-option-active {
   background-color: #fce7f3;
@@ -1871,6 +1902,257 @@ button.chip-selected:hover {
 .profile-private-summary {
   @apply cursor-pointer text-sm font-semibold;
   color: var(--color-primary-text, #111827);
+}
+
+/* Who is actually answering the messages. Sits under the name because knowing
+   you are writing to a parent rather than the member changes how you open. */
+.managed-by {
+  @apply mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-placeholder-text, #6b7280);
+  border: 1px solid var(--color-border, #fbcfe8);
+}
+
+/* --- Education & achievement repeaters --- */
+
+/* One qualification. Bordered rather than plain-stacked so it is obvious where
+   a row starts and ends once someone has three of them. */
+.education-card {
+  @apply rounded-xl p-4;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-primary-surface, #fdf2f8);
+}
+
+.education-card-head {
+  @apply flex items-center justify-between gap-3;
+}
+
+.education-card-index {
+  @apply text-sm font-semibold;
+  color: var(--color-primary, #ec4899);
+}
+
+.education-remove {
+  @apply rounded-lg px-2 py-1 text-xs font-semibold transition;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.education-remove:hover {
+  color: var(--color-error, #ef4444);
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.education-add {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition;
+  border: 1px dashed var(--color-border, #fbcfe8);
+  color: var(--color-primary, #ec4899);
+}
+
+.education-add:hover:not(:disabled) {
+  background-color: var(--color-primary-surface, #fdf2f8);
+  border-color: var(--color-primary-light, #f96cba);
+}
+
+.education-add:disabled {
+  @apply cursor-not-allowed opacity-50;
+}
+
+.education-add-note {
+  @apply text-xs font-normal;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* The reputation self-claim. Wording stays neutral on purpose - saying it
+   affects matching would simply teach everyone to tick it. */
+.education-claim {
+  @apply flex cursor-pointer items-center gap-2.5 text-sm;
+  color: var(--color-primary-text, #111827);
+}
+
+.education-claim input {
+  @apply h-4 w-4 shrink-0;
+  accent-color: var(--color-primary, #ec4899);
+}
+
+.achievement-row {
+  @apply rounded-xl p-4;
+  border: 1px solid var(--color-border, #fbcfe8);
+}
+
+/* --- Multi-select --- */
+
+/* A row the selection cap has locked out. Dimmed rather than hidden, so the
+   list does not appear to lose entries the moment the limit is reached. */
+.select-option-blocked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.select-limit-note {
+  @apply px-2.5 pb-1.5 pt-2 text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.multiselect-tags {
+  @apply mt-2;
+}
+
+/* --- Dual-thumb range --- */
+.dual-range {
+  @apply flex flex-col gap-2;
+}
+
+.dual-range-head {
+  @apply flex items-baseline justify-between gap-3;
+}
+
+.dual-range-label {
+  @apply text-sm font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+.dual-range-readout {
+  @apply text-sm font-semibold;
+  color: var(--color-primary, #ec4899);
+  font-variant-numeric: tabular-nums;
+}
+
+.dual-range-track-wrap {
+  @apply relative;
+  height: 1.75rem;
+}
+
+.dual-range-rail,
+.dual-range-fill {
+  @apply pointer-events-none absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: 9999px;
+  transform: translateY(-50%);
+}
+
+.dual-range-rail {
+  left: 0;
+  right: 0;
+  background-color: var(--color-primary-surface, #fdf2f8);
+  border: 1px solid var(--color-border, #fbcfe8);
+}
+
+.dual-range-fill {
+  left: var(--range-start, 0%);
+  right: calc(100% - var(--range-end, 100%));
+  background-color: var(--color-primary, #ec4899);
+}
+
+/* The two inputs sit on top of each other. The track has to ignore the pointer
+   or whichever input is uppermost would swallow every click across the whole
+   width; the thumbs themselves take it back, so each stays draggable. */
+.dual-range-input {
+  @apply absolute w-full appearance-none bg-transparent;
+  top: 0;
+  height: 1.75rem;
+  margin: 0;
+  pointer-events: none;
+}
+
+.dual-range-input:focus {
+  outline: none;
+}
+
+/* The two inputs occupy the same box, so DOM order alone decides which thumb
+   wins an overlap. `minGap` keeps the values apart but the thumbs are 18px
+   wide, so they still overlap visually when close. The low thumb is always to
+   the left of the high one, so putting it on top makes the nearer handle the
+   one you actually grab. */
+.dual-range-input-low {
+  z-index: 2;
+}
+
+.dual-range-input-high {
+  z-index: 1;
+}
+
+.dual-range-input::-webkit-slider-thumb {
+  @apply appearance-none;
+  pointer-events: auto;
+  height: 1.125rem;
+  width: 1.125rem;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 2px solid var(--color-primary, #ec4899);
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.18);
+  cursor: grab;
+}
+
+.dual-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  height: 1.125rem;
+  width: 1.125rem;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 2px solid var(--color-primary, #ec4899);
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.18);
+  cursor: grab;
+}
+
+.dual-range-input:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+}
+
+.dual-range-input:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--color-focus-ring, rgba(236, 72, 153, 0.16));
+}
+
+.dual-range-ends {
+  @apply flex justify-between text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.dual-range-actions {
+  @apply flex flex-wrap items-center justify-between gap-2;
+}
+
+.dual-range-clear {
+  @apply text-sm font-semibold;
+  color: var(--color-primary, #ec4899);
+}
+
+.dual-range-clear:hover {
+  text-decoration: underline;
+}
+
+.dual-range-disabled {
+  @apply opacity-50;
+}
+
+/* --- Verification badges ---
+   Two marks, deliberately different colours. "Complete" is a muted slate tick
+   that reads as a completion mark; the blue disc is reserved for an actual
+   identity check, so the familiar blue never comes to mean "filled the form
+   in". These are the first non-pink accents in the file. */
+.verified-badge {
+  @apply inline-flex shrink-0 items-center justify-center align-middle;
+}
+
+.verified-badge svg {
+  @apply h-full w-full;
+}
+
+.verified-badge-sm { @apply h-3.5 w-3.5; }
+.verified-badge-md { @apply h-[18px] w-[18px]; }
+.verified-badge-lg { @apply h-[22px] w-[22px]; }
+
+.verified-badge-complete {
+  color: var(--color-verified-complete, #94a3b8);
+}
+
+.verified-badge-id {
+  color: var(--color-verified-id, #1d9bf0);
+}
+
+/* Over a photo scrim the slate tick loses too much contrast. */
+.card-scrim .verified-badge-complete {
+  color: rgba(255, 255, 255, 0.92);
 }
 
 /* --- Icon-led profile fields --- */

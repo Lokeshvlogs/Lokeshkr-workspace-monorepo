@@ -15,6 +15,8 @@ from datetime import datetime
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from . import education, managed_by as managed_by_rules
+
 # camelCase key sent by the wizard -> model field name
 CAMEL_TO_MODEL = {
     # Step 0 - basic details
@@ -78,6 +80,34 @@ CAMEL_TO_MODEL = {
     "partnerProfession": "partner_profession",
     "partnerDiet": "partner_diet",
     "partnerAbout": "partner_about",
+    # Multi-value partner preferences. These supersede the singular keys above,
+    # which stay mapped for one release so an older client still saves.
+    "partnerMaritalStatuses": "partner_marital_statuses",
+    "partnerReligions": "partner_religions",
+    "partnerCommunities": "partner_communities",
+    "partnerMotherTongues": "partner_mother_tongues",
+    "partnerCountries": "partner_countries",
+    "partnerEducations": "partner_educations",
+    "partnerProfessions": "partner_professions",
+    "partnerDiets": "partner_diets",
+    # Interests. `dailyRoutine` maps a column that has existed since the first
+    # migration and was never wired to anything.
+    "interestsMusic": "interests_music",
+    "interestsMovies": "interests_movies",
+    "interestsBooks": "interests_books",
+    "interestsCuisines": "interests_cuisines",
+    "interestsTravel": "interests_travel",
+    "interestsHobbies": "interests_hobbies",
+    "interestsOther": "interests_other",
+    "dailyRoutine": "daily_routine",
+    # Where the job is, and the residency status that makes sense there.
+    "workCountry": "work_country",
+    "visaStatus": "visa_status",
+    # Mobility, and the career-side counterpart.
+    "managedBy": "managed_by",
+    "settleAbroad": "settle_abroad",
+    "partnerRelocateAfterMarriage": "partner_relocate_after_marriage",
+    "partnerSettleAbroad": "partner_settle_abroad",
 }
 
 MODEL_TO_CAMEL = {v: k for k, v in CAMEL_TO_MODEL.items()}
@@ -114,12 +144,80 @@ NULLABLE_INT_FIELDS = {
 }
 BOOL_FIELDS = {"lives_with_family", "has_children"}
 
+# JSON list columns. An empty list is a real answer ("no preference"), so these
+# must accept [] rather than treating it as "unset".
+JSON_LIST_FIELDS = {
+    "interests_music",
+    "interests_movies",
+    "interests_books",
+    "interests_cuisines",
+    "interests_travel",
+    "interests_hobbies",
+    "partner_marital_statuses",
+    "partner_religions",
+    "partner_communities",
+    "partner_mother_tongues",
+    "partner_countries",
+    "partner_educations",
+    "partner_professions",
+    "partner_diets",
+    "partner_relocate_after_marriage",
+    "partner_settle_abroad",
+}
+
+# Fields an explicit null may legitimately clear. Everywhere else `None` still
+# means "not in this payload" - see apply_payload.
+NULLABLE_FIELDS = NULLABLE_INT_FIELDS
+
+# Caps applied on the way in. Model validators are never enforced (nothing calls
+# full_clean, and SQLite ignores max_length), so without these the JSON columns
+# are an unbounded storage-write primitive for any authenticated user.
+MAX_LIST_ITEMS = 15
+MAX_LIST_VALUE_LENGTH = 60
+
+# How a dropdown says "no preference". Stored as an empty list instead, so the
+# two never have to be kept in agreement.
+NO_PREFERENCE = "any"
+
 
 def _to_int(value, default=0):
     try:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _to_str_list(value, field: str) -> list:
+    """Normalise whatever arrived into a clean list of option values.
+
+    Accepts a bare string as well as a list: during the release where the
+    singular columns still exist, an older client may send one.
+    """
+    if value in (None, ""):
+        return []
+
+    if isinstance(value, str):
+        items = [value]
+    elif isinstance(value, (list, tuple)):
+        items = list(value)
+    else:
+        # A dict where a list belongs is a client bug. Coercing it silently is
+        # how a JSON column ends up holding something nothing can render.
+        raise ValueError(f"{field} must be a list of values")
+
+    cleaned = []
+    seen = set()
+    for item in items:
+        if item is None:
+            continue
+        text = str(item).strip()[:MAX_LIST_VALUE_LENGTH]
+        # "any" is not a value, it is the absence of one.
+        if not text or text == NO_PREFERENCE or text in seen:
+            continue
+        seen.add(text)
+        cleaned.append(text)
+
+    return cleaned[:MAX_LIST_ITEMS]
 
 
 def parse_dob(value):
@@ -199,6 +297,165 @@ def sync_gallery(profile, entries) -> None:
     profile.photos.exclude(pk__in=keep).delete()
 
 
+MAX_ACHIEVEMENTS = 10
+MAX_ACHIEVEMENT_TITLE = 120
+MAX_ACHIEVEMENT_DETAIL = 400
+
+
+def sync_educations(profile, entries) -> None:
+    """Replace the education rows with exactly what the client sent.
+
+    Same contract as `sync_gallery`: the list is the complete desired state and
+    an omission is a deletion. With at most five tiny rows, delete-and-recreate
+    is simpler and safer than reconciling - no row ids leak to the client, so
+    there is nothing for it to get wrong. Both run inside the transaction that
+    `update_profile_step` opens.
+    """
+    from .models import ProfileEducation
+
+    if entries is None:
+        return
+    if not isinstance(entries, (list, tuple)):
+        raise ValueError("educations must be a list")
+
+    rows = []
+    # Same reasoning as clean_achievements: count kept rows rather than slicing
+    # the input, because the editor always leaves one empty row on screen and
+    # that blank must not cost a real qualification its place.
+    for raw in entries:
+        if len(rows) >= ProfileEducation.MAX_PER_PROFILE:
+            break
+        if not isinstance(raw, dict):
+            raise ValueError("each education entry must be an object")
+
+        level = str(raw.get("level") or "").strip()[:40]
+        if not level:
+            # A row with no level says nothing and would break rank ordering.
+            continue
+
+        slug = str(raw.get("institutionSlug") or "").strip()
+        is_other = bool(raw.get("isOther")) or slug == "other"
+
+        institution = None
+        name = str(raw.get("institutionName") or "").strip()[:200]
+        country = str(raw.get("country") or "").strip().upper()[:2]
+
+        if slug and not is_other:
+            institution = _resolve_institution(slug)
+            if institution is not None:
+                # Trust the catalog, never the client, for a resolved row -
+                # otherwise a payload could pair slug=iit_bombay with
+                # name="Harvard" and the profile would display the lie.
+                name = institution.name
+                country = institution.country
+            else:
+                # Unknown slug: keep whatever name came with it, but treat it
+                # as unlisted so it cannot inherit a reputation it has not got.
+                is_other = True
+
+        # School-level rows never carry a reputation claim, whatever was sent.
+        claimed = bool(raw.get("reputationClaimed")) and not education.is_school_level(level)
+
+        year = raw.get("completionYear")
+        year = _to_int(year, None) if year not in ("", None) else None
+        if year is not None and not (1950 <= year <= 2100):
+            year = None
+
+        rows.append(
+            ProfileEducation(
+                profile=profile,
+                position=len(rows),
+                level=level,
+                field_of_study=str(raw.get("fieldOfStudy") or "").strip()[:120],
+                country=country,
+                institution=institution,
+                institution_name=name,
+                institution_country=country,
+                is_other=is_other and bool(name),
+                reputation_claimed=claimed,
+                completion_year=year,
+            )
+        )
+
+    profile.educations.all().delete()
+    if rows:
+        ProfileEducation.objects.bulk_create(rows)
+
+
+def _resolve_institution(slug: str):
+    from apps.catalog.models import Institution
+
+    return Institution.objects.filter(slug=slug, is_active=True).first()
+
+
+def apply_employer(profile, slug: str, name: str) -> None:
+    """Set the employer from a catalog slug, or as free text.
+
+    Same rule as institutions: when a slug resolves, the NAME comes from the
+    catalog and the client's is discarded - otherwise a payload could pair
+    slug=google with name="Prime Minister of India" and the profile would show
+    it. Anything unresolved is stored as free text with no reputation, which is
+    honest: an employer we have never heard of is unknown, not bad.
+    """
+    from apps.catalog.models import Employer
+
+    slug = (slug or "").strip()
+    name = (name or "").strip()[:200]
+
+    if slug and slug != "other":
+        employer = Employer.objects.filter(slug=slug, is_active=True).first()
+        if employer is not None:
+            profile.employer = employer
+            profile.employer_name = employer.name
+            profile.employer_is_other = False
+            profile.employer_reputation_tier = employer.reputation_tier
+            return
+
+    profile.employer = None
+    profile.employer_name = name
+    profile.employer_is_other = bool(name)
+    # No tier for an unlisted employer. There is no self-claim here on purpose:
+    # a company either is well known enough to be in the catalog or it is not,
+    # and asking members to rate their own workplace invites everyone to say yes.
+    profile.employer_reputation_tier = education.NO_REPUTATION
+
+
+def clean_achievements(value) -> list:
+    """Normalise the achievements list. Display-only, so shape is all we check."""
+    if value in (None, ""):
+        return []
+    if not isinstance(value, (list, tuple)):
+        raise ValueError("achievements must be a list")
+
+    cleaned = []
+    # Counts VALID entries, rather than slicing the raw list first: the UI keeps
+    # a trailing blank row, and capping before filtering would let that blank
+    # consume a slot and silently drop a real achievement. The loop still stops
+    # at the cap, so an oversized payload is bounded either way.
+    for raw in value:
+        if len(cleaned) >= MAX_ACHIEVEMENTS:
+            break
+        if isinstance(raw, str):
+            raw = {"title": raw}
+        if not isinstance(raw, dict):
+            raise ValueError("each achievement must be an object")
+
+        title = str(raw.get("title") or "").strip()[:MAX_ACHIEVEMENT_TITLE]
+        if not title:
+            continue
+
+        year = raw.get("year")
+        year = _to_int(year, None) if year not in ("", None) else None
+
+        cleaned.append({
+            "title": title,
+            "year": year if year and 1950 <= year <= 2100 else None,
+            "detail": str(raw.get("detail") or "").strip()[:MAX_ACHIEVEMENT_DETAIL],
+        })
+
+    return cleaned
+
+
 def apply_payload(profile, payload: dict) -> list:
     """Write camelCase wizard values onto the profile. Returns fields touched."""
     touched = []
@@ -209,6 +466,34 @@ def apply_payload(profile, payload: dict) -> list:
             touched.append("photos")
             continue
 
+        if camel_key == "educations":
+            # Intercepted before the column mapping, like photos: this writes
+            # related rows, not a field on Profile.
+            sync_educations(profile, value)
+            profile.refresh_derived_education()
+            touched.append("educations")
+            continue
+
+        if camel_key == "achievements":
+            profile.achievements = clean_achievements(value)
+            touched.append("achievements")
+            continue
+
+        if camel_key == "employerSlug":
+            # Paired with employerName, so it is resolved here rather than
+            # through the column map.
+            apply_employer(profile, value, payload.get("employerName", ""))
+            touched.append("employer")
+            continue
+
+        if camel_key == "employerName":
+            # Handled by the employerSlug branch. Only acted on alone, for a
+            # payload that sends the name without a slug.
+            if "employerSlug" not in payload:
+                apply_employer(profile, "", value)
+                touched.append("employer")
+            continue
+
         if camel_key == "photo":
             image = decode_data_url(value)
             if image is not None:
@@ -217,10 +502,21 @@ def apply_payload(profile, payload: dict) -> list:
             continue
 
         field = CAMEL_TO_MODEL.get(camel_key)
-        if field is None or value is None:
+        if field is None:
             continue
 
-        if field == "dob_time":
+        # `None` means "absent from this payload" for most fields, because the
+        # wizard PATCHes one step at a time and must not blank the others. The
+        # exception is the fields where null is itself the answer.
+        if value is None:
+            if field in NULLABLE_FIELDS:
+                setattr(profile, field, None)
+                touched.append(field)
+            continue
+
+        if field in JSON_LIST_FIELDS:
+            value = _to_str_list(value, camel_key)
+        elif field == "dob_time":
             parsed = parse_dob(value)
             if parsed is None:
                 continue
@@ -325,9 +621,73 @@ def profile_to_api(profile, request=None, public: bool = False) -> dict:
         "partnerProfession": profile.partner_profession,
         "partnerDiet": profile.partner_diet,
         "partnerAbout": profile.partner_about,
+        # Both shapes travel for one release. The client reads the plural; the
+        # singular exists only so a client that has not been redeployed does not
+        # break. Delete the singular keys once that window has passed.
+        "partnerMaritalStatuses": profile.partner_marital_statuses or [],
+        "partnerReligions": profile.partner_religions or [],
+        "partnerCommunities": profile.partner_communities or [],
+        "partnerMotherTongues": profile.partner_mother_tongues or [],
+        "partnerCountries": profile.partner_countries or [],
+        "partnerEducations": profile.partner_educations or [],
+        "partnerProfessions": profile.partner_professions or [],
+        "partnerDiets": profile.partner_diets or [],
+        "interestsMusic": profile.interests_music or [],
+        "interestsMovies": profile.interests_movies or [],
+        "interestsBooks": profile.interests_books or [],
+        "interestsCuisines": profile.interests_cuisines or [],
+        "interestsTravel": profile.interests_travel or [],
+        "interestsHobbies": profile.interests_hobbies or [],
+        "interestsOther": profile.interests_other,
+        "dailyRoutine": profile.daily_routine,
+        # employerSlug lets the wizard re-select the catalog row; the tier
+        # behind it is internal and never travels.
+        "employerSlug": profile.employer.slug if profile.employer_id else "",
+        "employerName": profile.employer_name,
+        "workCountry": profile.work_country,
+        "visaStatus": profile.visa_status,
+        "settleAbroad": profile.settle_abroad,
+        "partnerRelocateAfterMarriage": profile.partner_relocate_after_marriage or [],
+        "partnerSettleAbroad": profile.partner_settle_abroad or [],
+        "achievements": profile.achievements or [],
+        # The institution's reputation tier is deliberately absent: it is the
+        # product's own judgement, and a member who could read it would know
+        # exactly which answer scores best.
+        #
+        # `reputationClaimed` is absent too on public payloads - see below. It
+        # is an input to that scoring, and showing other members that someone
+        # ticked "well regarded" about their own college serves nobody.
+        "educations": [
+            {
+                "level": entry.level,
+                "fieldOfStudy": entry.field_of_study,
+                "country": entry.country,
+                "institutionSlug": entry.institution.slug if entry.institution_id else "",
+                "institutionName": entry.institution_name,
+                "isOther": entry.is_other,
+                "completionYear": entry.completion_year,
+                **({} if public else {"reputationClaimed": entry.reputation_claimed}),
+            }
+            for entry in profile.educations.select_related("institution").all()
+        ],
         "photo": picture,
         "photos": gallery,
         "profile_completeness": profile.profile_completeness,
+        # Public on purpose: a trust signal is worthless if only its owner can
+        # see it. Only the derived level travels - the evidence flags behind it
+        # (phone_verified, id_document_verified, ...) stay server-side, so the
+        # client cannot infer which checks a member has or has not passed.
+        "verification_level": profile.verification_level,
+        # Public on purpose: knowing whether you are about to talk to the
+        # member or to their father is useful before the first message.
+        #
+        # The DERIVED value travels, never raw `profile_for` - "son" would
+        # leak the member's gender a second time and reads oddly on someone
+        # else's profile.
+        "managedBy": managed_by_rules.resolve(profile.managed_by, profile.profile_for),
+        "managedByLabel": managed_by_rules.label_for(
+            profile.managed_by, profile.profile_for, owner=not public
+        ),
     }
 
     if not public:

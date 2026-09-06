@@ -101,8 +101,17 @@ export function compareAttributes(me: PublicProfile, them: PublicProfile): AttrC
   ]
 }
 
-/** A preference of 'any' or blank is not a requirement. */
-const stated = (value: unknown): boolean => isFilled(value) && String(value) !== 'any'
+/**
+ * The values a preference actually asks for.
+ *
+ * Accepts an array (the current shape) or a bare string (the singular columns,
+ * still present for one release), so a profile saved either way is judged the
+ * same. 'any' is not a requirement, so it drops out.
+ */
+function wantedValues(value: unknown): string[] {
+  const list = Array.isArray(value) ? value : value ? [value] : []
+  return list.map((v) => String(v).trim()).filter((v) => v && v !== 'any')
+}
 
 /**
  * Measure a candidate against one profile's stated partner preferences.
@@ -113,38 +122,43 @@ const stated = (value: unknown): boolean => isFilled(value) && String(value) !==
 export function checkPreferences(owner: PublicProfile, candidate: PublicProfile): PrefCheck[] {
   const checks: PrefCheck[] = []
 
-  /** Exact-match preference against a single candidate field. */
-  const exact = (
+  /**
+   * A preference listing one or more acceptable values.
+   *
+   * Semantics are OR within a field and AND across fields: "Hindu or Jain" is
+   * met by either, but a religion preference and a diet preference must both
+   * be satisfied.
+   */
+  const oneOf = (
     key: string,
     label: string,
-    wantedValue: string,
+    wantedValue: unknown,
     actualValue: string,
     labelKey: string,
   ) => {
-    if (!stated(wantedValue)) {
-      // 'any' was chosen deliberately; blank was never answered. Both are
-      // excluded from the score, but they read differently to the member.
-      checks.push({
-        key,
-        label,
-        wanted: isFilled(wantedValue) ? 'No preference' : '',
-        actual: labelFor(labelKey, actualValue),
-        verdict: isFilled(wantedValue) ? 'no-preference' : 'unanswered',
-      })
+    const wanted = wantedValues(wantedValue)
+
+    if (wanted.length === 0) {
+      // With a list there is no way to tell "explicitly any" from "never
+      // answered" - both are []. Reported as unanswered, which is the honest
+      // reading when looking at someone else's preferences.
+      checks.push({ key, label, wanted: '', actual: labelFor(labelKey, actualValue), verdict: 'unanswered' })
       return
     }
 
+    const shown = wanted.map((v) => labelFor(labelKey, v)).join(' or ')
+
     if (!isFilled(actualValue)) {
-      checks.push({ key, label, wanted: labelFor(labelKey, wantedValue), actual: '', verdict: 'unknown' })
+      checks.push({ key, label, wanted: shown, actual: '', verdict: 'unknown' })
       return
     }
 
     checks.push({
       key,
       label,
-      wanted: labelFor(labelKey, wantedValue),
+      wanted: shown,
       actual: labelFor(labelKey, actualValue),
-      verdict: wantedValue === actualValue ? 'pass' : 'fail',
+      verdict: wanted.includes(actualValue) ? 'pass' : 'fail',
     })
   }
 
@@ -202,14 +216,31 @@ export function checkPreferences(owner: PublicProfile, candidate: PublicProfile)
           : 'fail',
   })
 
-  exact('partnerMaritalStatus', 'Marital status', owner.partnerMaritalStatus, candidate.maritalStatus, 'maritalStatus')
-  exact('partnerReligion', 'Religion', owner.partnerReligion, candidate.religion, 'religion')
-  exact('partnerCommunity', 'Community', owner.partnerCommunity, candidate.community, 'community')
-  exact('partnerMotherTongue', 'Mother tongue', owner.partnerMotherTongue, candidate.mothertongue, 'mothertongue')
-  exact('partnerCountry', 'Country', owner.partnerCountry, candidate.currentCountry, 'currentCountry')
-  exact('partnerEducation', 'Education', owner.partnerEducation, candidate.educationLevel, 'educationLevel')
-  exact('partnerProfession', 'Profession', owner.partnerProfession, candidate.profession, 'profession')
-  exact('partnerDiet', 'Diet', owner.partnerDiet, candidate.diet, 'diet')
+  // Each falls back to the singular column so a profile that has not been
+  // re-saved since the multi-select release is still judged correctly.
+  oneOf('partnerMaritalStatus', 'Marital status', owner.partnerMaritalStatuses ?? owner.partnerMaritalStatus, candidate.maritalStatus, 'maritalStatus')
+  oneOf('partnerReligion', 'Religion', owner.partnerReligions ?? owner.partnerReligion, candidate.religion, 'religion')
+  oneOf('partnerCommunity', 'Community', owner.partnerCommunities ?? owner.partnerCommunity, candidate.community, 'community')
+  oneOf('partnerMotherTongue', 'Mother tongue', owner.partnerMotherTongues ?? owner.partnerMotherTongue, candidate.mothertongue, 'mothertongue')
+  oneOf('partnerCountry', 'Country', owner.partnerCountries ?? owner.partnerCountry, candidate.currentCountry, 'currentCountry')
+  oneOf('partnerEducation', 'Education', owner.partnerEducations ?? owner.partnerEducation, candidate.educationLevel, 'educationLevel')
+  oneOf('partnerProfession', 'Profession', owner.partnerProfessions ?? owner.partnerProfession, candidate.profession, 'profession')
+  oneOf('partnerDiet', 'Diet', owner.partnerDiets ?? owner.partnerDiet, candidate.diet, 'diet')
+
+  // Mobility. Matched against the candidate's own `settleAbroad` answer, so
+  // every value the member selected counts as acceptable.
+  //
+  // `partnerRelocateAfterMarriage` is deliberately NOT checked here: there is no
+  // field on the other person saying whether they would relocate, so there is
+  // nothing to test it against. Scoring it would silently mark everyone
+  // "unknown" and dilute the total. It is captured and shown, not scored.
+  oneOf(
+    'partnerSettleAbroad',
+    'Settling abroad',
+    owner.partnerSettleAbroad,
+    candidate.settleAbroad,
+    'settleAbroad',
+  )
 
   return checks
 }

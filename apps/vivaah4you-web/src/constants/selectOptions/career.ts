@@ -1,30 +1,100 @@
 import { SelectOption } from "@lokesh-workspace/ui";
 
+/**
+ * Professions.
+ *
+ * The original 25 forced most members into "Engineer", "Other", or a title that
+ * was not really theirs. These are grouped by field and ordered roughly by how
+ * common they are on Indian matrimonial profiles, since SelectDropdown renders
+ * array order.
+ *
+ * Every original value is preserved, so no stored answer is orphaned. Values are
+ * stable slugs and also key the employer catalog's `profession_tags`.
+ */
 export  const professionOptions: SelectOption[] = [
+  // Software & data
   { value: 'software_engineer', label: 'Software Engineer' },
-  { value: 'doctor', label: 'Doctor' },
-  { value: 'teacher', label: 'Teacher' },
-  { value: 'business_analyst', label: 'Business Analyst' },
-  { value: 'accountant', label: 'Accountant' },
-  { value: 'civil_servant', label: 'Civil Servant' },
-  { value: 'lawyer', label: 'Lawyer' },
+  { value: 'data_scientist', label: 'Data Scientist / Analyst' },
+  { value: 'devops_engineer', label: 'DevOps / Cloud Engineer' },
+  { value: 'qa_engineer', label: 'QA / Test Engineer' },
+  { value: 'product_manager', label: 'Product Manager' },
+  { value: 'ux_designer', label: 'UX / Product Designer' },
+  { value: 'it_support', label: 'IT Support / Admin' },
+  { value: 'cybersecurity', label: 'Cybersecurity Specialist' },
+
+  // Engineering
+  { value: 'engineer', label: 'Engineer (other)' },
+  { value: 'civil_engineer', label: 'Civil Engineer' },
+  { value: 'mechanical_engineer', label: 'Mechanical Engineer' },
+  { value: 'electrical_engineer', label: 'Electrical Engineer' },
+  { value: 'chemical_engineer', label: 'Chemical Engineer' },
   { value: 'architect', label: 'Architect' },
-  { value: 'banker', label: 'Banker' },
-  { value: 'entrepreneur', label: 'Entrepreneur' },
+
+  // Medicine & health
+  { value: 'doctor', label: 'Doctor / Physician' },
+  { value: 'surgeon', label: 'Surgeon' },
+  { value: 'dentist', label: 'Dentist' },
   { value: 'nurse', label: 'Nurse' },
   { value: 'pharmacist', label: 'Pharmacist' },
-  { value: 'pilot', label: 'Pilot' },
+  { value: 'physiotherapist', label: 'Physiotherapist' },
+  { value: 'veterinarian', label: 'Veterinarian' },
+  { value: 'psychologist', label: 'Psychologist / Therapist' },
+  { value: 'medical_researcher', label: 'Medical Researcher' },
+
+  // Finance, law & consulting
+  { value: 'chartered_accountant', label: 'Chartered Accountant' },
+  { value: 'accountant', label: 'Accountant' },
+  { value: 'banker', label: 'Banker' },
+  { value: 'investment_professional', label: 'Investment / Finance Professional' },
+  { value: 'consultant', label: 'Consultant' },
+  { value: 'business_analyst', label: 'Business Analyst' },
+  { value: 'lawyer', label: 'Lawyer / Advocate' },
+  { value: 'company_secretary', label: 'Company Secretary' },
+  { value: 'actuary', label: 'Actuary' },
+
+  // Government & services
+  { value: 'civil_servant', label: 'Civil Servant (IAS / IPS / IFS)' },
+  { value: 'government_employee', label: 'Government Employee' },
   { value: 'police_officer', label: 'Police Officer' },
-  { value: 'engineer', label: 'Engineer' },
-  { value: 'scientist', label: 'Scientist' },
-  { value: 'professor', label: 'Professor' },
-  { value: 'graphic_designer', label: 'Graphic Designer' },
-  { value: 'chef', label: 'Chef' },
-  { value: 'journalist', label: 'Journalist' },
-  { value: 'actor', label: 'Actor' },
-  { value: 'fashion_designer', label: 'Fashion Designer' },
+  { value: 'defence', label: 'Armed Forces' },
+  { value: 'pilot', label: 'Pilot' },
+  { value: 'cabin_crew', label: 'Cabin Crew' },
+  { value: 'merchant_navy', label: 'Merchant Navy' },
+
+  // Education & research
+  { value: 'teacher', label: 'Teacher' },
+  { value: 'professor', label: 'Professor / Lecturer' },
+  { value: 'scientist', label: 'Scientist / Researcher' },
+
+  // Business & operations
+  { value: 'entrepreneur', label: 'Entrepreneur / Founder' },
+  { value: 'business_owner', label: 'Business Owner' },
   { value: 'sales_manager', label: 'Sales Manager' },
   { value: 'marketing_manager', label: 'Marketing Manager' },
+  { value: 'hr_professional', label: 'HR Professional' },
+  { value: 'operations_manager', label: 'Operations Manager' },
+  { value: 'supply_chain', label: 'Supply Chain / Logistics' },
+  { value: 'real_estate', label: 'Real Estate Professional' },
+
+  // Creative & media
+  { value: 'graphic_designer', label: 'Graphic Designer' },
+  { value: 'fashion_designer', label: 'Fashion Designer' },
+  { value: 'interior_designer', label: 'Interior Designer' },
+  { value: 'journalist', label: 'Journalist' },
+  { value: 'content_creator', label: 'Content Creator / Writer' },
+  { value: 'photographer', label: 'Photographer / Videographer' },
+  { value: 'actor', label: 'Actor / Performer' },
+  { value: 'musician', label: 'Musician' },
+  { value: 'chef', label: 'Chef' },
+
+  // Other paths
+  { value: 'agriculture', label: 'Agriculture / Farming' },
+  { value: 'social_worker', label: 'Social Worker / NGO' },
+  { value: 'sportsperson', label: 'Sportsperson / Coach' },
+  { value: 'homemaker', label: 'Homemaker' },
+  { value: 'student_profession', label: 'Student' },
+  { value: 'between_jobs', label: 'Between jobs' },
+  { value: 'retired', label: 'Retired' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -61,17 +131,72 @@ export const employedAsOptions: SelectOption[] = [
   { value: 'other', label: 'Other' },
 ];
 
+/**
+ * Fields of study.
+ *
+ * The original eleven entries were so broad that most graduates had to answer
+ * "Engineering" or "Other", which told a reader nothing. These are grouped by
+ * discipline and ordered roughly by how common they are on Indian matrimonial
+ * profiles, since SelectDropdown renders array order.
+ *
+ * The original eleven values are all preserved, so no stored answer is orphaned.
+ */
 export const fieldOfStudyOptions: SelectOption[] = [
-  { value: 'engineering', label: 'Engineering' },
-  { value: 'medicine', label: 'Medicine' },
+  // Engineering & technology
+  { value: 'computer_science', label: 'Computer Science / IT' },
+  { value: 'engineering', label: 'Engineering (general)' },
+  { value: 'electronics_engineering', label: 'Electronics / Electrical Engineering' },
+  { value: 'mechanical_engineering', label: 'Mechanical Engineering' },
+  { value: 'civil_engineering', label: 'Civil Engineering' },
+  { value: 'chemical_engineering', label: 'Chemical Engineering' },
+  { value: 'aerospace_engineering', label: 'Aerospace Engineering' },
+  { value: 'biotechnology', label: 'Biotechnology / Bioengineering' },
+  { value: 'data_science', label: 'Data Science / Analytics' },
+
+  // Medicine & health
+  { value: 'medicine', label: 'Medicine (MBBS / MD)' },
+  { value: 'dentistry', label: 'Dentistry' },
+  { value: 'pharmacy', label: 'Pharmacy' },
+  { value: 'nursing', label: 'Nursing' },
+  { value: 'physiotherapy', label: 'Physiotherapy' },
+  { value: 'ayurveda_homeopathy', label: 'Ayurveda / Homeopathy / Unani' },
+  { value: 'veterinary', label: 'Veterinary Science' },
+  { value: 'public_health', label: 'Public Health' },
+
+  // Business & commerce
+  { value: 'management', label: 'Management / MBA' },
   { value: 'commerce', label: 'Commerce' },
+  { value: 'accounting_finance', label: 'Accounting / Finance' },
+  { value: 'economics', label: 'Economics' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'hospitality', label: 'Hotel Management / Hospitality' },
+
+  // Sciences
+  { value: 'science', label: 'Science (general)' },
+  { value: 'physics', label: 'Physics' },
+  { value: 'chemistry', label: 'Chemistry' },
+  { value: 'mathematics', label: 'Mathematics / Statistics' },
+  { value: 'biology', label: 'Biology / Life Sciences' },
+  { value: 'environmental_science', label: 'Environmental Science' },
+  { value: 'agriculture', label: 'Agriculture' },
+
+  // Arts, law & social sciences
   { value: 'arts', label: 'Arts / Humanities' },
-  { value: 'science', label: 'Science' },
   { value: 'law', label: 'Law' },
-  { value: 'management', label: 'Management' },
-  { value: 'computer_science', label: 'Computer Science' },
+  { value: 'psychology', label: 'Psychology' },
+  { value: 'sociology', label: 'Sociology / Social Work' },
+  { value: 'political_science', label: 'Political Science / Public Policy' },
+  { value: 'journalism', label: 'Journalism / Mass Communication' },
+  { value: 'literature', label: 'Literature / Languages' },
+  { value: 'history', label: 'History / Archaeology' },
+
+  // Creative & applied
   { value: 'design', label: 'Design' },
-  { value: 'education', label: 'Education' },
+  { value: 'architecture', label: 'Architecture' },
+  { value: 'fine_arts', label: 'Fine Arts / Performing Arts' },
+  { value: 'fashion', label: 'Fashion / Textile' },
+  { value: 'education', label: 'Education / Teaching' },
+
   { value: 'other', label: 'Other' },
 ];
 

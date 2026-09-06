@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
         profile_for: requestData.profile_for,
         age: Number(requestData.age),
         looking_for: requestData.looking_for ?? null,
+        managed_by: requestData.managed_by ?? null,
         country_code: requestData.country_code,
         phone: requestData.phone,
         password: requestData.password,

@@ -154,7 +154,7 @@ export default function MatchSearchBar({
             id="match-age-min"
             label="Age from"
             placeholder=""
-            options={withAny(PARTNER_AGE_OPTIONS)}
+            options={withAny(PARTNER_AGE_OPTIONS)} selectedFirst={false}
             value={choice('ageMin')}
             onChange={(v) => setChoice('ageMin', v)}
           />
@@ -162,7 +162,7 @@ export default function MatchSearchBar({
             id="match-age-max"
             label="Age to"
             placeholder=""
-            options={withAny(PARTNER_AGE_OPTIONS)}
+            options={withAny(PARTNER_AGE_OPTIONS)} selectedFirst={false}
             value={choice('ageMax')}
             onChange={(v) => setChoice('ageMax', v)}
           />
@@ -210,8 +210,8 @@ export default function MatchSearchBar({
             <SelectDropdown id="f-education" label="Education" placeholder="" options={PARTNER_EDUCATION_OPTIONS} value={choice('education')} onChange={(v) => setChoice('education', v)} searchable />
             <SelectDropdown id="f-profession" label="Profession" placeholder="" options={PARTNER_PROFESSION_OPTIONS} value={choice('profession')} onChange={(v) => setChoice('profession', v)} searchable />
             <SelectDropdown id="f-diet" label="Diet" placeholder="" options={PARTNER_DIET_OPTIONS} value={choice('diet')} onChange={(v) => setChoice('diet', v)} />
-            <SelectDropdown id="f-height-min" label="Height from" placeholder="" options={withAny(PARTNER_HEIGHT_OPTIONS)} value={choice('heightMin')} onChange={(v) => setChoice('heightMin', v)} />
-            <SelectDropdown id="f-height-max" label="Height to" placeholder="" options={withAny(PARTNER_HEIGHT_OPTIONS)} value={choice('heightMax')} onChange={(v) => setChoice('heightMax', v)} />
+            <SelectDropdown id="f-height-min" label="Height from" placeholder="" options={withAny(PARTNER_HEIGHT_OPTIONS)} selectedFirst={false} value={choice('heightMin')} onChange={(v) => setChoice('heightMin', v)} />
+            <SelectDropdown id="f-height-max" label="Height to" placeholder="" options={withAny(PARTNER_HEIGHT_OPTIONS)} selectedFirst={false} value={choice('heightMax')} onChange={(v) => setChoice('heightMax', v)} />
           </div>
         </div>
       )}

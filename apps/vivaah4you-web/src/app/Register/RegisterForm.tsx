@@ -5,7 +5,13 @@ import { PasswordInput, SelectDropdown, TextField } from '@lokesh-workspace/ui'
 import { COUNTRY_CODES_OPTIONS } from '@/constants/selectOptions/places'
 import { registerFieldSchema, registerSchema } from '@/lib/validation/schemas/registerUserSchema'
 import { useZodForm, blockEnterKeySubmit } from '@/hooks/useZodForm'
-import { PROFILE_FOR_OPTIONS, LOOKING_FOR_OPTIONS, AGE_OPTIONS } from './constants/RegisterUserOptions'
+import {
+  AGE_OPTIONS,
+  LOOKING_FOR_OPTIONS,
+  MANAGED_BY_DEFAULTS,
+  MANAGED_BY_OPTIONS,
+  PROFILE_FOR_OPTIONS,
+} from './constants/RegisterUserOptions'
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton'
 
 export default function RegisterForm() {
@@ -60,6 +66,7 @@ export default function RegisterForm() {
       profile_for: undefined,
       age: undefined,
       looking_for: undefined,
+      managed_by: undefined,
       country_code: "IN",
       phone: undefined,
       password: undefined,
@@ -77,6 +84,20 @@ export default function RegisterForm() {
       setField('looking_for', undefined)
       clearFieldError('looking_for')
     }
+  }, [values.profile_for])
+
+  /**
+   * "Managed by" is only a question when the profile is for somebody else -
+   * "Myself" already answers it - and it is pre-filled from `profile_for`, so
+   * for most people it is a confirmation rather than a second question.
+   */
+  const managedByVisible = Boolean(values?.profile_for) && values.profile_for !== 'self'
+
+  useEffect(() => {
+    const chosen = values?.profile_for as string | undefined
+    if (!chosen) return
+    setField('managed_by', MANAGED_BY_DEFAULTS[chosen] ?? undefined)
+    clearFieldError('managed_by')
   }, [values.profile_for])
 
   return (
@@ -128,6 +149,16 @@ export default function RegisterForm() {
             />
           )}
         </div>
+
+        {managedByVisible && (
+          <SelectDropdown
+            {...registerInputProps('managed_by', true)}
+            placeholder=""
+            label="Who will manage this profile?"
+            options={MANAGED_BY_OPTIONS}
+            errorValue={errors.managed_by ? errors.managed_by[0] : undefined}
+          />
+        )}
 
         <div className="flex gap-3 items-start">
 

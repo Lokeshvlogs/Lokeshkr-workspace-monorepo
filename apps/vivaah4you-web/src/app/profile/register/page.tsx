@@ -6,12 +6,19 @@ import {
   AvatarCropper,
   BirthDateTimePicker,
   ChipGroup,
+  DualRangeSlider,
   HorizontalFormSlider,
+  MultiSelect,
   SelectDropdown,
   TextField,
 } from "@lokesh-workspace/ui";
 
 import PhotoGallery from "@/components/profile/PhotoGallery";
+import { coerceToFormShape } from "@/lib/profileFormShape";
+import EducationList, { type EducationEntry } from "@/components/profile/EducationList";
+import AchievementList, { type AchievementEntry } from "@/components/profile/AchievementList";
+import EmployerPicker from "@/components/profile/EmployerPicker";
+import VisaStatusPicker from "@/components/profile/VisaStatusPicker";
 import { useAuth } from "@/components/authProvider";
 import {
   clearProfileDraft,
@@ -22,11 +29,10 @@ import {
 import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from "@/lib/profileDisplay";
 import { motherTongueOptions } from "@/constants/selectOptions/social";
 import { COUNTRY_OPTIONS } from "@/constants/selectOptions/places";
+// Education level, field of study and the institution list now live inside
+// EducationList, which owns one row at a time.
 import {
   professionOptions,
-  educationOptions,
-  fieldOfStudyOptions,
-  collegeOptions,
   employedAsOptions,
   employedInOptions,
 } from "@/constants/selectOptions/career";
@@ -36,9 +42,11 @@ import {
   smokingOptions,
   drinkingOptions,
   dietOptions,
+  routineOptions,
   feetOptions,
   inchOptions,
 } from "@/constants/selectOptions/person";
+import { INTEREST_CATEGORIES } from "@/constants/selectOptions/interests";
 import {
   PARENT_OCCUPATION_OPTIONS,
   RELIGIOSITY_OPTIONS,
@@ -46,17 +54,22 @@ import {
   religiosityDetailOptions,
 } from "@/constants/selectOptions/beliefs";
 import {
-  ANY_OPTION,
-  PARTNER_AGE_OPTIONS,
-  PARTNER_COUNTRY_OPTIONS,
-  PARTNER_DIET_OPTIONS,
-  PARTNER_EDUCATION_OPTIONS,
-  PARTNER_HEIGHT_OPTIONS,
-  PARTNER_MARITAL_OPTIONS,
-  PARTNER_MOTHER_TONGUE_OPTIONS,
-  PARTNER_PROFESSION_OPTIONS,
-  PARTNER_RELIGION_OPTIONS,
+  PARTNER_AGE_MAX,
+  PARTNER_AGE_MIN,
+  PARTNER_COUNTRY_CHOICES,
+  PARTNER_DIET_CHOICES,
+  PARTNER_EDUCATION_CHOICES,
+  PARTNER_HEIGHT_MAX_INCHES,
+  PARTNER_HEIGHT_MIN_INCHES,
+  PARTNER_MARITAL_CHOICES,
+  PARTNER_MOTHER_TONGUE_CHOICES,
+  PARTNER_PROFESSION_CHOICES,
+  PARTNER_RELIGION_CHOICES,
 } from "@/constants/selectOptions/partner";
+
+/** Form values are strings; the sliders want numbers, and "" means unset. */
+const toNum = (value: string): number | null =>
+  value === "" || value === null || value === undefined ? null : Number(value);
 
 const STEPS = [
   { title: "Basic Details", hint: "How you appear to other families." },
@@ -115,6 +128,33 @@ const YES_NO_OPTIONS = [
   { value: "no", label: "No" },
 ];
 
+/**
+ * Mobility answers a member will accept in a partner.
+ *
+ * Multi-select, because someone happy with "yes" is usually just as happy with
+ * "open to discussion", and forcing one choice quietly excluded matches they
+ * wanted. "All" is the exclusive option: choosing it clears the rest, since
+ * accepting every answer is the same as having no preference.
+ */
+const MOBILITY_CHOICES = [
+  { value: "any", label: "All" },
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+  { value: "open", label: "Open to discussion" },
+];
+
+/**
+ * A single answer about yourself, where "haven't decided" is honest.
+ *
+ * Text rather than a boolean so leaving it blank stays distinguishable from
+ * answering "no" - silence is not a refusal.
+ */
+const YES_NO_MAYBE_OPTIONS = [
+  { value: "yes", label: "Yes" },
+  { value: "open", label: "Open to it" },
+  { value: "no", label: "No" },
+];
+
 const WAS_MARRIED = new Set(["married", "divorced", "widowed", "annulled", "awaiting_divorce"]);
 
 /** Sibling counts up to `total`, so "married" can never offer an impossible number. */
@@ -145,14 +185,20 @@ const INITIAL_FORM = {
   placeOfBirthCountry: "",
   placeOfBirthCity: "",
 
-  // Step 2
-  educationLevel: "",
-  fieldOfStudy: "",
-  collegeUniversity: "",
+  // Step 2. educationLevel / fieldOfStudy / collegeUniversity are no longer
+  // entered directly - the server derives them from the highest `educations`
+  // row - so they are absent here on purpose.
+  educations: [] as EducationEntry[],
+  achievements: [] as AchievementEntry[],
   profession: "",
   employedIn: "",
   employedAs: "",
   salaryAmount: "",
+  settleAbroad: "",
+  employerSlug: "",
+  employerName: "",
+  workCountry: "",
+  visaStatus: "",
 
   // Step 3
   familyLivingInCountry: "",
@@ -173,21 +219,32 @@ const INITIAL_FORM = {
   smoking: "",
   drinking: "",
   hasChildren: false,
+  dailyRoutine: "",
+  interestsMusic: [] as string[],
+  interestsMovies: [] as string[],
+  interestsBooks: [] as string[],
+  interestsCuisines: [] as string[],
+  interestsTravel: [] as string[],
+  interestsHobbies: [] as string[],
+  interestsOther: "",
 
   // Step 5
   partnerAgeMin: "",
   partnerAgeMax: "",
   partnerHeightMin: "",
   partnerHeightMax: "",
-  partnerMaritalStatus: "",
-  partnerReligion: "",
-  partnerCommunity: "",
-  partnerMotherTongue: "",
-  partnerCountry: "",
-  partnerEducation: "",
-  partnerProfession: "",
-  partnerDiet: "",
   partnerAbout: "",
+  // Multi-value preferences. `[]` means no preference.
+  partnerMaritalStatuses: [] as string[],
+  partnerReligions: [] as string[],
+  partnerCommunities: [] as string[],
+  partnerMotherTongues: [] as string[],
+  partnerCountries: [] as string[],
+  partnerEducations: [] as string[],
+  partnerProfessions: [] as string[],
+  partnerDiets: [] as string[],
+  partnerRelocateAfterMarriage: [] as string[],
+  partnerSettleAbroad: [] as string[],
 
   // Step 6
   photo: "",
@@ -200,10 +257,10 @@ type FormState = typeof INITIAL_FORM;
 const STEP_FIELDS: (keyof FormState)[][] = [
   ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel", "aboutMe"],
   ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity"],
-  ["educationLevel", "fieldOfStudy", "collegeUniversity", "profession", "employedIn", "employedAs", "salaryAmount"],
+  ["educations", "achievements", "profession", "employedIn", "employedAs", "salaryAmount", "settleAbroad", "employerSlug", "employerName", "workCountry", "visaStatus"],
   ["familyLivingInCountry", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily", "fatherOccupation", "motherOccupation", "brothers", "brothersMarried", "sisters", "sistersMarried", "familyAbout"],
-  ["diet", "smoking", "drinking", "hasChildren"],
-  ["partnerAgeMin", "partnerAgeMax", "partnerHeightMin", "partnerHeightMax", "partnerMaritalStatus", "partnerReligion", "partnerCommunity", "partnerMotherTongue", "partnerCountry", "partnerEducation", "partnerProfession", "partnerDiet", "partnerAbout"],
+  ["diet", "smoking", "drinking", "hasChildren", "dailyRoutine", "interestsMusic", "interestsMovies", "interestsBooks", "interestsCuisines", "interestsTravel", "interestsHobbies", "interestsOther"],
+  ["partnerAgeMin", "partnerAgeMax", "partnerHeightMin", "partnerHeightMax", "partnerAbout", "partnerMaritalStatuses", "partnerReligions", "partnerCommunities", "partnerMotherTongues", "partnerCountries", "partnerEducations", "partnerProfessions", "partnerDiets", "partnerRelocateAfterMarriage", "partnerSettleAbroad"],
   ["photo", "photos"],
 ];
 
@@ -218,6 +275,7 @@ function PickerField({
   onChange,
   searchable = false,
   className = "",
+  selectedFirst,
 }: {
   label: string;
   options: { value: string; label: string }[];
@@ -225,6 +283,8 @@ function PickerField({
   onChange: (value: string) => void;
   searchable?: boolean;
   className?: string;
+  /** Pass false where the list is a numeric ladder - see SelectDropdown. */
+  selectedFirst?: boolean;
 }) {
   return (
     <SelectDropdown
@@ -235,6 +295,7 @@ function PickerField({
       onChange={onChange}
       searchable={searchable}
       className={className}
+      selectedFirst={selectedFirst}
     />
   );
 }
@@ -308,10 +369,21 @@ export default function ProfileRegisterPage() {
   );
 
   const communityOptions = useMemo(() => communitiesFor(form.religion), [form.religion]);
-  const partnerCommunityOptions = useMemo(
-    () => [ANY_OPTION, ...communitiesFor(form.partnerReligion)],
-    [form.partnerReligion],
-  );
+  /**
+   * Communities across every religion the member is open to.
+   *
+   * Community values are namespaced per religion, so with several religions
+   * selected the lists have to be concatenated - and de-duplicated, because a
+   * few community values appear under more than one religion.
+   */
+  const partnerCommunityOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return form.partnerReligions.flatMap((religion) =>
+      communitiesFor(religion).filter((option) =>
+        seen.has(option.value) ? false : (seen.add(option.value), true),
+      ),
+    );
+  }, [form.partnerReligions]);
   const religiosityDetails = useMemo(
     () => religiosityDetailOptions(form.religiosity),
     [form.religiosity],
@@ -334,11 +406,8 @@ export default function ProfileRegisterPage() {
           (Object.keys(INITIAL_FORM) as (keyof FormState)[]).forEach((key) => {
             const value = data[key];
             if (value === null || value === undefined || value === "") return;
-            // Numeric columns come back as numbers; the dropdowns bind strings.
-            (restored as any)[key] =
-              typeof INITIAL_FORM[key] === "string" && typeof value === "number"
-                ? String(value)
-                : value;
+            const coerced = coerceToFormShape(INITIAL_FORM[key], key, value);
+            if (coerced !== undefined) (restored as any)[key] = coerced;
           });
         }
       } catch {
@@ -352,10 +421,33 @@ export default function ProfileRegisterPage() {
       if (draft) {
         draftStep = draft.step;
         (Object.keys(draft.form) as (keyof FormState)[]).forEach((key) => {
-          const value = draft.form[key];
-          if (value !== null && value !== undefined && value !== "") {
-            (restored as any)[key] = value;
+          // Ignore keys the form no longer has - a draft can outlive a rename.
+          if (!(key in INITIAL_FORM)) return;
+
+          const raw = draft.form[key];
+          if (raw === null || raw === undefined || raw === "") return;
+
+          // A draft is arbitrarily old: one saved before a field became
+          // multi-select still holds a plain string, which would crash the
+          // control expecting an array. Anything unsalvageable is dropped and
+          // the server's value stands.
+          const value = coerceToFormShape(INITIAL_FORM[key], key, raw);
+          if (value === undefined) return;
+
+          // An empty array is truthy, so without this an untouched draft would
+          // wipe a gallery (or interests and education rows) that the server
+          // had just supplied. "" is treated as "not answered" above for the
+          // same reason; [] is its array equivalent.
+          if (
+            Array.isArray(value) &&
+            value.length === 0 &&
+            Array.isArray((restored as any)[key]) &&
+            (restored as any)[key].length > 0
+          ) {
+            return;
           }
+
+          (restored as any)[key] = value;
         });
       }
 
@@ -496,7 +588,11 @@ export default function ProfileRegisterPage() {
       );
     }
     if (s === 2) {
-      return form.educationLevel !== "" && form.profession !== "" && form.salaryAmount !== "";
+      // At least one qualification with a level chosen. The rest of an
+      // education row (institution, year) is optional - plenty of members will
+      // not want to name their college.
+      const hasEducation = form.educations.some((entry) => entry.level !== "");
+      return hasEducation && form.profession !== "" && form.salaryAmount !== "";
     }
     if (s === 3) {
       // Parents, siblings and the family note are optional; location and income
@@ -626,8 +722,8 @@ export default function ProfileRegisterPage() {
                   <div>
                     <span className="field-label">Height</span>
                     <div className="flex gap-3">
-                      <PickerField label="Feet" options={feetOptions} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" />
-                      <PickerField label="Inches" options={inchOptions} value={form.heightInches} onChange={(v) => setField("heightInches", v)} className="w-28" />
+                      <PickerField label="Feet" options={feetOptions} selectedFirst={false} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" />
+                      <PickerField label="Inches" options={inchOptions} selectedFirst={false} value={form.heightInches} onChange={(v) => setField("heightInches", v)} className="w-28" />
                     </div>
                   </div>
                 </div>
@@ -695,11 +791,25 @@ export default function ProfileRegisterPage() {
               <div key="career" className="flex flex-col gap-5 px-1">
                 <div className="form-section">
                   <p className="form-section-title">Education</p>
-                  <div className="mt-4 flex flex-col gap-5">
-                    <PickerField label="Highest Education Level" options={educationOptions} value={form.educationLevel} onChange={(v) => setField("educationLevel", v)} searchable />
-                    <PickerField label="Field of Study" options={fieldOfStudyOptions} value={form.fieldOfStudy} onChange={(v) => setField("fieldOfStudy", v)} searchable />
-                    <PickerField label="College / University" options={collegeOptions} value={form.collegeUniversity} onChange={(v) => setField("collegeUniversity", v)} searchable />
-                  </div>
+                  <p className="form-section-hint mb-4">
+                    Add each qualification you would like to show. Pick the country first —
+                    it narrows the list of institutions.
+                  </p>
+                  <EducationList
+                    value={form.educations}
+                    onChange={(educations) => setField("educations", educations)}
+                  />
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">Achievements &amp; recognition</p>
+                  <p className="form-section-hint mb-4">
+                    Optional. Awards, publications, ranks — anything you are proud of.
+                  </p>
+                  <AchievementList
+                    value={form.achievements}
+                    onChange={(achievements) => setField("achievements", achievements)}
+                  />
                 </div>
 
                 <div className="form-section">
@@ -709,6 +819,48 @@ export default function ProfileRegisterPage() {
                     <PickerField label="Employed In" options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
                     <PickerField label="Employed As" options={employedAsOptions} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
                     <PickerField label="Annual income" options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
+
+                    <EmployerPicker
+                      slug={form.employerSlug}
+                      name={form.employerName}
+                      onChange={(slug, name) =>
+                        setForm((p) => ({ ...p, employerSlug: slug, employerName: name }))
+                      }
+                      profession={form.profession}
+                      country={form.workCountry}
+                    />
+
+                    <div className="form-grid-2">
+                      <PickerField
+                        label="Country of work"
+                        options={COUNTRY_OPTIONS}
+                        value={form.workCountry}
+                        onChange={(v) =>
+                          // The employer list and the visa options are both
+                          // per country, so neither survives a change of it.
+                          setForm((p) => ({
+                            ...p,
+                            workCountry: v,
+                            employerSlug: "",
+                            employerName: "",
+                            visaStatus: "",
+                          }))
+                        }
+                        searchable
+                      />
+                      <VisaStatusPicker
+                        country={form.workCountry}
+                        value={form.visaStatus}
+                        onChange={(v) => setField("visaStatus", v)}
+                      />
+                    </div>
+
+                    <ChipGroup
+                      label="Interested in settling abroad?"
+                      options={YES_NO_MAYBE_OPTIONS}
+                      value={form.settleAbroad}
+                      onChange={(v) => setField("settleAbroad", v)}
+                    />
                   </div>
                 </div>
               </div>,
@@ -747,10 +899,10 @@ export default function ProfileRegisterPage() {
                       married figure down with it, so the pair can never end up
                       contradicting itself. The API enforces the same rule. */}
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <PickerField label="Brothers" options={SIBLING_COUNT_OPTIONS} value={form.brothers} onChange={(v) => setSiblingTotal("brothers", "brothersMarried", v)} />
-                    <PickerField label="Married" options={marriedOptionsUpTo(form.brothers)} value={form.brothersMarried} onChange={(v) => setField("brothersMarried", v)} />
-                    <PickerField label="Sisters" options={SIBLING_COUNT_OPTIONS} value={form.sisters} onChange={(v) => setSiblingTotal("sisters", "sistersMarried", v)} />
-                    <PickerField label="Married" options={marriedOptionsUpTo(form.sisters)} value={form.sistersMarried} onChange={(v) => setField("sistersMarried", v)} />
+                    <PickerField label="Brothers" options={SIBLING_COUNT_OPTIONS} selectedFirst={false} value={form.brothers} onChange={(v) => setSiblingTotal("brothers", "brothersMarried", v)} />
+                    <PickerField label="Married" options={marriedOptionsUpTo(form.brothers)} selectedFirst={false} value={form.brothersMarried} onChange={(v) => setField("brothersMarried", v)} />
+                    <PickerField label="Sisters" options={SIBLING_COUNT_OPTIONS} selectedFirst={false} value={form.sisters} onChange={(v) => setSiblingTotal("sisters", "sistersMarried", v)} />
+                    <PickerField label="Married" options={marriedOptionsUpTo(form.sisters)} selectedFirst={false} value={form.sistersMarried} onChange={(v) => setField("sistersMarried", v)} />
                   </div>
                 </div>
 
@@ -763,24 +915,69 @@ export default function ProfileRegisterPage() {
                 />
               </div>,
 
-              /* ---------- 4: Lifestyle ---------- */
+              /* ---------- 4: Lifestyle & habits ---------- */
               <div key="lifestyle" className="flex flex-col gap-5 px-1">
-                <div className="form-grid-2">
-                  <PickerField label="Diet" options={dietOptions} value={form.diet} onChange={(v) => setField("diet", v)} />
-                  <PickerField label="Smoking" options={smokingOptions} value={form.smoking} onChange={(v) => setField("smoking", v)} />
-                  <PickerField label="Drinking" options={drinkingOptions} value={form.drinking} onChange={(v) => setField("drinking", v)} />
-                </div>
+                <div className="form-section">
+                  <p className="form-section-title">Day to day</p>
+                  <div className="form-grid-2 mt-3">
+                    <PickerField label="Diet" options={dietOptions} value={form.diet} onChange={(v) => setField("diet", v)} />
+                    <PickerField label="Smoking" options={smokingOptions} value={form.smoking} onChange={(v) => setField("smoking", v)} />
+                    <PickerField label="Drinking" options={drinkingOptions} value={form.drinking} onChange={(v) => setField("drinking", v)} />
+                  </div>
 
-                {WAS_MARRIED.has(form.maritalStatus) && (
-                  <div className="form-section">
+                  <div className="mt-5">
                     <ChipGroup
-                      label="Do you have children?"
-                      options={YES_NO_OPTIONS}
-                      value={form.hasChildren ? "yes" : "no"}
-                      onChange={(v) => setField("hasChildren", v === "yes")}
+                      label="Your rhythm"
+                      options={routineOptions}
+                      value={form.dailyRoutine}
+                      onChange={(v) => setField("dailyRoutine", v)}
                     />
                   </div>
-                )}
+
+                  {WAS_MARRIED.has(form.maritalStatus) && (
+                    <div className="mt-5">
+                      <ChipGroup
+                        label="Do you have children?"
+                        options={YES_NO_OPTIONS}
+                        value={form.hasChildren ? "yes" : "no"}
+                        onChange={(v) => setField("hasChildren", v === "yes")}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">What you are into</p>
+                  <p className="form-section-hint mb-4">
+                    All optional — but this is the part people actually read. Pick a few in
+                    each row; they show up as tags on your profile.
+                  </p>
+
+                  <div className="flex flex-col gap-5">
+                    {INTEREST_CATEGORIES.map((category) => (
+                      <MultiSelect
+                        key={category.key}
+                        label={category.label}
+                        options={category.options}
+                        value={form[category.key]}
+                        onChange={(v) => setField(category.key, v)}
+                        searchable
+                        maxSelected={8}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-5">
+                    <LongText
+                      id="interestsOther"
+                      label="Anything else about you"
+                      hint="Optional. Something the lists above do not cover."
+                      value={form.interestsOther}
+                      onChange={(v) => setField("interestsOther", v)}
+                      maxLength={300}
+                    />
+                  </div>
+                </div>
               </div>,
 
               /* ---------- 5: Partner preference ---------- */
@@ -791,31 +988,111 @@ export default function ProfileRegisterPage() {
 
                 <div className="form-section">
                   <p className="form-section-title">Age &amp; height</p>
-                  <div className="form-grid-2 mt-3">
-                    <PickerField label="Age from" options={PARTNER_AGE_OPTIONS} value={form.partnerAgeMin} onChange={(v) => setField("partnerAgeMin", v)} />
-                    <PickerField label="Age to" options={PARTNER_AGE_OPTIONS} value={form.partnerAgeMax} onChange={(v) => setField("partnerAgeMax", v)} />
-                    <PickerField label="Height from" options={PARTNER_HEIGHT_OPTIONS} value={form.partnerHeightMin} onChange={(v) => setField("partnerHeightMin", v)} />
-                    <PickerField label="Height to" options={PARTNER_HEIGHT_OPTIONS} value={form.partnerHeightMax} onChange={(v) => setField("partnerHeightMax", v)} />
+                  <p className="form-section-hint mb-4">
+                    Drag either end. Leave them alone if you have no preference.
+                  </p>
+                  <div className="flex flex-col gap-6">
+                    <DualRangeSlider
+                      label="Age"
+                      min={PARTNER_AGE_MIN}
+                      max={PARTNER_AGE_MAX}
+                      value={[toNum(form.partnerAgeMin), toNum(form.partnerAgeMax)]}
+                      onChange={([lo, hi]) =>
+                        setForm((p) => ({ ...p, partnerAgeMin: String(lo), partnerAgeMax: String(hi) }))
+                      }
+                      onClear={() =>
+                        setForm((p) => ({ ...p, partnerAgeMin: "", partnerAgeMax: "" }))
+                      }
+                      format={(n) => `${n} yrs`}
+                    />
+
+                    {/* Stored as total inches, which is why the bounds are 48-84
+                        rather than a feet/inches pair. */}
+                    <DualRangeSlider
+                      label="Height"
+                      min={PARTNER_HEIGHT_MIN_INCHES}
+                      max={PARTNER_HEIGHT_MAX_INCHES}
+                      value={[toNum(form.partnerHeightMin), toNum(form.partnerHeightMax)]}
+                      onChange={([lo, hi]) =>
+                        setForm((p) => ({
+                          ...p,
+                          partnerHeightMin: String(lo),
+                          partnerHeightMax: String(hi),
+                        }))
+                      }
+                      onClear={() =>
+                        setForm((p) => ({ ...p, partnerHeightMin: "", partnerHeightMax: "" }))
+                      }
+                      format={(n) => `${Math.floor(n / 12)} ft ${n % 12} in`}
+                    />
                   </div>
                 </div>
 
                 <div className="form-section">
                   <p className="form-section-title">Background</p>
+                  <p className="form-section-hint mb-3">
+                    Pick as many as you are open to — they widen your matches rather than narrowing them.
+                  </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Marital status" options={PARTNER_MARITAL_OPTIONS} value={form.partnerMaritalStatus} onChange={(v) => setField("partnerMaritalStatus", v)} />
-                    <PickerField label="Religion" options={PARTNER_RELIGION_OPTIONS} value={form.partnerReligion} onChange={(v) => setForm((p) => ({ ...p, partnerReligion: v, partnerCommunity: "" }))} />
-                    <PickerField label="Community" options={partnerCommunityOptions} value={form.partnerCommunity} onChange={(v) => setField("partnerCommunity", v)} searchable />
-                    <PickerField label="Mother tongue" options={PARTNER_MOTHER_TONGUE_OPTIONS} value={form.partnerMotherTongue} onChange={(v) => setField("partnerMotherTongue", v)} searchable />
-                    <PickerField label="Country" options={PARTNER_COUNTRY_OPTIONS} value={form.partnerCountry} onChange={(v) => setField("partnerCountry", v)} searchable />
-                    <PickerField label="Diet" options={PARTNER_DIET_OPTIONS} value={form.partnerDiet} onChange={(v) => setField("partnerDiet", v)} />
+                    <MultiSelect label="Marital status" options={PARTNER_MARITAL_CHOICES} value={form.partnerMaritalStatuses} onChange={(v) => setField("partnerMaritalStatuses", v)} exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect
+                      label="Religion"
+                      options={PARTNER_RELIGION_CHOICES}
+                      value={form.partnerReligions}
+                      onChange={(v) =>
+                        // Communities are namespaced per religion, so dropping a
+                        // religion has to drop the communities chosen under it.
+                        setForm((p) => ({
+                          ...p,
+                          partnerReligions: v,
+                          partnerCommunities: p.partnerCommunities.filter((c) =>
+                            v.some((r) => communitiesFor(r).some((o) => o.value === c)),
+                          ),
+                        }))
+                      }
+                      exclusiveValue="any"
+                      maxSelected={4}
+                    />
+                    <MultiSelect label="Community" options={partnerCommunityOptions} value={form.partnerCommunities} onChange={(v) => setField("partnerCommunities", v)} searchable maxSelected={8} />
+                    <MultiSelect label="Mother tongue" options={PARTNER_MOTHER_TONGUE_CHOICES} value={form.partnerMotherTongues} onChange={(v) => setField("partnerMotherTongues", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Country" options={PARTNER_COUNTRY_CHOICES} value={form.partnerCountries} onChange={(v) => setField("partnerCountries", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Diet" options={PARTNER_DIET_CHOICES} value={form.partnerDiets} onChange={(v) => setField("partnerDiets", v)} exclusiveValue="any" maxSelected={4} />
                   </div>
                 </div>
 
                 <div className="form-section">
                   <p className="form-section-title">Education &amp; work</p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Education" options={PARTNER_EDUCATION_OPTIONS} value={form.partnerEducation} onChange={(v) => setField("partnerEducation", v)} searchable />
-                    <PickerField label="Profession" options={PARTNER_PROFESSION_OPTIONS} value={form.partnerProfession} onChange={(v) => setField("partnerProfession", v)} searchable />
+                    <MultiSelect label="Education" options={PARTNER_EDUCATION_CHOICES} value={form.partnerEducations} onChange={(v) => setField("partnerEducations", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Profession" options={PARTNER_PROFESSION_CHOICES} value={form.partnerProfessions} onChange={(v) => setField("partnerProfessions", v)} searchable exclusiveValue="any" maxSelected={6} />
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">After marriage</p>
+                  <p className="form-section-hint mb-3">
+                    Expectations about moving are worth settling early — they are a common
+                    reason otherwise good matches do not work out.
+                  </p>
+                  <p className="form-section-hint mb-3">
+                    Pick every answer you would accept — each one you choose widens who
+                    reaches you.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-5">
+                    <MultiSelect
+                      label="Should your partner be willing to relocate to your location?"
+                      options={MOBILITY_CHOICES}
+                      value={form.partnerRelocateAfterMarriage}
+                      onChange={(v) => setField("partnerRelocateAfterMarriage", v)}
+                      exclusiveValue="any"
+                    />
+                    <MultiSelect
+                      label="Would you like a partner interested in settling abroad?"
+                      options={MOBILITY_CHOICES}
+                      value={form.partnerSettleAbroad}
+                      onChange={(v) => setField("partnerSettleAbroad", v)}
+                      exclusiveValue="any"
+                    />
                   </div>
                 </div>
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import {
   BirthDateTimePicker,
   ChipGroup,
+  MultiSelect,
   SelectDropdown,
   TextField,
 } from '@lokesh-workspace/ui'
@@ -32,6 +33,13 @@ const PencilIcon = () => (
 
 /** Human-readable value for the read-only row. */
 export function displayValue(def: ProfileFieldDef, profile: PublicProfile): string {
+  // Generic array guard, ahead of the per-key switch: every multi-value field
+  // resolves the same way, so future ones are covered without another case.
+  const raw = (profile as any)[def.key]
+  if (Array.isArray(raw)) {
+    return raw.length ? labelFor(def.key, raw) : ''
+  }
+
   switch (def.key) {
     case 'height':
       return formatHeight(profile.heightFeet, profile.heightInches)
@@ -96,6 +104,11 @@ export default function EditableField({ def, profile, onSave }: Props) {
     setError('')
     if (def.editor === 'height') {
       setDraft({ heightFeet: String(profile.heightFeet || ''), heightInches: String(profile.heightInches ?? '') })
+    } else if (def.editor === 'multiselect') {
+      // Must come before the generic branch below: its `?? ''` fallback would
+      // hand MultiSelect a string where it requires an array.
+      const current = (profile as any)[def.key]
+      setDraft({ [def.key]: Array.isArray(current) ? [...current] : [] })
     } else if (def.editor === 'chips' && ['manglikLevel', 'familyType'].includes(def.key)) {
       setDraft({ [def.key]: String((profile as any)[def.key] ?? 0) })
     } else if (def.editor === 'bool') {
@@ -119,6 +132,9 @@ export default function EditableField({ def, profile, onSave }: Props) {
     let patch: Record<string, unknown>
     if (def.editor === 'height') {
       patch = { heightFeet: draft.heightFeet, heightInches: draft.heightInches }
+    } else if (def.editor === 'multiselect') {
+      // An empty array is a real answer ("no preference"), not a missing one.
+      patch = { [def.key]: draft[def.key] ?? [] }
     } else if (def.editor === 'bool') {
       patch = { [def.key]: draft[def.key] === 'yes' }
     } else if (def.editor === 'chips' && ['manglikLevel', 'familyType'].includes(def.key)) {
@@ -202,6 +218,17 @@ export default function EditableField({ def, profile, onSave }: Props) {
         />
       )}
 
+      {def.editor === 'multiselect' && (
+        <MultiSelect
+          label={def.label}
+          options={optionsForField(def, profile)}
+          value={Array.isArray(value) ? (value as string[]) : []}
+          onChange={(v) => setDraft({ [def.key]: v })}
+          searchable={def.searchable}
+          exclusiveValue="any"
+        />
+      )}
+
       {def.editor === 'chips' && (
         <ChipGroup
           options={(def.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
@@ -235,7 +262,7 @@ export default function EditableField({ def, profile, onSave }: Props) {
           <SelectDropdown
             label="Feet"
             placeholder=""
-            options={HEIGHT_FEET_OPTIONS}
+            options={HEIGHT_FEET_OPTIONS} selectedFirst={false}
             value={draft.heightFeet}
             onChange={(v) => setDraft({ ...draft, heightFeet: v })}
             className="w-28"
@@ -243,7 +270,7 @@ export default function EditableField({ def, profile, onSave }: Props) {
           <SelectDropdown
             label="Inches"
             placeholder=""
-            options={HEIGHT_INCH_OPTIONS}
+            options={HEIGHT_INCH_OPTIONS} selectedFirst={false}
             value={draft.heightInches}
             onChange={(v) => setDraft({ ...draft, heightInches: v })}
             className="w-28"

@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { VerifiedBadge } from '@lokesh-workspace/ui'
 
+import Avatar from '@/components/profile/Avatar'
 import { firstIncompleteStep, missingFields } from '@/lib/profileCompletion'
 import type { MemberStats } from '@/components/home/InsightsPanel'
 import type { MyProfile } from '@/types/profile'
@@ -84,17 +86,13 @@ export default function WelcomeHeader({
   return (
     <header className="welcome">
       <div className="welcome-main">
-        {profile?.photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.photo} alt="" className="welcome-avatar" />
-        ) : (
-          <span className="welcome-avatar welcome-avatar-initial" aria-hidden="true">
-            {firstName.charAt(0).toUpperCase()}
-          </span>
-        )}
+        <Avatar src={profile?.photo} name={firstName} className="welcome-avatar" decorative />
 
         <div className="min-w-0">
-          <h1 className="welcome-greeting">Welcome back, {firstName}</h1>
+          <h1 className="welcome-greeting">
+            Welcome back, {firstName}
+            <VerifiedBadge level={(profile?.verification_level ?? 0) as 0 | 1 | 2 | 3} size="md" />
+          </h1>
           <p className="welcome-sub">
             {live
               ? 'Your profile is live and visible to matches.'

@@ -66,6 +66,9 @@ const LABEL_MAPS: Record<string, Record<string, string>> = {
   partnerEducation: { any: 'No preference', ...toLabelMap(educationOptions) },
   partnerProfession: { any: 'No preference', ...toLabelMap(professionOptions) },
   partnerDiet: { any: 'No preference', ...toLabelMap(dietOptions) },
+  settleAbroad: { yes: 'Yes', open: 'Open to it', no: 'No' },
+  partnerSettleAbroad: { yes: 'Yes', open: 'Open to discussion', no: 'No' },
+  partnerRelocateAfterMarriage: { yes: 'Yes', open: 'Open to discussion', no: 'No' },
 }
 
 export const MARITAL_STATUS_LABELS = MARITAL_STATUS_LABELS_RAW
@@ -123,6 +126,17 @@ const COMMUNITY_LABELS: Record<string, string> = Object.values(communitiesByReli
 
 export function labelFor(field: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return ''
+
+  // Multi-value fields (partner preferences, interests) hold arrays. Without
+  // this branch String(['hindu','jain']) is "hindu,jain", which titleCase then
+  // renders as "Hindu,jain" - each value has to be resolved on its own.
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => labelFor(field, entry))
+      .filter(Boolean)
+      .join(', ')
+  }
+
   const raw = String(value)
 
   if (field === 'maritalStatus') return MARITAL_STATUS_LABELS[raw] ?? titleCase(raw)

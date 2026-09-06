@@ -39,6 +39,7 @@ const toCard = (profile: PublicProfile): ProfileCardData => ({
   ].filter(Boolean),
   // Display picture plus gallery - what a visitor would actually be able to see.
   photoCount: (profile.photo ? 1 : 0) + (profile.photos?.length ?? 0),
+  verificationLevel: profile.verification_level ?? 0,
 })
 
 function matchesFilters(profile: PublicProfile, filters: MatchFilters): boolean {
@@ -97,8 +98,13 @@ function sortEntries(entries: MatchEntry[], sort: SortKey): MatchEntry[] {
       return sorted.reverse()
     case 'best':
     default:
+      // Mirrors the server's ordering in /profiles/matches. Sorting on
+      // completeness alone here silently undid the verification ranking the
+      // server had just applied.
       return sorted.sort(
-        (a, b) => (b.profile.profile_completeness ?? 0) - (a.profile.profile_completeness ?? 0),
+        (a, b) =>
+          (b.profile.verification_level ?? 0) - (a.profile.verification_level ?? 0) ||
+          (b.profile.profile_completeness ?? 0) - (a.profile.profile_completeness ?? 0),
       )
   }
 }
