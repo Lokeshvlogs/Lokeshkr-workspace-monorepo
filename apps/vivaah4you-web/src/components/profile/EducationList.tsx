@@ -1,4 +1,5 @@
 'use client'
+import { BookOpen, CalendarDays, Globe2, GraduationCap } from 'lucide-react'
 
 import React from 'react'
 import { SelectDropdown, TextField } from '@lokesh-workspace/ui'
@@ -87,6 +88,7 @@ export default function EducationList({ value, onChange }: Props) {
             <div className="form-grid-2 mt-3">
               <SelectDropdown
                 label="Level"
+                icon={<GraduationCap />}
                 placeholder=""
                 options={educationOptions}
                 value={entry.level}
@@ -105,6 +107,7 @@ export default function EducationList({ value, onChange }: Props) {
 
               <SelectDropdown
                 label="Country of study"
+                icon={<Globe2 />}
                 placeholder=""
                 options={COUNTRY_OPTIONS}
                 value={entry.country}
@@ -168,6 +171,7 @@ export default function EducationList({ value, onChange }: Props) {
                 {!school && (
                   <SelectDropdown
                     label="Field of study"
+                    icon={<BookOpen />}
                     placeholder=""
                     options={fieldOfStudyOptions}
                     value={entry.fieldOfStudy}
@@ -178,6 +182,7 @@ export default function EducationList({ value, onChange }: Props) {
                 <TextField
                   id={`edu-year-${index}`}
                   label="Year completed"
+                  icon={<CalendarDays />}
                   type="number"
                   inputMode="numeric"
                   value={entry.completionYear}

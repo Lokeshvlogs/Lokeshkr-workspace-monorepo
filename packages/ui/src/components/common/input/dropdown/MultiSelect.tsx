@@ -3,6 +3,7 @@ import { Check, ChevronDown } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState, CSSProperties, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption } from '../../../../types/select';
+import FloatingLabel from '../FloatingLabel';
 
 interface Props {
   id?: string;
@@ -325,21 +326,7 @@ export default function MultiSelect({
           onClick={() => !disabled && setOpen(o => !o)}
           onKeyDown={onKeyDown}
         >
-          {/* With an icon the label becomes a flex row, so the ellipsis that
-              `.text-field-label` applies to itself has to move onto the text
-              span instead - hence the modifier class rather than always-on
-              flex. */}
-          <label
-            htmlFor={id}
-            className={`text-field-label ${icon ? 'text-field-label-icon' : ''}`}
-          >
-            {icon && (
-              <span className="field-label-icon" aria-hidden="true">
-                {icon}
-              </span>
-            )}
-            {icon ? <span className="field-label-text">{label}</span> : label}
-          </label>
+          <FloatingLabel htmlFor={id} label={label} icon={icon} />
 
           <span className="select-label truncate">{summary}</span>
 

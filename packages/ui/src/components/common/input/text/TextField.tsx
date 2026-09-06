@@ -1,9 +1,12 @@
 "use client";
 
 import React from "react";
+import FloatingLabel from '../FloatingLabel';
 
 interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  /** Decorative glyph drawn ahead of the floating label. */
+  icon?: React.ReactNode;
   className?: string;
   labelClassName?: string;
   errorValue?: string;
@@ -24,6 +27,7 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const TextField = ({
   label,
+  icon,
   id,
   className = "",
   labelClassName = "",
@@ -51,9 +55,7 @@ export const TextField = ({
       aria-describedby={errorValue ? `${id}-error` : undefined}
       className={`input ${errorValue ? "input-error" : ""} ${className}`}
     />
-    <label htmlFor={id} className={`text-field-label ${labelClassName}`}>
-      {label}
-    </label>
+    <FloatingLabel htmlFor={id} label={label} icon={icon} className={labelClassName} />
     {showError && errorValue && (
       <p id={`${id}-error`} className="error-text" role="alert">
         {errorValue}

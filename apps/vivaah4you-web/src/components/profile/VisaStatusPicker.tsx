@@ -1,4 +1,5 @@
 'use client'
+import { BadgeCheck } from 'lucide-react'
 
 import React, { useEffect, useState } from 'react'
 import { SelectDropdown } from '@lokesh-workspace/ui'
@@ -46,6 +47,7 @@ export default function VisaStatusPicker({ country, value, onChange, disabled }:
   return (
     <SelectDropdown
       label={country ? 'Residency status' : 'Residency status (pick a country first)'}
+      icon={<BadgeCheck />}
       placeholder=""
       options={options}
       value={value}

@@ -3,22 +3,45 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Award,
+  Baby,
   BookOpen,
   Briefcase,
+  Building,
+  Building2,
   Cake,
+  CalendarClock,
+  Camera,
+  Cigarette,
+  Compass,
+  Film,
   Globe2,
   GraduationCap,
   Heart,
   Home,
+  ImagePlus,
   Landmark,
   Languages,
   MapPin,
+  Music,
+  Palette,
+  Palmtree,
+  PenLine,
+  PersonStanding,
   Plane,
   Ruler,
   Salad,
   SlidersHorizontal,
+  Sparkles,
+  Star,
+  Sun,
+  User,
+  UserCog,
   Users,
   Users2,
+  Utensils,
+  Wallet,
+  Wine,
 } from "lucide-react";
 import {
   AvatarCropper,
@@ -89,6 +112,20 @@ import {
 /** Form values are strings; the sliders want numbers, and "" means unset. */
 const toNum = (value: string): number | null =>
   value === "" || value === null || value === undefined ? null : Number(value);
+
+/**
+ * One glyph per interest row. Keyed off `INTEREST_CATEGORIES[].key` rather than
+ * held on the category itself, so the constants file stays free of JSX and of a
+ * React dependency.
+ */
+const INTEREST_ICONS: Record<string, React.ReactNode> = {
+  interestsMusic: <Music />,
+  interestsMovies: <Film />,
+  interestsBooks: <BookOpen />,
+  interestsCuisines: <Utensils />,
+  interestsTravel: <Palmtree />,
+  interestsHobbies: <Palette />,
+};
 
 const STEPS = [
   { title: "Basic Details", hint: "How you appear to other families." },
@@ -289,6 +326,7 @@ const PHOTO_STEP = 6;
 /** SelectDropdown with the wizard's shared look, so every picker matches. */
 function PickerField({
   label,
+  icon,
   options,
   value,
   onChange,
@@ -297,6 +335,7 @@ function PickerField({
   selectedFirst,
 }: {
   label: string;
+  icon?: React.ReactNode;
   options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
@@ -308,6 +347,7 @@ function PickerField({
   return (
     <SelectDropdown
       label={label}
+      icon={icon}
       placeholder=""
       options={options}
       value={value}
@@ -322,6 +362,7 @@ function PickerField({
 function LongText({
   id,
   label,
+  icon,
   hint,
   value,
   onChange,
@@ -329,6 +370,7 @@ function LongText({
 }: {
   id: string;
   label: string;
+  icon?: React.ReactNode;
   hint?: string;
   value: string;
   onChange: (value: string) => void;
@@ -336,7 +378,10 @@ function LongText({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="field-label">{label}</label>
+      <label htmlFor={id} className={`field-label ${icon ? "field-label-row" : ""}`}>
+        {icon && <span className="field-label-icon" aria-hidden="true">{icon}</span>}
+        {label}
+      </label>
       {hint && <p className="mb-2 text-xs text-color-placeholder-text">{hint}</p>}
       <textarea
         id={id}
@@ -735,19 +780,25 @@ export default function ProfileRegisterPage() {
               /* ---------- 0: Basic details ---------- */
               <div key="basic" className="flex flex-col gap-5 px-1">
                 <div className="form-grid-2">
-                  <TextField id="firstName" label="First Name" value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
-                  <TextField id="surname" label="Surname" value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
+                  <TextField id="firstName" label="First Name" icon={<User />} value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
+                  <TextField id="surname" label="Surname" icon={<User />} value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
                 </div>
 
                 <div>
-                  <span className="field-label">Date &amp; time of birth</span>
+                  <span className="field-label field-label-row">
+                    <span className="field-label-icon" aria-hidden="true"><CalendarClock /></span>
+                    Date &amp; time of birth
+                  </span>
                   <BirthDateTimePicker value={form.dob} onChange={(v) => setField("dob", v)} />
                 </div>
 
                 <div className="form-grid-2">
-                  <ChipGroup label="Gender" options={GENDER_OPTIONS} value={form.gender} onChange={(v) => setField("gender", v)} />
+                  <ChipGroup label="Gender" icon={<Users />} options={GENDER_OPTIONS} value={form.gender} onChange={(v) => setField("gender", v)} />
                   <div>
-                    <span className="field-label">Height</span>
+                    <span className="field-label field-label-row">
+                      <span className="field-label-icon" aria-hidden="true"><Ruler /></span>
+                      Height
+                    </span>
                     <div className="flex gap-3">
                       <PickerField label="Feet" options={feetOptions} selectedFirst={false} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" />
                       <PickerField label="Inches" options={inchOptions} selectedFirst={false} value={form.heightInches} onChange={(v) => setField("heightInches", v)} className="w-28" />
@@ -755,13 +806,14 @@ export default function ProfileRegisterPage() {
                   </div>
                 </div>
 
-                <ChipGroup label="Body Physique" options={physiqueOptions} value={form.bodyPhysique} onChange={(v) => setField("bodyPhysique", v)} />
-                <ChipGroup label="Marital Status" options={MARITAL_OPTIONS} value={form.maritalStatus} onChange={(v) => setField("maritalStatus", v)} />
-                <ChipGroup label="Are you Manglik?" options={MANGLIK_OPTIONS} value={form.manglikLevel} onChange={(v) => setField("manglikLevel", v)} />
+                <ChipGroup label="Body Physique" icon={<PersonStanding />} options={physiqueOptions} value={form.bodyPhysique} onChange={(v) => setField("bodyPhysique", v)} />
+                <ChipGroup label="Marital Status" icon={<Heart />} options={MARITAL_OPTIONS} value={form.maritalStatus} onChange={(v) => setField("maritalStatus", v)} />
+                <ChipGroup label="Are you Manglik?" icon={<Star />} options={MANGLIK_OPTIONS} value={form.manglikLevel} onChange={(v) => setField("manglikLevel", v)} />
 
                 <LongText
                   id="aboutMe"
                   label="About yourself"
+                  icon={<PenLine />}
                   hint="Optional. A few lines in your own words — what you enjoy, what matters to you."
                   value={form.aboutMe}
                   onChange={(v) => setField("aboutMe", v)}
@@ -771,14 +823,17 @@ export default function ProfileRegisterPage() {
               /* ---------- 1: Social background ---------- */
               <div key="social" className="flex flex-col gap-5 px-1">
                 <div className="form-grid-2">
-                  <PickerField label="Religion" options={RELIGION_OPTIONS} value={form.religion} onChange={(v) => setForm((p) => ({ ...p, religion: v, community: "" }))} />
-                  <PickerField label="Caste / Community" options={communityOptions} value={form.community} onChange={(v) => setField("community", v)} searchable />
+                  <PickerField label="Religion" icon={<Landmark />} options={RELIGION_OPTIONS} value={form.religion} onChange={(v) => setForm((p) => ({ ...p, religion: v, community: "" }))} />
+                  <PickerField label="Caste / Community" icon={<Users2 />} options={communityOptions} value={form.community} onChange={(v) => setField("community", v)} searchable />
                 </div>
 
-                <PickerField label="Mother Tongue" options={motherTongueOptions} value={form.mothertongue} onChange={(v) => setField("mothertongue", v)} searchable />
+                <PickerField label="Mother Tongue" icon={<Languages />} options={motherTongueOptions} value={form.mothertongue} onChange={(v) => setField("mothertongue", v)} searchable />
 
                 <div className="form-section">
-                  <p className="form-section-title">Religious outlook</p>
+                  <p className="form-section-title">
+                    <Compass size={17} className="form-section-icon" aria-hidden="true" />
+                    Religious outlook
+                  </p>
                   <p className="form-section-hint mb-3">Pick the stance that fits you, then how it shows up day to day.</p>
                   <ChipGroup
                     options={RELIGIOSITY_OPTIONS}
@@ -789,6 +844,7 @@ export default function ProfileRegisterPage() {
                     <div className="mt-4">
                       <PickerField
                         label="More specifically"
+                        icon={<Compass />}
                         options={religiosityDetails}
                         value={form.religiosityDetail}
                         onChange={(v) => setField("religiosityDetail", v)}
@@ -798,18 +854,24 @@ export default function ProfileRegisterPage() {
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Currently living in</p>
+                  <p className="form-section-title">
+                    <MapPin size={17} className="form-section-icon" aria-hidden="true" />
+                    Currently living in
+                  </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" options={COUNTRY_OPTIONS} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentCity: "" }))} searchable />
-                    <PickerField label="City" options={citiesForCountry(form.currentCountry)} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentCity: "" }))} searchable />
+                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.currentCountry)} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
                   </div>
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Place of birth</p>
+                  <p className="form-section-title">
+                    <Baby size={17} className="form-section-icon" aria-hidden="true" />
+                    Place of birth
+                  </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" options={COUNTRY_OPTIONS} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthCity: "" }))} searchable />
-                    <PickerField label="City" options={citiesForCountry(form.placeOfBirthCountry)} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthCity: "" }))} searchable />
+                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.placeOfBirthCountry)} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
                   </div>
                 </div>
               </div>,
@@ -817,7 +879,10 @@ export default function ProfileRegisterPage() {
               /* ---------- 2: Education & career ---------- */
               <div key="career" className="flex flex-col gap-5 px-1">
                 <div className="form-section">
-                  <p className="form-section-title">Education</p>
+                  <p className="form-section-title">
+                    <GraduationCap size={17} className="form-section-icon" aria-hidden="true" />
+                    Education
+                  </p>
                   <p className="form-section-hint mb-4">
                     Add each qualification you would like to show. Pick the country first —
                     it narrows the list of institutions.
@@ -829,7 +894,10 @@ export default function ProfileRegisterPage() {
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Achievements &amp; recognition</p>
+                  <p className="form-section-title">
+                    <Award size={17} className="form-section-icon" aria-hidden="true" />
+                    Achievements &amp; recognition
+                  </p>
                   <p className="form-section-hint mb-4">
                     Optional. Awards, publications, ranks — anything you are proud of.
                   </p>
@@ -840,12 +908,15 @@ export default function ProfileRegisterPage() {
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Profession</p>
+                  <p className="form-section-title">
+                    <Building size={17} className="form-section-icon" aria-hidden="true" />
+                    Profession
+                  </p>
                   <div className="mt-4 flex flex-col gap-5">
-                    <PickerField label="Profession" options={professionOptions} value={form.profession} onChange={(v) => setField("profession", v)} searchable />
-                    <PickerField label="Employed In" options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
-                    <PickerField label="Employed As" options={employedAsOptions} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
-                    <PickerField label="Annual income" options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
+                    <PickerField label="Profession" icon={<Briefcase />} options={professionOptions} value={form.profession} onChange={(v) => setField("profession", v)} searchable />
+                    <PickerField label="Employed In" icon={<Building2 />} options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
+                    <PickerField label="Employed As" icon={<UserCog />} options={employedAsOptions} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
+                    <PickerField label="Annual income" icon={<Wallet />} options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
 
                     <EmployerPicker
                       slug={form.employerSlug}
@@ -860,6 +931,7 @@ export default function ProfileRegisterPage() {
                     <div className="form-grid-2">
                       <PickerField
                         label="Country of work"
+                        icon={<Globe2 />}
                         options={COUNTRY_OPTIONS}
                         value={form.workCountry}
                         onChange={(v) =>
@@ -884,6 +956,7 @@ export default function ProfileRegisterPage() {
 
                     <ChipGroup
                       label="Interested in settling abroad?"
+                      icon={<Plane />}
                       options={YES_NO_MAYBE_OPTIONS}
                       value={form.settleAbroad}
                       onChange={(v) => setField("settleAbroad", v)}
@@ -895,31 +968,40 @@ export default function ProfileRegisterPage() {
               /* ---------- 3: Family background ---------- */
               <div key="family" className="flex flex-col gap-5 px-1">
                 <div className="form-section">
-                  <p className="form-section-title">Where your family lives</p>
+                  <p className="form-section-title">
+                    <MapPin size={17} className="form-section-icon" aria-hidden="true" />
+                    Where your family lives
+                  </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" options={COUNTRY_OPTIONS} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInCity: "" }))} searchable />
-                    <PickerField label="City" options={citiesForCountry(form.familyLivingInCountry)} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInCity: "" }))} searchable />
+                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.familyLivingInCountry)} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
                   </div>
                   <div className="mt-4">
-                    <PickerField label="Family income (per annum)" options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
+                    <PickerField label="Family income (per annum)" icon={<Wallet />} options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
                   </div>
                   <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <ChipGroup label="Family Type" options={FAMILY_TYPE_OPTIONS} value={form.familyType} onChange={(v) => setField("familyType", v)} />
-                    <ChipGroup label="Lives with family" options={YES_NO_OPTIONS} value={form.livesWithFamily ? "yes" : "no"} onChange={(v) => setField("livesWithFamily", v === "yes")} />
+                    <ChipGroup label="Family Type" icon={<Users />} options={FAMILY_TYPE_OPTIONS} value={form.familyType} onChange={(v) => setField("familyType", v)} />
+                    <ChipGroup label="Lives with family" icon={<Home />} options={YES_NO_OPTIONS} value={form.livesWithFamily ? "yes" : "no"} onChange={(v) => setField("livesWithFamily", v === "yes")} />
                   </div>
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Parents</p>
+                  <p className="form-section-title">
+                    <Users size={17} className="form-section-icon" aria-hidden="true" />
+                    Parents
+                  </p>
                   <p className="form-section-hint mb-3">Optional.</p>
                   <div className="form-grid-2">
-                    <PickerField label="Father" options={PARENT_OCCUPATION_OPTIONS} value={form.fatherOccupation} onChange={(v) => setField("fatherOccupation", v)} />
-                    <PickerField label="Mother" options={PARENT_OCCUPATION_OPTIONS} value={form.motherOccupation} onChange={(v) => setField("motherOccupation", v)} />
+                    <PickerField label="Father" icon={<Briefcase />} options={PARENT_OCCUPATION_OPTIONS} value={form.fatherOccupation} onChange={(v) => setField("fatherOccupation", v)} />
+                    <PickerField label="Mother" icon={<Briefcase />} options={PARENT_OCCUPATION_OPTIONS} value={form.motherOccupation} onChange={(v) => setField("motherOccupation", v)} />
                   </div>
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">Siblings</p>
+                  <p className="form-section-title">
+                    <Users2 size={17} className="form-section-icon" aria-hidden="true" />
+                    Siblings
+                  </p>
                   <p className="form-section-hint mb-3">Optional. How many, and how many are married.</p>
                   {/* "Married" is capped at the sibling count either way: its
                       options stop there, and lowering the total drags the
@@ -936,6 +1018,7 @@ export default function ProfileRegisterPage() {
                 <LongText
                   id="familyAbout"
                   label="About your family"
+                  icon={<PenLine />}
                   hint="Optional. Values, background, anything a family would want to know."
                   value={form.familyAbout}
                   onChange={(v) => setField("familyAbout", v)}
@@ -945,16 +1028,20 @@ export default function ProfileRegisterPage() {
               /* ---------- 4: Lifestyle & habits ---------- */
               <div key="lifestyle" className="flex flex-col gap-5 px-1">
                 <div className="form-section">
-                  <p className="form-section-title">Day to day</p>
+                  <p className="form-section-title">
+                    <Sun size={17} className="form-section-icon" aria-hidden="true" />
+                    Day to day
+                  </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Diet" options={dietOptions} value={form.diet} onChange={(v) => setField("diet", v)} />
-                    <PickerField label="Smoking" options={smokingOptions} value={form.smoking} onChange={(v) => setField("smoking", v)} />
-                    <PickerField label="Drinking" options={drinkingOptions} value={form.drinking} onChange={(v) => setField("drinking", v)} />
+                    <PickerField label="Diet" icon={<Salad />} options={dietOptions} value={form.diet} onChange={(v) => setField("diet", v)} />
+                    <PickerField label="Smoking" icon={<Cigarette />} options={smokingOptions} value={form.smoking} onChange={(v) => setField("smoking", v)} />
+                    <PickerField label="Drinking" icon={<Wine />} options={drinkingOptions} value={form.drinking} onChange={(v) => setField("drinking", v)} />
                   </div>
 
                   <div className="mt-5">
                     <ChipGroup
                       label="Your rhythm"
+                      icon={<Sun />}
                       options={routineOptions}
                       value={form.dailyRoutine}
                       onChange={(v) => setField("dailyRoutine", v)}
@@ -965,6 +1052,7 @@ export default function ProfileRegisterPage() {
                     <div className="mt-5">
                       <ChipGroup
                         label="Do you have children?"
+                        icon={<Baby />}
                         options={YES_NO_OPTIONS}
                         value={form.hasChildren ? "yes" : "no"}
                         onChange={(v) => setField("hasChildren", v === "yes")}
@@ -974,7 +1062,10 @@ export default function ProfileRegisterPage() {
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">What you are into</p>
+                  <p className="form-section-title">
+                    <Sparkles size={17} className="form-section-icon" aria-hidden="true" />
+                    What you are into
+                  </p>
                   <p className="form-section-hint mb-4">
                     All optional — but this is the part people actually read. Pick a few in
                     each row; they show up as tags on your profile.
@@ -985,6 +1076,7 @@ export default function ProfileRegisterPage() {
                       <MultiSelect
                         key={category.key}
                         label={category.label}
+                        icon={INTEREST_ICONS[category.key]}
                         options={category.options}
                         value={form[category.key]}
                         onChange={(v) => setField(category.key, v)}
@@ -998,6 +1090,7 @@ export default function ProfileRegisterPage() {
                     <LongText
                       id="interestsOther"
                       label="Anything else about you"
+                      icon={<PenLine />}
                       hint="Optional. Something the lists above do not cover."
                       value={form.interestsOther}
                       onChange={(v) => setField("interestsOther", v)}
@@ -1143,6 +1236,7 @@ export default function ProfileRegisterPage() {
                 <LongText
                   id="partnerAbout"
                   label="What are you looking for?"
+                  icon={<PenLine />}
                   hint="Optional. Qualities that matter to you in a partner."
                   value={form.partnerAbout}
                   onChange={(v) => setField("partnerAbout", v)}
@@ -1152,7 +1246,10 @@ export default function ProfileRegisterPage() {
               /* ---------- 6: Photos ---------- */
               <div key="photo" className="flex flex-col gap-6 px-1">
                 <div className="form-section flex flex-col items-center">
-                  <p className="form-section-title">Display photo</p>
+                  <p className="form-section-title">
+                    <Camera size={17} className="form-section-icon" aria-hidden="true" />
+                    Display photo
+                  </p>
                   <p className="form-section-hint mb-4 text-center">
                     Drag the photo to reposition it, and zoom until your face fills the circle.
                   </p>
@@ -1163,7 +1260,10 @@ export default function ProfileRegisterPage() {
                 </div>
 
                 <div className="form-section">
-                  <p className="form-section-title">More photos</p>
+                  <p className="form-section-title">
+                    <ImagePlus size={17} className="form-section-icon" aria-hidden="true" />
+                    More photos
+                  </p>
                   <p className="form-section-hint mb-4">
                     Optional. Add a few more so families can get a fuller picture of you.
                   </p>

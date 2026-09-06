@@ -9,6 +9,8 @@ export interface ChipOption<T extends string | number = string> {
 
 interface ChipGroupProps<T extends string | number> {
   label?: string;
+  /** Decorative glyph drawn ahead of the legend. */
+  icon?: React.ReactNode;
   options: ChipOption<T>[];
   value?: T | null;
   onChange: (value: T) => void;
@@ -32,6 +34,7 @@ const Check = () => (
  */
 export default function ChipGroup<T extends string | number>({
   label,
+  icon,
   options,
   value,
   onChange,
@@ -43,7 +46,16 @@ export default function ChipGroup<T extends string | number>({
 }: ChipGroupProps<T>) {
   return (
     <fieldset className={`chip-group ${className}`}>
-      {label && <legend className="chip-group-label">{label}</legend>}
+      {label && (
+        <legend className={`chip-group-label ${icon ? 'chip-group-label-icon' : ''}`}>
+          {icon && (
+            <span className="field-label-icon" aria-hidden="true">
+              {icon}
+            </span>
+          )}
+          {label}
+        </legend>
+      )}
       <div className="chip-group-options" role="radiogroup" aria-label={label}>
         {options.map((option) => {
           const selected = value === option.value;

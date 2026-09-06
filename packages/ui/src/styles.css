@@ -197,7 +197,10 @@
   gap: 0.375rem;
 }
 
-.text-field-label-icon > .field-label-icon {
+/* Unscoped, because the same glyph slot is used by the floated label, the
+   ChipGroup legend and the static `.field-label`. Sized in `em` so it tracks
+   whatever type size it lands next to. */
+.field-label-icon {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -206,7 +209,7 @@
   opacity: 0.8;
 }
 
-.text-field-label-icon > .field-label-icon > svg {
+.field-label-icon > svg {
   width: 100%;
   height: 100%;
 }
@@ -719,6 +722,16 @@ button.chip-selected:hover {
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+/* `.field-label-row` is the icon-bearing variant - a legend or label cannot be
+   flex and keep its own ellipsis at the same time, so the row is opt-in the
+   same way `.text-field-label-icon` is. */
+.field-label-row,
+.chip-group-label-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 /* --- Avatar cropper --- */

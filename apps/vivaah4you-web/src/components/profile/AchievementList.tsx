@@ -1,4 +1,5 @@
 'use client'
+import { Award, CalendarDays, PenLine } from 'lucide-react'
 
 import React from 'react'
 import { TextField } from '@lokesh-workspace/ui'
@@ -38,12 +39,14 @@ export default function AchievementList({ value, onChange }: Props) {
             <TextField
               id={`ach-title-${index}`}
               label="Achievement"
+              icon={<Award />}
               value={entry.title}
               onChange={(e) => update(index, { title: e.target.value })}
             />
             <TextField
               id={`ach-year-${index}`}
               label="Year"
+              icon={<CalendarDays />}
               type="number"
               inputMode="numeric"
               value={entry.year}
@@ -56,6 +59,7 @@ export default function AchievementList({ value, onChange }: Props) {
               <TextField
                 id={`ach-detail-${index}`}
                 label="A little more (optional)"
+                icon={<PenLine />}
                 value={entry.detail}
                 onChange={(e) => update(index, { detail: e.target.value })}
               />
