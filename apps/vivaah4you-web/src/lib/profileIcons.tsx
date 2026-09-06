@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   Activity,
   Baby,
+  BadgeCheck,
   Banknote,
   BookOpen,
   Briefcase,
@@ -75,6 +76,7 @@ export const FIELD_ICONS: Record<string, FieldIcon> = {
   currentCity: MapPin,
   placeOfBirthCountry: Globe2,
   placeOfBirthCity: Baby,
+  citizenshipCountry: BadgeCheck,
 
   // Education & career
   educationLevel: GraduationCap,

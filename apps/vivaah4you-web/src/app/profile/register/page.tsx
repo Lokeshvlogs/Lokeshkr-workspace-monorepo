@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Award,
   Baby,
+  BadgeCheck,
   BookOpen,
   Briefcase,
   Building,
@@ -57,7 +58,7 @@ import {
 import PhotoGallery from "@/components/profile/PhotoGallery";
 import CompletenessRing from "@/components/profile/CompletenessRing";
 import { coerceToFormShape } from "@/lib/profileFormShape";
-import EducationList, { type EducationEntry } from "@/components/profile/EducationList";
+import EducationList, { isEducationComplete, type EducationEntry } from "@/components/profile/EducationList";
 import AchievementList, { type AchievementEntry } from "@/components/profile/AchievementList";
 import EmployerPicker from "@/components/profile/EmployerPicker";
 import VisaStatusPicker from "@/components/profile/VisaStatusPicker";
@@ -131,9 +132,9 @@ const STEPS = [
   { title: "Basic Details", hint: "How you appear to other families." },
   { title: "Social Background", hint: "Religion, community and where you live." },
   { title: "Education & Career", hint: "Your studies and what you do." },
-  { title: "Family Background", hint: "About your family. Most of this is optional." },
+  { title: "Family Background", hint: "About your family. Only the closing note is optional." },
   { title: "Lifestyle & Habits", hint: "Day-to-day preferences." },
-  { title: "Partner Preference", hint: "What you are looking for. All optional." },
+  { title: "Partner Preference", hint: "What you are looking for. Pick at least one of each." },
   { title: "Photos", hint: "A friendly face gets far more interest." },
 ];
 
@@ -239,6 +240,7 @@ const INITIAL_FORM = {
   currentCountry: "",
   currentCity: "",
   placeOfBirthCountry: "",
+  citizenshipCountry: "",
   placeOfBirthCity: "",
 
   // Step 2. educationLevel / fieldOfStudy / collegeUniversity are no longer
@@ -312,7 +314,7 @@ type FormState = typeof INITIAL_FORM;
 // Which keys belong to which wizard step - drives both saving and validation.
 const STEP_FIELDS: (keyof FormState)[][] = [
   ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel", "aboutMe"],
-  ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity"],
+  ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity", "citizenshipCountry"],
   ["educations", "achievements", "profession", "employedIn", "employedAs", "salaryAmount", "settleAbroad", "employerSlug", "employerName", "workCountry", "visaStatus"],
   ["familyLivingInCountry", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily", "fatherOccupation", "motherOccupation", "brothers", "brothersMarried", "sisters", "sistersMarried", "familyAbout"],
   ["diet", "smoking", "drinking", "hasChildren", "dailyRoutine", "interestsMusic", "interestsMovies", "interestsBooks", "interestsCuisines", "interestsTravel", "interestsHobbies", "interestsOther"],
@@ -327,6 +329,8 @@ const PHOTO_STEP = 6;
 function PickerField({
   label,
   icon,
+  errorValue,
+  onBlur,
   options,
   value,
   onChange,
@@ -336,6 +340,8 @@ function PickerField({
 }: {
   label: string;
   icon?: React.ReactNode;
+  errorValue?: string;
+  onBlur?: () => void;
   options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
@@ -348,6 +354,8 @@ function PickerField({
     <SelectDropdown
       label={label}
       icon={icon}
+      errorValue={errorValue}
+      onBlur={onBlur}
       placeholder=""
       options={options}
       value={value}
@@ -404,6 +412,22 @@ export default function ProfileRegisterPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState<string>("");
   const [savedNotice, setSavedNotice] = useState<string>("");
+  /* How many residency statuses the chosen country of work offers. Some
+     have none, and the step must not gate on a dropdown that cannot be
+     answered - see `gapsOn` for step 2. */
+  const [visaOptionCount, setVisaOptionCount] = useState(0);
+  /* Steps the member has tried to leave. Nothing is marked red before that:
+     a form that opens covered in errors reads as broken rather than as
+     guidance. Once a step is in here its marks update live, so filling a
+     field clears its error immediately. */
+  const [triedSteps, setTriedSteps] = useState<ReadonlySet<number>>(new Set());
+  /* Fields the member has focused and left. A required one that is still empty
+     when focus moves on is marked there and then, rather than waiting for
+     Continue - the answer is missing at the moment they walk away from it. */
+  const [touchedFields, setTouchedFields] = useState<ReadonlySet<string>>(new Set());
+
+  const markTouched = (key: string) =>
+    setTouchedFields((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [completeness, setCompleteness] = useState<number>(0);
 
@@ -615,6 +639,12 @@ export default function ProfileRegisterPage() {
   );
 
   const handleNext = async (currentStep: number) => {
+    // Throwing keeps the slider on this step. The button stays enabled on
+    // purpose - a disabled Continue cannot tell anyone what it is waiting for.
+    if (!canProceed(currentStep)) {
+      setTriedSteps((prev) => new Set(prev).add(currentStep));
+      throw new Error("incomplete");
+    }
     const saved = await saveStep(currentStep);
     if (!saved) throw new Error("save-failed");
     await new Promise((resolve) => setTimeout(resolve, SAVE_CONFIRM_MS));
@@ -623,6 +653,10 @@ export default function ProfileRegisterPage() {
   };
 
   const handleSubmit = async () => {
+    if (!canProceed(PHOTO_STEP)) {
+      setTriedSteps((prev) => new Set(prev).add(PHOTO_STEP));
+      return;
+    }
     const saved = await saveStep(PHOTO_STEP);
     if (!saved) return;
     await new Promise((resolve) => setTimeout(resolve, SAVE_CONFIRM_MS));
@@ -632,44 +666,105 @@ export default function ProfileRegisterPage() {
 
   /* ---------- Step gating ---------- */
 
-  const canProceed = (s: number): boolean => {
+  /**
+   * Every required answer a step is still missing, keyed by form field.
+   *
+   * Keyed rather than a flat list so each control can be marked where it sits.
+   * Field keys are unique across steps, so the maps for several steps can be
+   * merged without colliding.
+   */
+  const gapsOn = (s: number): Record<string, string> => {
+    const gaps: Record<string, string> = {};
+    const need = (ok: boolean, key: string, message = "Required") => {
+      if (!ok) gaps[key] = message;
+    };
+
     if (s === 0) {
-      return (
-        form.firstName.trim() !== "" &&
-        form.surname.trim() !== "" &&
-        form.dob !== "" &&
-        form.gender !== "" &&
-        form.heightFeet !== "" &&
-        form.maritalStatus !== ""
-      );
+      need(form.firstName.trim() !== "", "firstName");
+      need(form.surname.trim() !== "", "surname");
+      need(form.dob !== "", "dob", "Your date of birth is required");
+      need(form.gender !== "", "gender", "Pick one");
+      // Inches stays optional: a plain "5 ft" is a real answer, and the
+      // picker's own 0 is indistinguishable from an untouched one.
+      need(form.heightFeet !== "", "heightFeet");
+      need(form.maritalStatus !== "", "maritalStatus", "Pick one");
+      return gaps;
     }
+
     if (s === 1) {
-      return (
-        form.religion !== "" &&
-        form.community !== "" &&
-        form.religiosity !== "" &&
-        form.currentCountry !== ""
-      );
+      need(form.religion !== "", "religion");
+      need(form.community !== "", "community");
+      need(form.mothertongue !== "", "mothertongue");
+      need(form.religiosity !== "", "religiosity", "Pick one");
+      // Only some outlooks offer a follow-up, so this is required exactly when
+      // the control is on screen.
+      need(religiosityDetails.length === 0 || form.religiosityDetail !== "", "religiosityDetail");
+      need(form.currentCountry !== "", "currentCountry");
+      need(form.currentCity !== "", "currentCity");
+      need(form.placeOfBirthCountry !== "", "placeOfBirthCountry");
+      need(form.placeOfBirthCity !== "", "placeOfBirthCity");
+      need(form.citizenshipCountry !== "", "citizenshipCountry");
+      return gaps;
     }
+
     if (s === 2) {
-      // At least one qualification with a level chosen. The rest of an
-      // education row (institution, year) is optional - plenty of members will
-      // not want to name their college.
-      const hasEducation = form.educations.some((entry) => entry.level !== "");
-      return hasEducation && form.profession !== "" && form.salaryAmount !== "";
+      need(
+        form.educations.some(isEducationComplete),
+        "educations",
+        "Add one qualification with every part filled in",
+      );
+      need(form.profession !== "", "profession");
+      need(form.employedIn !== "", "employedIn");
+      need(form.employedAs !== "", "employedAs");
+      need(form.salaryAmount !== "", "salaryAmount");
+      need(form.workCountry !== "", "workCountry");
+      // Some countries have no status list at all, so gating on a status there
+      // would be a dead end rather than a prompt.
+      need(visaOptionCount === 0 || form.visaStatus !== "", "visaStatus");
+      need(form.settleAbroad !== "", "settleAbroad", "Pick one");
+      return gaps;
     }
+
     if (s === 3) {
-      // Parents, siblings and the family note are optional; location and income
-      // are not, because profile completeness counts them.
-      return form.familyLivingInCountry !== "" && form.familyIncome !== "";
+      // Family type, "lives with family" and the four sibling counts all
+      // default to a real answer, so they are answered from the moment the
+      // step renders and there is nothing to wait on. Only the family note is
+      // genuinely optional.
+      need(form.familyLivingInCountry !== "", "familyLivingInCountry");
+      need(form.familyLivingInCity !== "", "familyLivingInCity");
+      need(form.familyIncome !== "", "familyIncome");
+      need(form.fatherOccupation !== "", "fatherOccupation");
+      need(form.motherOccupation !== "", "motherOccupation");
+      return gaps;
     }
+
     if (s === 4) {
-      return form.diet !== "" && form.smoking !== "" && form.drinking !== "";
+      need(form.diet !== "", "diet");
+      need(form.smoking !== "", "smoking");
+      need(form.drinking !== "", "drinking");
+      return gaps;
     }
-    return true; // partner preference is entirely optional
+
+    if (s === 5) {
+      // Age, height and the free-text note stay optional - a range left alone
+      // reads as "no preference", which is a real answer.
+      const pick = "Pick at least one";
+      need(form.partnerMaritalStatuses.length > 0, "partnerMaritalStatuses", pick);
+      need(form.partnerReligions.length > 0, "partnerReligions", pick);
+      need(form.partnerCommunities.length > 0, "partnerCommunities", pick);
+      need(form.partnerMotherTongues.length > 0, "partnerMotherTongues", pick);
+      need(form.partnerCountries.length > 0, "partnerCountries", pick);
+      need(form.partnerDiets.length > 0, "partnerDiets", pick);
+      need(form.partnerEducations.length > 0, "partnerEducations", pick);
+      need(form.partnerProfessions.length > 0, "partnerProfessions", pick);
+      return gaps;
+    }
+
+    need(form.photo !== "", "photo", "A display photo is required");
+    return gaps;
   };
 
-  const canSubmit = (s: number): boolean => s === PHOTO_STEP && form.photo !== "";
+  const canProceed = (s: number): boolean => Object.keys(gapsOn(s)).length === 0;
 
   const handleJumpToStep = (target: number) => {
     if (step === undefined || target === step) return;
@@ -692,6 +787,25 @@ export default function ProfileRegisterPage() {
   }
 
   const active = STEPS[step];
+
+  /* Field keys are unique across steps, so these merge without colliding and a
+     single lookup serves every step. */
+  const triedGaps: Record<string, string> = {};
+  triedSteps.forEach((s) => Object.assign(triedGaps, gapsOn(s)));
+
+  const allGaps: Record<string, string> = {};
+  for (let i = 0; i < STEPS.length; i += 1) Object.assign(allGaps, gapsOn(i));
+
+  /**
+   * A field is marked once its step has been submitted, or once the member has
+   * focused and left that field alone. Either way the mark clears itself the
+   * moment the gap is filled, because both maps are recomputed from `form`.
+   */
+  const err = (key: string) =>
+    triedGaps[key] ?? (touchedFields.has(key) ? allGaps[key] : undefined);
+
+  /** `onBlur` for a required field, marking it so `err` can start reporting. */
+  const touch = (key: string) => () => markTouched(key);
 
   return (
     <div className="wiz-page px-4 py-10 sm:py-16">
@@ -772,16 +886,14 @@ export default function ProfileRegisterPage() {
             }
             onSubmit={handleSubmit}
             onNext={handleNext}
-            canProceed={canProceed}
-            canSubmit={canSubmit}
             step={step}
             setStep={setStep}
             steps={[
               /* ---------- 0: Basic details ---------- */
               <div key="basic" className="flex flex-col gap-5 px-1">
                 <div className="form-grid-2">
-                  <TextField id="firstName" label="First Name" icon={<User />} value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
-                  <TextField id="surname" label="Surname" icon={<User />} value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
+                  <TextField id="firstName" label="First Name" icon={<User />} errorValue={err("firstName")} onBlur={touch("firstName")} value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
+                  <TextField id="surname" label="Surname" icon={<User />} errorValue={err("surname")} onBlur={touch("surname")} value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
                 </div>
 
                 <div>
@@ -789,25 +901,25 @@ export default function ProfileRegisterPage() {
                     <span className="field-label-icon" aria-hidden="true"><CalendarClock /></span>
                     Date &amp; time of birth
                   </span>
-                  <BirthDateTimePicker value={form.dob} onChange={(v) => setField("dob", v)} />
+                  <BirthDateTimePicker value={form.dob} onChange={(v) => setField("dob", v)} errorValue={err("dob")} onBlur={touch("dob")} />
                 </div>
 
                 <div className="form-grid-2">
-                  <ChipGroup label="Gender" icon={<Users />} options={GENDER_OPTIONS} value={form.gender} onChange={(v) => setField("gender", v)} />
+                  <ChipGroup label="Gender" icon={<Users />} options={GENDER_OPTIONS} value={form.gender} onChange={(v) => setField("gender", v)} error={err("gender")} onBlur={touch("gender")} />
                   <div>
                     <span className="field-label field-label-row">
                       <span className="field-label-icon" aria-hidden="true"><Ruler /></span>
                       Height
                     </span>
                     <div className="flex gap-3">
-                      <PickerField label="Feet" options={feetOptions} selectedFirst={false} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" />
+                      <PickerField label="Feet" errorValue={err("heightFeet")} onBlur={touch("heightFeet")} options={feetOptions} selectedFirst={false} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" />
                       <PickerField label="Inches" options={inchOptions} selectedFirst={false} value={form.heightInches} onChange={(v) => setField("heightInches", v)} className="w-28" />
                     </div>
                   </div>
                 </div>
 
                 <ChipGroup label="Body Physique" icon={<PersonStanding />} options={physiqueOptions} value={form.bodyPhysique} onChange={(v) => setField("bodyPhysique", v)} />
-                <ChipGroup label="Marital Status" icon={<Heart />} options={MARITAL_OPTIONS} value={form.maritalStatus} onChange={(v) => setField("maritalStatus", v)} />
+                <ChipGroup label="Marital Status" icon={<Heart />} options={MARITAL_OPTIONS} value={form.maritalStatus} onChange={(v) => setField("maritalStatus", v)} error={err("maritalStatus")} onBlur={touch("maritalStatus")} />
                 <ChipGroup label="Are you Manglik?" icon={<Star />} options={MANGLIK_OPTIONS} value={form.manglikLevel} onChange={(v) => setField("manglikLevel", v)} />
 
                 <LongText
@@ -823,11 +935,11 @@ export default function ProfileRegisterPage() {
               /* ---------- 1: Social background ---------- */
               <div key="social" className="flex flex-col gap-5 px-1">
                 <div className="form-grid-2">
-                  <PickerField label="Religion" icon={<Landmark />} options={RELIGION_OPTIONS} value={form.religion} onChange={(v) => setForm((p) => ({ ...p, religion: v, community: "" }))} />
-                  <PickerField label="Caste / Community" icon={<Users2 />} options={communityOptions} value={form.community} onChange={(v) => setField("community", v)} searchable />
+                  <PickerField label="Religion" icon={<Landmark />} errorValue={err("religion")} onBlur={touch("religion")} options={RELIGION_OPTIONS} value={form.religion} onChange={(v) => setForm((p) => ({ ...p, religion: v, community: "" }))} />
+                  <PickerField label="Caste / Community" icon={<Users2 />} errorValue={err("community")} onBlur={touch("community")} options={communityOptions} value={form.community} onChange={(v) => setField("community", v)} searchable />
                 </div>
 
-                <PickerField label="Mother Tongue" icon={<Languages />} options={motherTongueOptions} value={form.mothertongue} onChange={(v) => setField("mothertongue", v)} searchable />
+                <PickerField label="Mother Tongue" icon={<Languages />} errorValue={err("mothertongue")} onBlur={touch("mothertongue")} options={motherTongueOptions} value={form.mothertongue} onChange={(v) => setField("mothertongue", v)} searchable />
 
                 <div className="form-section">
                   <p className="form-section-title">
@@ -837,6 +949,7 @@ export default function ProfileRegisterPage() {
                   <p className="form-section-hint mb-3">Pick the stance that fits you, then how it shows up day to day.</p>
                   <ChipGroup
                     options={RELIGIOSITY_OPTIONS}
+                    error={err("religiosity")} onBlur={touch("religiosity")}
                     value={form.religiosity}
                     onChange={(v) => setForm((p) => ({ ...p, religiosity: v, religiosityDetail: "" }))}
                   />
@@ -845,6 +958,7 @@ export default function ProfileRegisterPage() {
                       <PickerField
                         label="More specifically"
                         icon={<Compass />}
+                        errorValue={err("religiosityDetail")} onBlur={touch("religiosityDetail")}
                         options={religiosityDetails}
                         value={form.religiosityDetail}
                         onChange={(v) => setField("religiosityDetail", v)}
@@ -859,8 +973,8 @@ export default function ProfileRegisterPage() {
                     Currently living in
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentCity: "" }))} searchable />
-                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.currentCountry)} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("currentCountry")} onBlur={touch("currentCountry")} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentCity: "" }))} searchable />
+                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.currentCountry)} errorValue={err("currentCity")} onBlur={touch("currentCity")} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
                   </div>
                 </div>
 
@@ -870,8 +984,24 @@ export default function ProfileRegisterPage() {
                     Place of birth
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthCity: "" }))} searchable />
-                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.placeOfBirthCountry)} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("placeOfBirthCountry")} onBlur={touch("placeOfBirthCountry")} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthCity: "" }))} searchable />
+                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.placeOfBirthCountry)} errorValue={err("placeOfBirthCity")} onBlur={touch("placeOfBirthCity")} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
+                  </div>
+                </div>
+
+                {/* Kept out of both panels above on purpose: plenty of members
+                    were born in one country, live in a second and hold the
+                    passport of a third. */}
+                <div className="form-section">
+                  <p className="form-section-title">
+                    <BadgeCheck size={17} className="form-section-icon" aria-hidden="true" />
+                    Citizenship
+                  </p>
+                  <p className="form-section-hint mb-3">
+                    The passport you hold — it is what most families ask about first.
+                  </p>
+                  <div className="mt-3">
+                    <PickerField label="Country of citizenship" icon={<BadgeCheck />} errorValue={err("citizenshipCountry")} onBlur={touch("citizenshipCountry")} options={COUNTRY_OPTIONS} value={form.citizenshipCountry} onChange={(v) => setField("citizenshipCountry", v)} searchable />
                   </div>
                 </div>
               </div>,
@@ -890,6 +1020,7 @@ export default function ProfileRegisterPage() {
                   <EducationList
                     value={form.educations}
                     onChange={(educations) => setField("educations", educations)}
+                    error={err("educations")}
                   />
                 </div>
 
@@ -913,10 +1044,10 @@ export default function ProfileRegisterPage() {
                     Profession
                   </p>
                   <div className="mt-4 flex flex-col gap-5">
-                    <PickerField label="Profession" icon={<Briefcase />} options={professionOptions} value={form.profession} onChange={(v) => setField("profession", v)} searchable />
-                    <PickerField label="Employed In" icon={<Building2 />} options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
-                    <PickerField label="Employed As" icon={<UserCog />} options={employedAsOptions} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
-                    <PickerField label="Annual income" icon={<Wallet />} options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
+                    <PickerField label="Profession" icon={<Briefcase />} errorValue={err("profession")} onBlur={touch("profession")} options={professionOptions} value={form.profession} onChange={(v) => setField("profession", v)} searchable />
+                    <PickerField label="Employed In" icon={<Building2 />} errorValue={err("employedIn")} onBlur={touch("employedIn")} options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
+                    <PickerField label="Employed As" icon={<UserCog />} errorValue={err("employedAs")} onBlur={touch("employedAs")} options={employedAsOptions} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
+                    <PickerField label="Annual income" icon={<Wallet />} errorValue={err("salaryAmount")} onBlur={touch("salaryAmount")} options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
 
                     <EmployerPicker
                       slug={form.employerSlug}
@@ -932,6 +1063,7 @@ export default function ProfileRegisterPage() {
                       <PickerField
                         label="Country of work"
                         icon={<Globe2 />}
+                        errorValue={err("workCountry")} onBlur={touch("workCountry")}
                         options={COUNTRY_OPTIONS}
                         value={form.workCountry}
                         onChange={(v) =>
@@ -951,12 +1083,15 @@ export default function ProfileRegisterPage() {
                         country={form.workCountry}
                         value={form.visaStatus}
                         onChange={(v) => setField("visaStatus", v)}
+                        onOptionsChange={setVisaOptionCount}
+                        errorValue={err("visaStatus")} onBlur={touch("visaStatus")}
                       />
                     </div>
 
                     <ChipGroup
                       label="Interested in settling abroad?"
                       icon={<Plane />}
+                      error={err("settleAbroad")} onBlur={touch("settleAbroad")}
                       options={YES_NO_MAYBE_OPTIONS}
                       value={form.settleAbroad}
                       onChange={(v) => setField("settleAbroad", v)}
@@ -973,11 +1108,11 @@ export default function ProfileRegisterPage() {
                     Where your family lives
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInCity: "" }))} searchable />
-                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.familyLivingInCountry)} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("familyLivingInCountry")} onBlur={touch("familyLivingInCountry")} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInCity: "" }))} searchable />
+                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.familyLivingInCountry)} errorValue={err("familyLivingInCity")} onBlur={touch("familyLivingInCity")} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
                   </div>
                   <div className="mt-4">
-                    <PickerField label="Family income (per annum)" icon={<Wallet />} options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
+                    <PickerField label="Family income (per annum)" icon={<Wallet />} errorValue={err("familyIncome")} onBlur={touch("familyIncome")} options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
                   </div>
                   <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <ChipGroup label="Family Type" icon={<Users />} options={FAMILY_TYPE_OPTIONS} value={form.familyType} onChange={(v) => setField("familyType", v)} />
@@ -990,10 +1125,10 @@ export default function ProfileRegisterPage() {
                     <Users size={17} className="form-section-icon" aria-hidden="true" />
                     Parents
                   </p>
-                  <p className="form-section-hint mb-3">Optional.</p>
+                  <p className="form-section-hint mb-3">What each of them does.</p>
                   <div className="form-grid-2">
-                    <PickerField label="Father" icon={<Briefcase />} options={PARENT_OCCUPATION_OPTIONS} value={form.fatherOccupation} onChange={(v) => setField("fatherOccupation", v)} />
-                    <PickerField label="Mother" icon={<Briefcase />} options={PARENT_OCCUPATION_OPTIONS} value={form.motherOccupation} onChange={(v) => setField("motherOccupation", v)} />
+                    <PickerField label="Father" icon={<Briefcase />} errorValue={err("fatherOccupation")} onBlur={touch("fatherOccupation")} options={PARENT_OCCUPATION_OPTIONS} value={form.fatherOccupation} onChange={(v) => setField("fatherOccupation", v)} />
+                    <PickerField label="Mother" icon={<Briefcase />} errorValue={err("motherOccupation")} onBlur={touch("motherOccupation")} options={PARENT_OCCUPATION_OPTIONS} value={form.motherOccupation} onChange={(v) => setField("motherOccupation", v)} />
                   </div>
                 </div>
 
@@ -1002,7 +1137,7 @@ export default function ProfileRegisterPage() {
                     <Users2 size={17} className="form-section-icon" aria-hidden="true" />
                     Siblings
                   </p>
-                  <p className="form-section-hint mb-3">Optional. How many, and how many are married.</p>
+                  <p className="form-section-hint mb-3">How many, and how many are married. Leave at zero if none.</p>
                   {/* "Married" is capped at the sibling count either way: its
                       options stop there, and lowering the total drags the
                       married figure down with it, so the pair can never end up
@@ -1033,9 +1168,9 @@ export default function ProfileRegisterPage() {
                     Day to day
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Diet" icon={<Salad />} options={dietOptions} value={form.diet} onChange={(v) => setField("diet", v)} />
-                    <PickerField label="Smoking" icon={<Cigarette />} options={smokingOptions} value={form.smoking} onChange={(v) => setField("smoking", v)} />
-                    <PickerField label="Drinking" icon={<Wine />} options={drinkingOptions} value={form.drinking} onChange={(v) => setField("drinking", v)} />
+                    <PickerField label="Diet" icon={<Salad />} errorValue={err("diet")} onBlur={touch("diet")} options={dietOptions} value={form.diet} onChange={(v) => setField("diet", v)} />
+                    <PickerField label="Smoking" icon={<Cigarette />} errorValue={err("smoking")} onBlur={touch("smoking")} options={smokingOptions} value={form.smoking} onChange={(v) => setField("smoking", v)} />
+                    <PickerField label="Drinking" icon={<Wine />} errorValue={err("drinking")} onBlur={touch("drinking")} options={drinkingOptions} value={form.drinking} onChange={(v) => setField("drinking", v)} />
                   </div>
 
                   <div className="mt-5">
@@ -1103,7 +1238,8 @@ export default function ProfileRegisterPage() {
               /* ---------- 5: Partner preference ---------- */
               <div key="partner" className="flex flex-col gap-5 px-1">
                 <p className="text-sm text-color-placeholder-text">
-                  Everything here is optional — leave anything blank for no preference.
+                  Pick at least one answer in each list. Age and height are the exceptions —
+                  leave those alone for no preference.
                 </p>
 
                 <div className="form-section">
@@ -1159,13 +1295,14 @@ export default function ProfileRegisterPage() {
                     Background
                   </p>
                   <p className="form-section-hint mb-3">
-                    Pick as many as you are open to — they widen your matches rather than narrowing them.
+                    Pick every answer you are open to — more choices widen your matches rather than narrowing them.
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <MultiSelect label="Marital status" icon={<Heart />} options={PARTNER_MARITAL_CHOICES} value={form.partnerMaritalStatuses} onChange={(v) => setField("partnerMaritalStatuses", v)} exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Marital status" icon={<Heart />} errorValue={err("partnerMaritalStatuses")} onBlur={touch("partnerMaritalStatuses")} options={PARTNER_MARITAL_CHOICES} value={form.partnerMaritalStatuses} onChange={(v) => setField("partnerMaritalStatuses", v)} exclusiveValue="any" maxSelected={5} />
                     <MultiSelect
                       label="Religion"
                       icon={<Landmark />}
+                      errorValue={err("partnerReligions")} onBlur={touch("partnerReligions")}
                       options={PARTNER_RELIGION_CHOICES}
                       value={form.partnerReligions}
                       onChange={(v) =>
@@ -1182,10 +1319,10 @@ export default function ProfileRegisterPage() {
                       exclusiveValue="any"
                       maxSelected={4}
                     />
-                    <MultiSelect label="Community" icon={<Users2 />} options={partnerCommunityOptions} value={form.partnerCommunities} onChange={(v) => setField("partnerCommunities", v)} searchable maxSelected={8} />
-                    <MultiSelect label="Mother tongue" icon={<Languages />} options={PARTNER_MOTHER_TONGUE_CHOICES} value={form.partnerMotherTongues} onChange={(v) => setField("partnerMotherTongues", v)} searchable exclusiveValue="any" maxSelected={5} />
-                    <MultiSelect label="Country" icon={<Globe2 />} options={PARTNER_COUNTRY_CHOICES} value={form.partnerCountries} onChange={(v) => setField("partnerCountries", v)} searchable exclusiveValue="any" maxSelected={5} />
-                    <MultiSelect label="Diet" icon={<Salad />} options={PARTNER_DIET_CHOICES} value={form.partnerDiets} onChange={(v) => setField("partnerDiets", v)} exclusiveValue="any" maxSelected={4} />
+                    <MultiSelect label="Community" icon={<Users2 />} errorValue={err("partnerCommunities")} onBlur={touch("partnerCommunities")} options={partnerCommunityOptions} value={form.partnerCommunities} onChange={(v) => setField("partnerCommunities", v)} searchable maxSelected={8} />
+                    <MultiSelect label="Mother tongue" icon={<Languages />} errorValue={err("partnerMotherTongues")} onBlur={touch("partnerMotherTongues")} options={PARTNER_MOTHER_TONGUE_CHOICES} value={form.partnerMotherTongues} onChange={(v) => setField("partnerMotherTongues", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Country" icon={<Globe2 />} errorValue={err("partnerCountries")} onBlur={touch("partnerCountries")} options={PARTNER_COUNTRY_CHOICES} value={form.partnerCountries} onChange={(v) => setField("partnerCountries", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Diet" icon={<Salad />} errorValue={err("partnerDiets")} onBlur={touch("partnerDiets")} options={PARTNER_DIET_CHOICES} value={form.partnerDiets} onChange={(v) => setField("partnerDiets", v)} exclusiveValue="any" maxSelected={4} />
                   </div>
                 </div>
 
@@ -1195,8 +1332,8 @@ export default function ProfileRegisterPage() {
                     Education &amp; work
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <MultiSelect label="Education" icon={<BookOpen />} options={PARTNER_EDUCATION_CHOICES} value={form.partnerEducations} onChange={(v) => setField("partnerEducations", v)} searchable exclusiveValue="any" maxSelected={5} />
-                    <MultiSelect label="Profession" icon={<Briefcase />} options={PARTNER_PROFESSION_CHOICES} value={form.partnerProfessions} onChange={(v) => setField("partnerProfessions", v)} searchable exclusiveValue="any" maxSelected={6} />
+                    <MultiSelect label="Education" icon={<BookOpen />} errorValue={err("partnerEducations")} onBlur={touch("partnerEducations")} options={PARTNER_EDUCATION_CHOICES} value={form.partnerEducations} onChange={(v) => setField("partnerEducations", v)} searchable exclusiveValue="any" maxSelected={5} />
+                    <MultiSelect label="Profession" icon={<Briefcase />} errorValue={err("partnerProfessions")} onBlur={touch("partnerProfessions")} options={PARTNER_PROFESSION_CHOICES} value={form.partnerProfessions} onChange={(v) => setField("partnerProfessions", v)} searchable exclusiveValue="any" maxSelected={6} />
                   </div>
                 </div>
 
@@ -1254,6 +1391,9 @@ export default function ProfileRegisterPage() {
                     Drag the photo to reposition it, and zoom until your face fills the circle.
                   </p>
                   <AvatarCropper value={form.photo} onChange={(dataUrl) => setField("photo", dataUrl)} size={224} />
+                  {err("photo") && (
+                    <p className="error-text mt-3 text-center" role="alert">{err("photo")}</p>
+                  )}
                   {form.photo && (
                     <p className="avatar-hint mt-3">This is how you appear in search results and to your matches.</p>
                   )}

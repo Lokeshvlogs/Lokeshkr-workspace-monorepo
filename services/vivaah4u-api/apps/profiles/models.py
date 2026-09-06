@@ -167,6 +167,9 @@ class Profile(models.Model):
     current_city = models.CharField(max_length=150, blank=True)
     place_of_birth_country = models.CharField(max_length=60, blank=True)
     place_of_birth_city = models.CharField(max_length=150, blank=True)
+    # Separate from both of the above: plenty of members were born in one
+    # country, live in a second and hold the passport of a third.
+    citizenship_country = models.CharField(max_length=60, blank=True)
     # Family Details
     family_living_in_country = models.CharField(max_length=60, blank=True)
     family_living_in_city = models.CharField(max_length=150, blank=True)
@@ -385,6 +388,11 @@ class Profile(models.Model):
     EXTRA_TEXT_FIELDS: list[str] = [
         "daily_routine",
         "settle_abroad",
+        # Required by the wizard, but deliberately outside the core set: the
+        # column is blank on every profile that predates it, and promoting it
+        # to core would drop those members below the eligibility bar for a
+        # question they were never asked.
+        "citizenship_country",
     ]
     # JSON list columns; a non-empty list counts as one answered slot.
     #

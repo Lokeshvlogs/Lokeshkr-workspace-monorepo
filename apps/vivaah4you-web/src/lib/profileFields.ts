@@ -208,6 +208,7 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'currentCity', label: 'Lives in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.currentCountry) },
   { key: 'placeOfBirthCountry', label: 'Birth country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['placeOfBirthCity'] },
   { key: 'placeOfBirthCity', label: 'Born in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.placeOfBirthCountry) },
+  { key: 'citizenshipCountry', label: 'Citizen of', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS },
 
   // ---- Education & Career (step 2) ----
   // educationLevel / fieldOfStudy / collegeUniversity are DERIVED from the

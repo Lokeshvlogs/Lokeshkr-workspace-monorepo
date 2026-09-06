@@ -17,6 +17,8 @@ interface ChipGroupProps<T extends string | number> {
   className?: string;
   chipClassName?: string;
   error?: string;
+  /** Focus left the group entirely - moving between its own chips does not count. */
+  onBlur?: () => void;
   name?: string;
   /** Shows a tick inside the selected chip. */
   showCheck?: boolean;
@@ -41,11 +43,17 @@ export default function ChipGroup<T extends string | number>({
   className = "",
   chipClassName = "",
   error,
+  onBlur,
   name,
   showCheck = true,
 }: ChipGroupProps<T>) {
   return (
-    <fieldset className={`chip-group ${className}`}>
+    <fieldset
+      className={`chip-group ${error ? "chip-group-error" : ""} ${className}`}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onBlur?.();
+      }}
+    >
       {label && (
         <legend className={`chip-group-label ${icon ? 'chip-group-label-icon' : ''}`}>
           {icon && (
@@ -56,7 +64,12 @@ export default function ChipGroup<T extends string | number>({
           {label}
         </legend>
       )}
-      <div className="chip-group-options" role="radiogroup" aria-label={label}>
+      <div
+        className="chip-group-options"
+        role="radiogroup"
+        aria-label={label}
+        aria-invalid={error ? "true" : "false"}
+      >
         {options.map((option) => {
           const selected = value === option.value;
           return (

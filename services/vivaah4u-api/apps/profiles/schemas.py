@@ -36,6 +36,7 @@ class ProfileUpdateSchema(Schema):
     currentCity: Optional[str] = None
     placeOfBirthCountry: Optional[str] = None
     placeOfBirthCity: Optional[str] = None
+    citizenshipCountry: Optional[str] = None
     familyLivingInCountry: Optional[str] = None
     familyLivingInCity: Optional[str] = None
     familyIncome: Optional[str] = None

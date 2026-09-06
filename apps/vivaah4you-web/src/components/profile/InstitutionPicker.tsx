@@ -19,6 +19,8 @@ interface Props {
   country?: string
   kind?: string
   disabled?: boolean
+  errorValue?: string
+  onBlur?: () => void
 }
 
 const DEBOUNCE_MS = 250
@@ -38,6 +40,8 @@ export default function InstitutionPicker({
   country,
   kind,
   disabled,
+  errorValue,
+  onBlur,
 }: Props) {
   const [options, setOptions] = useState<SelectOptionLike[]>([])
   const [loading, setLoading] = useState(false)
@@ -93,6 +97,8 @@ export default function InstitutionPicker({
   return (
     <SelectDropdown
       label={label}
+      errorValue={errorValue}
+      onBlur={onBlur}
       placeholder=""
       options={withCurrent}
       value={value}

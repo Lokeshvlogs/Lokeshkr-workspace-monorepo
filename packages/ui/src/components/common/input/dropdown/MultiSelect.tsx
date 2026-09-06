@@ -24,6 +24,11 @@ interface Props {
   value: string[] | string | null | undefined;
   /** Emits the complete next array, never a delta. */
   onChange: (values: string[]) => void;
+  /**
+   * Focus left the control. Suppressed while the list is open, so opening it
+   * - which moves focus into the portal - does not read as leaving the field.
+   */
+  onBlur?: () => void;
   searchable?: boolean;
   /** Refuses further picks once reached; already-chosen values stay removable. */
   maxSelected?: number;
@@ -59,6 +64,7 @@ export default function MultiSelect({
   options,
   value: rawValue,
   onChange,
+  onBlur,
   searchable = false,
   maxSelected,
   exclusiveValue,
@@ -325,6 +331,7 @@ export default function MultiSelect({
           aria-invalid={errorValue ? 'true' : 'false'}
           onClick={() => !disabled && setOpen(o => !o)}
           onKeyDown={onKeyDown}
+          onBlur={() => { if (!open) onBlur?.(); }}
         >
           <FloatingLabel htmlFor={id} label={label} icon={icon} />
 

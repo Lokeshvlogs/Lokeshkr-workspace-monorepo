@@ -691,6 +691,23 @@ button.chip-selected:hover {
   color: var(--color-primary, #ec4899);
 }
 
+/* An errored ChipGroup has no border of its own - the fieldset is borderless -
+   so the state has to land on the chips. Only the unchosen ones are marked: a
+   chip the member has actually picked is not the thing that is wrong. */
+.chip-group-error .chip:not(.chip-selected) {
+  border-color: var(--color-error, #ef4444);
+}
+
+.dob-trigger-error.dob-trigger-error,
+.dob-trigger-error.dob-trigger-error:hover {
+  border-color: var(--color-error, #ef4444);
+}
+
+/* An education row that is missing one of the parts the wizard requires. */
+.education-card-error.education-card-error {
+  border-color: var(--color-error, #ef4444);
+}
+
 /* --- Form layout helpers --- */
 .form-section {
   @apply rounded-xl border border-color-border bg-white p-5;

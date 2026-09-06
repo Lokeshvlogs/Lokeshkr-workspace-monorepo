@@ -36,6 +36,7 @@ export interface PublicProfile {
   currentCity: string
   placeOfBirthCountry: string
   placeOfBirthCity: string
+  citizenshipCountry: string
   familyLivingInCountry: string
   familyLivingInCity: string
   familyIncome: string

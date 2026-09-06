@@ -55,6 +55,7 @@ const LABEL_MAPS: Record<string, Record<string, string>> = {
   familyIncome: toLabelMap(familyIncomeOptions),
   currentCountry: toLabelMap(COUNTRY_OPTIONS),
   placeOfBirthCountry: toLabelMap(COUNTRY_OPTIONS),
+  citizenshipCountry: toLabelMap(COUNTRY_OPTIONS),
   familyLivingInCountry: toLabelMap(COUNTRY_OPTIONS),
   mothertongue: toLabelMap(motherTongueOptions as SelectOption[]),
   religiosity: toLabelMap(RELIGIOSITY_OPTIONS),

@@ -41,6 +41,7 @@ FULLY_ANSWERED = {
     "current_city": "Kochi, Kerala, India",
     "place_of_birth_country": "IN",
     "place_of_birth_city": "Kochi, Kerala, India",
+    "citizenship_country": "IN",
     "family_living_in_country": "IN",
     "family_living_in_city": "Kochi, Kerala, India",
     "family_income": "10-15",
