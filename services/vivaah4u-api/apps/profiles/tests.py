@@ -10,9 +10,12 @@ Run with:  service.bat vivaah4u-api test
 """
 
 import json
+from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.db.utils import IntegrityError
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.catalog.models import Employer, Institution
 
@@ -25,7 +28,23 @@ from apps.profiles.mapping import (
 )
 from apps.profiles import managed_by as managed_by_rules
 from apps.profiles.education import NO_REPUTATION, rank_of
-from apps.profiles.models import Profile, ProfileEducation
+from apps.profiles.models import (
+    Block,
+    Interest,
+    Profile,
+    ProfileEducation,
+    ProfileView,
+    interest_pair_key,
+)
+from apps.profiles import interests, presence
+from apps.profiles.api import (
+    RECENTLY_JOINED_DAYS,
+    eligible_matches,
+    match_queryset,
+    new_match_queryset,
+    recent_match_queryset,
+    visitor_rows,
+)
 from apps.profiles.verification import VerificationLevel
 
 # Every core field with a value that counts as answered. Kept explicit rather
@@ -767,3 +786,396 @@ class MobilityPreferenceTests(TestCase):
         """`settleAbroad` is about you, so one answer is the right shape."""
         apply_payload(self.profile, {"settleAbroad": "open"})
         self.assertEqual(self.profile.settle_abroad, "open")
+
+
+class PresenceTests(TestCase):
+    """`last_active_at`, and the two ways stamping it could go quietly wrong."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="presence-asha", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+
+    def test_first_call_stamps(self):
+        presence.touch(self.user)
+        self.profile.refresh_from_db()
+        self.assertIsNotNone(self.profile.last_active_at)
+
+    def test_second_call_inside_the_interval_does_not_write(self):
+        presence.touch(self.user)
+        self.profile.refresh_from_db()
+        first = self.profile.last_active_at
+
+        presence.touch(self.user)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.last_active_at, first)
+
+    def test_call_after_the_interval_rewrites(self):
+        stale = timezone.now() - presence.STAMP_INTERVAL - timedelta(seconds=30)
+        Profile.objects.filter(pk=self.profile.pk).update(last_active_at=stale)
+
+        presence.touch(self.user)
+        self.profile.refresh_from_db()
+        self.assertGreater(self.profile.last_active_at, stale)
+
+    def test_stamping_leaves_updated_at_alone(self):
+        """`updated_at` is on the /me payload. Bumping it on every request would
+        make the profile look edited every time the member loaded a page."""
+        before = Profile.objects.get(pk=self.profile.pk).updated_at
+
+        Profile.objects.filter(pk=self.profile.pk).update(last_active_at=None)
+        presence.touch(self.user)
+
+        self.assertEqual(Profile.objects.get(pk=self.profile.pk).updated_at, before)
+
+    def test_stamping_does_not_recompute_completeness(self):
+        """Proves .update() and not .save(). A deliberately wrong completeness
+        must survive a touch - if save() ran, it would be corrected."""
+        Profile.objects.filter(pk=self.profile.pk).update(profile_completeness=77)
+
+        presence.touch(self.user)
+
+        self.assertEqual(Profile.objects.get(pk=self.profile.pk).profile_completeness, 77)
+
+    def test_touch_tolerates_no_user(self):
+        presence.touch(None)  # must not raise
+
+    def test_online_within_the_window(self):
+        self.assertTrue(presence.is_online(timezone.now() - timedelta(minutes=1)))
+        self.assertFalse(presence.is_online(timezone.now() - timedelta(hours=2)))
+        self.assertFalse(presence.is_online(None))
+
+    def test_never_stamped_is_none_not_offline(self):
+        """Every profile predating the column is NULL. Calling those members
+        offline would be a claim we cannot support."""
+        self.assertIsNone(presence.to_api(None, exact=True))
+
+    def test_other_viewers_see_the_hour_not_the_minute(self):
+        stamp = timezone.now().replace(hour=9, minute=37, second=12) - timedelta(days=1)
+
+        exact = presence.to_api(stamp, exact=True)
+        floored = presence.to_api(stamp, exact=False)
+
+        self.assertEqual(exact["lastActiveAt"], stamp.isoformat())
+        self.assertTrue(floored["lastActiveAt"].startswith(stamp.strftime("%Y-%m-%dT%H:00")))
+
+    def test_online_hides_the_timestamp_from_others(self):
+        """"Online now" is the whole message; the exact minute only adds exposure."""
+        now = timezone.now()
+        self.assertIsNone(presence.to_api(now, exact=False)["lastActiveAt"])
+        self.assertIsNotNone(presence.to_api(now, exact=True)["lastActiveAt"])
+
+    def test_anonymous_public_payload_carries_no_presence(self):
+        Profile.objects.filter(pk=self.profile.pk).update(last_active_at=timezone.now())
+        self.profile.refresh_from_db()
+
+        data = profile_to_api(self.profile, None, public=True)
+        self.assertNotIn("presence", data)
+
+    def test_signed_in_viewer_sees_presence_on_a_public_payload(self):
+        Profile.objects.filter(pk=self.profile.pk).update(last_active_at=timezone.now())
+        self.profile.refresh_from_db()
+
+        data = profile_to_api(self.profile, None, public=True, viewer=self.profile)
+        self.assertTrue(data["presence"]["isOnline"])
+
+    def test_own_payload_always_carries_the_key(self):
+        data = profile_to_api(self.profile, None, public=False)
+        self.assertIn("presence", data)
+
+
+def _member(username, gender="M"):
+    """A profile that is visible in matches - gender is what pairs them up."""
+    user = User.objects.create_user(username=username, password="x")
+    profile = Profile.objects.get(user=user)
+    profile.gender = gender
+    profile.first_name = username.title()
+    profile.save()
+    return profile
+
+
+class InterestTests(TestCase):
+    def setUp(self):
+        self.asha = _member("asha-i", "F")
+        self.ravi = _member("ravi-i", "M")
+
+    def test_send_creates_pending(self):
+        interest, mutual = interests.send(self.asha, self.ravi)
+        self.assertEqual(interest.status, Interest.Status.PENDING)
+        self.assertFalse(mutual)
+
+    def test_self_interest_is_refused(self):
+        with self.assertRaises(interests.InterestError):
+            interests.send(self.asha, self.asha)
+
+    def test_crossing_interests_auto_accept_without_duplicating(self):
+        """The second person asking is agreement, not a second request."""
+        interests.send(self.asha, self.ravi)
+        interest, mutual = interests.send(self.ravi, self.asha)
+
+        self.assertTrue(mutual)
+        self.assertEqual(interest.status, Interest.Status.ACCEPTED)
+        self.assertEqual(Interest.objects.count(), 1)
+
+    def test_repeat_send_is_idempotent_not_a_duplicate(self):
+        first, _ = interests.send(self.asha, self.ravi)
+        second, _ = interests.send(self.asha, self.ravi)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(Interest.objects.count(), 1)
+
+    def test_live_pair_uniqueness_is_enforced_by_the_database(self):
+        """Pins the constraint itself, not the code path that respects it."""
+        interests.send(self.asha, self.ravi)
+        with self.assertRaises(IntegrityError):
+            Interest.objects.create(sender=self.ravi, receiver=self.asha)
+
+    def test_pair_key_is_order_independent(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        self.assertEqual(interest.pair_key, interest_pair_key(self.ravi.pk, self.asha.pk))
+
+    def test_accept_is_receiver_only(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        with self.assertRaises(interests.InterestError):
+            interests.accept(interest.id, self.asha)
+
+        interests.accept(interest.id, self.ravi)
+        interest.refresh_from_db()
+        self.assertEqual(interest.status, Interest.Status.ACCEPTED)
+
+    def test_withdraw_is_sender_only(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        with self.assertRaises(interests.InterestError):
+            interests.withdraw(interest.id, self.ravi)
+
+        interests.withdraw(interest.id, self.asha)
+        interest.refresh_from_db()
+        self.assertEqual(interest.status, Interest.Status.WITHDRAWN)
+
+    def test_answering_twice_is_refused(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+        with self.assertRaises(interests.InterestError):
+            interests.decline(interest.id, self.ravi)
+
+    def test_withdrawn_can_be_sent_again_immediately(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.withdraw(interest.id, self.asha)
+
+        again, _ = interests.send(self.asha, self.ravi)
+        self.assertEqual(again.pk, interest.pk)
+        self.assertEqual(again.status, Interest.Status.PENDING)
+
+    def test_declined_needs_the_cooldown_before_asking_again(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.decline(interest.id, self.ravi)
+
+        with self.assertRaises(interests.InterestError):
+            interests.send(self.asha, self.ravi)
+
+    def test_only_one_resend_is_ever_allowed(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.decline(interest.id, self.ravi)
+
+        past = timezone.now() - timedelta(days=interests.RESEND_COOLDOWN_DAYS + 1)
+        Interest.objects.filter(pk=interest.pk).update(responded_at=past)
+        again, _ = interests.send(self.asha, self.ravi)
+        self.assertEqual(again.resend_count, 1)
+
+        interests.decline(again.id, self.ravi)
+        Interest.objects.filter(pk=interest.pk).update(responded_at=past)
+        with self.assertRaises(interests.InterestError):
+            interests.send(self.asha, self.ravi)
+
+    def test_daily_cap_refuses_further_sends(self):
+        for n in range(interests.MAX_PER_DAY):
+            interests.send(self.asha, _member("cap-%d" % n, "M"))
+
+        with self.assertRaises(interests.InterestError) as caught:
+            interests.send(self.asha, self.ravi)
+        self.assertEqual(caught.exception.status, 429)
+
+    def test_declined_tab_is_sender_only(self):
+        """A receiver's own declines are done; listing them invites re-litigation."""
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.decline(interest.id, self.ravi)
+
+        self.assertEqual(interests.for_tab(self.asha, "declined").count(), 1)
+        self.assertEqual(interests.for_tab(self.ravi, "declined").count(), 0)
+
+    def test_accepted_tab_shows_both_directions(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+
+        self.assertEqual(interests.for_tab(self.asha, "accepted").count(), 1)
+        self.assertEqual(interests.for_tab(self.ravi, "accepted").count(), 1)
+
+    def test_counts_separate_outstanding_from_unseen(self):
+        interests.send(self.asha, self.ravi)
+
+        before = interests.counts(self.ravi)
+        self.assertEqual(before["received_pending"], 1)
+        self.assertEqual(before["received_unseen"], 1)
+
+        interests.mark_seen(self.ravi)
+
+        after = interests.counts(self.ravi)
+        self.assertEqual(after["received_pending"], 1, "the tab count must survive being seen")
+        self.assertEqual(after["received_unseen"], 0, "the dot must clear")
+
+    def test_is_accepted_between_reads_either_direction(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        self.assertFalse(interests.is_accepted_between(self.asha, self.ravi))
+
+        interests.accept(interest.id, self.ravi)
+        self.assertTrue(interests.is_accepted_between(self.asha, self.ravi))
+        self.assertTrue(interests.is_accepted_between(self.ravi, self.asha))
+
+
+class BlockTests(TestCase):
+    def setUp(self):
+        self.asha = _member("asha-b", "F")
+        self.ravi = _member("ravi-b", "M")
+
+    def test_decline_with_block_stops_further_interest(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.decline(interest.id, self.ravi, block=True)
+
+        with self.assertRaises(interests.InterestError) as caught:
+            interests.send(self.asha, self.ravi)
+        self.assertEqual(caught.exception.status, 403)
+
+    def test_block_is_mutual_in_effect(self):
+        Block.objects.create(blocker=self.ravi, blocked=self.asha)
+        self.assertTrue(interests.is_blocked_between(self.asha, self.ravi))
+        self.assertTrue(interests.is_blocked_between(self.ravi, self.asha))
+
+    def test_blocked_profiles_leave_the_match_pool_both_ways(self):
+        self.assertIn(self.ravi, eligible_matches(self.asha))
+
+        Block.objects.create(blocker=self.ravi, blocked=self.asha)
+
+        self.assertNotIn(self.ravi, eligible_matches(self.asha))
+        self.assertNotIn(self.asha, eligible_matches(self.ravi))
+
+
+class MatchTabTests(TestCase):
+    def setUp(self):
+        self.asha = _member("asha-m", "F")
+
+    def _joined(self, username, days_ago):
+        profile = _member(username, "M")
+        Profile.objects.filter(pk=profile.pk).update(
+            created_at=timezone.now() - timedelta(days=days_ago)
+        )
+        return profile
+
+    def test_recent_tab_excludes_anyone_older_than_the_window(self):
+        fresh = self._joined("fresh-m", 2)
+        self._joined("stale-m", RECENTLY_JOINED_DAYS + 5)
+
+        recent = list(recent_match_queryset(self.asha))
+        self.assertEqual(recent, [fresh])
+
+    def test_recent_tab_is_ordered_newest_first(self):
+        older = self._joined("older-m", 20)
+        newer = self._joined("newer-m", 1)
+
+        self.assertEqual(list(recent_match_queryset(self.asha)), [newer, older])
+
+    def test_null_marker_falls_back_to_a_week_not_everything(self):
+        """Treating null as the epoch would mark the whole pool new on a first
+        load and produce a badge in the hundreds, which means nothing."""
+        self._joined("ancient-m", 400)
+        recent = self._joined("recent-m", 2)
+
+        self.assertEqual(list(new_match_queryset(self.asha)), [recent])
+
+    def test_new_tab_empties_once_marked_seen(self):
+        self._joined("newish-m", 1)
+        self.assertEqual(new_match_queryset(self.asha).count(), 1)
+
+        Profile.objects.filter(pk=self.asha.pk).update(last_seen_matches_at=timezone.now())
+        self.asha.refresh_from_db()
+
+        self.assertEqual(new_match_queryset(self.asha).count(), 0)
+
+    def test_new_tab_picks_up_someone_who_joined_after_the_marker(self):
+        Profile.objects.filter(pk=self.asha.pk).update(
+            last_seen_matches_at=timezone.now() - timedelta(days=1)
+        )
+        self.asha.refresh_from_db()
+        joined = self._joined("later-m", 0)
+
+        self.assertEqual(list(new_match_queryset(self.asha)), [joined])
+
+    def test_blocked_profiles_are_absent_from_every_tab(self):
+        blocked = self._joined("blocked-m", 1)
+        Block.objects.create(blocker=self.asha, blocked=blocked)
+
+        for tab in ("all", "new", "recent"):
+            self.assertNotIn(blocked, match_queryset(self.asha, tab), tab)
+
+    def test_public_payload_carries_joined_at_but_not_created_at(self):
+        data = profile_to_api(self.asha, None, public=True)
+        self.assertIn("joinedAt", data)
+        self.assertNotIn("created_at", data)
+
+
+class RepeatVisitorTests(TestCase):
+    def setUp(self):
+        self.asha = _member("asha-v", "F")
+        self.ravi = _member("ravi-v", "M")
+        self.kiran = _member("kiran-v", "M")
+
+    def _view(self, viewer, when=None):
+        row = ProfileView.objects.create(viewer=viewer, viewed=self.asha)
+        if when is not None:
+            ProfileView.objects.filter(pk=row.pk).update(created_at=when)
+        return row
+
+    def test_grouping_survives_the_models_own_ordering(self):
+        """ProfileView.Meta.ordering is ["-created_at"], and Django folds an
+        active ordering column into the GROUP BY. Without `.order_by()` this
+        returns one row per view instead of one per viewer - silently."""
+        now = timezone.now()
+        for minutes in (1, 2, 3):
+            self._view(self.ravi, now - timedelta(minutes=minutes))
+
+        rows = list(visitor_rows(self.asha))
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["visits"], 3)
+
+    def test_one_view_is_not_a_repeat(self):
+        self._view(self.ravi)
+        rows = list(visitor_rows(self.asha))
+        self.assertEqual(rows[0]["visits"], 1)
+        self.assertEqual(list(visitor_rows(self.asha, repeat_only=True)), [])
+
+    def test_two_views_make_a_repeat_visitor(self):
+        self._view(self.ravi)
+        self._view(self.ravi)
+        self.assertEqual(len(list(visitor_rows(self.asha, repeat_only=True))), 1)
+
+    def test_a_heavy_viewer_does_not_crowd_out_the_list(self):
+        """The old implementation read 160 rows and de-duplicated in Python, so
+        one viewer with 160 visits returned a single visitor."""
+        for _ in range(200):
+            self._view(self.ravi)
+        self._view(self.kiran)
+
+        viewers = {row["viewer"] for row in visitor_rows(self.asha)}
+        self.assertEqual(viewers, {self.ravi.pk, self.kiran.pk})
+
+    def test_ordering_is_by_latest_visit_not_by_count(self):
+        now = timezone.now()
+        self._view(self.ravi, now - timedelta(hours=5))
+        self._view(self.ravi, now - timedelta(hours=4))
+        self._view(self.kiran, now - timedelta(minutes=1))
+
+        rows = list(visitor_rows(self.asha))
+        self.assertEqual(rows[0]["viewer"], self.kiran.pk)
+
+    def test_hidden_visitors_are_excluded(self):
+        self._view(self.ravi)
+        Profile.objects.filter(pk=self.ravi.pk).update(hide=True)
+
+        self.assertEqual(list(visitor_rows(self.asha)), [])

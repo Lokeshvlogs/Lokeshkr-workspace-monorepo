@@ -115,8 +115,6 @@ const FAMILY_TYPE_OPTIONS: SelectOption[] = [
 ]
 
 export const SECTIONS = [
-  'About',
-  'Basic Details',
   'Religion & Community',
   'Location',
   'Education & Career',
@@ -144,7 +142,6 @@ function communitiesForAny(religions: string[] | undefined): SelectOption[] {
 
 export const PROFILE_FIELDS: ProfileFieldDef[] = [
   // ---- About (step 0) ----
-  { key: 'aboutMe', label: 'About me', section: 'About', step: 0, editor: 'textarea' },
 
   // ---- Basic Details (step 0) ----
   { key: 'firstName', label: 'First name', section: 'Basic Details', step: 0, editor: 'text' },

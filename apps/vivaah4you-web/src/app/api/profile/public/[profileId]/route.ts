@@ -9,8 +9,11 @@ export async function GET(
   const { profileId } = await params
   const encoded = encodeURIComponent(profileId)
 
-  // Public page - no auth token attached.
-  const { ok, status, data } = await djangoFetch(`/profiles/public/${encoded}`, {}, false)
+  // The token is forwarded even though the endpoint stays public: Django shows
+  // presence to a signed-in reader and withholds it from an anonymous one, and
+  // it cannot tell the two apart without it. A signed-out reader still gets the
+  // whole public profile, just no "last seen".
+  const { ok, status, data } = await djangoFetch(`/profiles/public/${encoded}`)
 
   if (ok) {
     // Log the visit for the owner's "who viewed me" list. Sent as a separate

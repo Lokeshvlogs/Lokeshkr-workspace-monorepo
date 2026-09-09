@@ -333,6 +333,15 @@ class Profile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # When the member last opened their matches. Only ever moved by an explicit
+    # POST, never as a side effect of the GET - see the matches endpoint.
+    last_seen_matches_at = models.DateTimeField(null=True, blank=True)
+
+    # Stamped by the authentication class on API activity - see presence.py.
+    # Never written through save(), so it does not touch updated_at or trigger
+    # a completeness recompute.
+    last_active_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
     hide = models.BooleanField(default=False)
     hide_profile_from_search = models.BooleanField(default=False)
     hide_display_picture_from_search = models.BooleanField(default=False)
@@ -645,3 +654,116 @@ class ProfileView(models.Model):
 
     def __str__(self):
         return f"{self.viewer_id} viewed {self.viewed_id}"
+
+
+def interest_pair_key(a_id: int, b_id: int) -> str:
+    """An order-independent key for the two profiles in an interest.
+
+    Sorted, so A->B and B->A produce the same string. That is what lets a
+    database constraint enforce "at most one live thread per pair, in either
+    direction" instead of leaving it to two code paths to remember.
+    """
+    lo, hi = sorted((int(a_id), int(b_id)))
+    return f"{lo}:{hi}"
+
+
+class Interest(models.Model):
+    """One member asking another to connect.
+
+    Stored as a single directed row with a status, not as a mirrored pair.
+    "Received" is a point of view, not a state: mirroring it would mean two
+    statuses to keep in step on every transition, and the classic failure is
+    the sender seeing "accepted" while the receiver still sees "pending".
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Awaiting a reply"
+        ACCEPTED = "accepted", "Accepted"
+        DECLINED = "declined", "Declined"
+        WITHDRAWN = "withdrawn", "Withdrawn by the sender"
+
+    #: Statuses that occupy the pair. Only one of these may exist per pair.
+    LIVE_STATUSES = (Status.PENDING, Status.ACCEPTED)
+
+    sender = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="interests_sent"
+    )
+    receiver = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="interests_received"
+    )
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+
+    #: See `interest_pair_key`. Maintained in save(); never set by hand.
+    pair_key = models.CharField(max_length=40, db_index=True, editable=False)
+
+    message = models.CharField(max_length=280, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    #: When the receiver last opened their inbox past this row. Distinct from
+    #: status on purpose - "seen but not yet answered" is a real and common
+    #: state, and it is what clears the red dot without clearing the count.
+    seen_at = models.DateTimeField(null=True, blank=True)
+
+    #: Times this pair has been reopened after a decline. A counter rather than
+    #: a boolean so the policy can be relaxed later without a migration.
+    resend_count = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sender", "receiver"], name="uniq_interest_direction"
+            ),
+            # The important one: makes it physically impossible for A->B and
+            # B->A to both be live, which forces the crossing case through the
+            # auto-accept path rather than producing two half-threads.
+            models.UniqueConstraint(
+                fields=["pair_key"],
+                condition=models.Q(status__in=["pending", "accepted"]),
+                name="uniq_live_interest_per_pair",
+            ),
+            models.CheckConstraint(
+                check=~models.Q(sender=models.F("receiver")), name="interest_not_self"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["receiver", "status", "-created_at"]),
+            models.Index(fields=["sender", "status", "-created_at"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.pair_key = interest_pair_key(self.sender_id, self.receiver_id)
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            kwargs["update_fields"] = set(update_fields) | {"pair_key"}
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.sender_id} -> {self.receiver_id} ({self.status})"
+
+
+class Block(models.Model):
+    """One member refusing all contact from another.
+
+    Deliberately one-directional in storage and two-directional in effect: the
+    blocked member must not be able to tell, so every query that consults this
+    checks both columns.
+    """
+
+    blocker = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="blocks_made"
+    )
+    blocked = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="blocks_received"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["blocker", "blocked"], name="uniq_block"),
+        ]
+        indexes = [models.Index(fields=["blocked", "blocker"])]
+
+    def __str__(self):
+        return f"{self.blocker_id} blocked {self.blocked_id}"

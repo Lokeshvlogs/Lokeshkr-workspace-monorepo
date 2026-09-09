@@ -2,14 +2,15 @@ from datetime import timedelta
 from typing import List
 
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import File, Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
-from ninja_jwt.authentication import JWTAuth
 
+from . import cards, interests
+from .auth import active_auth, optional_auth
 from .mapping import apply_payload, profile_to_api
 from .models import Profile, ProfileView
 from .schemas import ProfileUpdateSchema
@@ -20,6 +21,14 @@ router = Router(tags=["profiles"])
 STATS_WINDOW_DAYS = 30
 # How many recent visitors the dashboard shows.
 VISITOR_LIMIT = 8
+# How many matches one page carries.
+MATCH_PAGE_SIZE = 12
+MATCH_TABS = ("all", "new", "recent")
+# What counts as "recently joined".
+RECENTLY_JOINED_DAYS = 30
+# Used when a member has never marked their matches seen - see
+# new_match_queryset for why this is not the epoch.
+NEW_MATCH_FALLBACK_DAYS = 7
 
 
 def eligible_matches(profile: Profile):
@@ -34,6 +43,13 @@ def eligible_matches(profile: Profile):
     )
     if opposite:
         qs = qs.filter(gender=opposite)
+
+    # Blocking is mutual in effect, so a block removes the pair from each
+    # other's pool - and from the dashboard count, which reads the same pool.
+    blocked = interests.blocked_profile_ids(profile)
+    if blocked:
+        qs = qs.exclude(pk__in=blocked)
+
     return qs
 
 
@@ -57,7 +73,7 @@ def validate_sibling_counts(profile: Profile) -> None:
             )
 
 
-@router.get("/profiles", auth=JWTAuth())
+@router.get("/profiles", auth=active_auth)
 def profiles_list(request):
     qs = (
         Profile.objects.exclude(user=request.user)
@@ -69,7 +85,7 @@ def profiles_list(request):
     return [profile_to_api(p, request, public=True) for p in qs]
 
 
-@router.get("/me", auth=JWTAuth())
+@router.get("/me", auth=active_auth)
 def my_profile(request):
     profile = get_object_or_404(Profile, user=request.user)
     data = profile_to_api(profile, request)
@@ -77,62 +93,92 @@ def my_profile(request):
     return data
 
 
-@router.get("/public/{profile_id}")
+# Optional auth, not none: the page is genuinely public, but a signed-in
+# viewer is shown presence and an anonymous one is not.
+@router.get("/public/{profile_id}", auth=optional_auth)
 def public_profile(request, profile_id: str):
     """Publicly viewable subset of a profile - no contact details, no exact DOB."""
     profile = get_object_or_404(Profile, profile_id=profile_id)
     if profile.hide or profile.hide_profile_from_search:
         raise HttpError(404, "Profile not found")
 
-    data = profile_to_api(profile, request, public=True)
+    viewer = request.auth if getattr(request, "auth", False) else None
+    data = profile_to_api(profile, request, public=True, viewer=viewer)
     if profile.hide_display_picture_from_search:
         data["photo"] = None
     return data
 
 
-@router.get("/matches", auth=JWTAuth())
-def matches(request):
+def recent_match_queryset(profile: Profile):
+    """Members who joined inside the window, newest first."""
+    since = timezone.now() - timedelta(days=RECENTLY_JOINED_DAYS)
+    return eligible_matches(profile).filter(created_at__gte=since).order_by("-created_at")
+
+
+def new_match_queryset(profile: Profile):
+    """Members who joined since this member last looked at their matches.
+
+    A null marker falls back to a week rather than to the epoch. Treating null
+    as "everything" would mark the entire pool as new on a member's first load
+    and produce a badge reading in the hundreds, which means nothing.
+    """
+    marker = profile.last_seen_matches_at or (timezone.now() - timedelta(days=NEW_MATCH_FALLBACK_DAYS))
+    return eligible_matches(profile).filter(created_at__gt=marker).order_by("-created_at")
+
+
+def match_queryset(profile: Profile, tab: str):
+    if tab == "recent":
+        return recent_match_queryset(profile)
+    if tab == "new":
+        return new_match_queryset(profile)
+    # Verification outranks completeness deliberately. Under today's rule the
+    # two agree, so this costs nothing now - but it is what we want the day
+    # identity checks decouple them, when an ID-verified 96% profile should
+    # beat an unverified 100% one.
+    return eligible_matches(profile).order_by(
+        "-verification_level", "-profile_completeness", "-created_at"
+    )
+
+
+@router.get("/matches", auth=active_auth)
+def matches(request, tab: str = "all", limit: int = MATCH_PAGE_SIZE, offset: int = 0):
     """Suggested matches.
 
     Placeholder ranking: opposite gender, visible profiles, most complete first.
     A real compatibility algorithm replaces the ordering here later.
     """
     profile = get_object_or_404(Profile, user=request.user)
-    qs = (
-        eligible_matches(profile)
-        # profile_to_api reads profile.photos per row.
-        .prefetch_related("photos")
-        # Verification outranks completeness deliberately. Under today's rule
-        # the two agree, so this costs nothing now - but it is what we want the
-        # day identity checks decouple them, when an ID-verified 96% profile
-        # should beat an unverified 100% one.
-        .order_by("-verification_level", "-profile_completeness", "-created_at")[:12]
-    )
+    if tab not in MATCH_TABS:
+        raise HttpError(400, "Unknown tab.")
 
-    return [profile_to_api(p, request, public=True) for p in qs]
+    limit = max(1, min(limit, 48))
+    # profile_to_api reads profile.photos per row.
+    qs = match_queryset(profile, tab).prefetch_related("photos")
+    total = qs.count()
+    rows = [
+        profile_to_api(p, request, public=True, viewer=profile)
+        for p in qs[offset : offset + limit]
+    ]
 
-
-def visitor_card(profile: Profile, request, last_seen) -> dict:
-    """The trimmed shape the dashboard's visitor list needs."""
-    photo = None
-    if profile.display_picture and not profile.hide_display_picture_from_search:
-        try:
-            photo = request.build_absolute_uri(profile.display_picture.url)
-        except ValueError:
-            photo = None
-    return {
-        "profile_id": profile.profile_id or "",
-        "verification_level": profile.verification_level,
-        "first_name": profile.first_name,
-        "surname": profile.surname,
-        "age": profile.age,
-        "city": profile.current_city,
-        "photo": photo,
-        "last_seen": last_seen.isoformat() if last_seen else None,
-    }
+    return {"results": rows, "total": total, "has_more": offset + limit < total}
 
 
-@router.post("/view/{profile_id}", auth=JWTAuth())
+@router.post("/matches/seen", auth=active_auth)
+def mark_matches_seen(request):
+    """Move the "new matches" marker to now.
+
+    Explicit, never a side effect of the GET: a StrictMode double-render, a
+    prefetch or a background refetch would otherwise wipe the badge before the
+    member had seen anything.
+    """
+    profile = get_object_or_404(Profile, user=request.user)
+    now = timezone.now()
+    # .update() so this cannot recompute completeness or bump updated_at.
+    Profile.objects.filter(pk=profile.pk).update(last_seen_matches_at=now)
+    return {"seen_at": now.isoformat()}
+
+
+@router.post("/view/{profile_id}", auth=active_auth)
 def record_profile_view(request, profile_id: str):
     """Log that the caller opened someone else's profile.
 
@@ -149,31 +195,58 @@ def record_profile_view(request, profile_id: str):
     return {"recorded": True}
 
 
-@router.get("/visitors", auth=JWTAuth())
-def profile_visitors(request):
-    """Who looked at your profile, most recent first, one row per person."""
-    profile = get_object_or_404(Profile, user=request.user)
+def visitor_rows(profile: Profile, repeat_only: bool = False):
+    """One row per viewer, with how many times they came back.
 
-    seen: dict[int, object] = {}
-    # Ordered newest-first by Meta.ordering, so the first row per viewer is
-    # their latest visit.
-    views = (
+    `.order_by()` with no arguments is load-bearing. `ProfileView.Meta.ordering`
+    is `["-created_at"]`, and Django folds any active ordering column into the
+    GROUP BY - without clearing it this groups by (viewer, created_at) and
+    returns one row per view instead of one per viewer. It fails silently, with
+    numbers that look plausible.
+    """
+    rows = (
         ProfileView.objects.filter(viewed=profile)
         .exclude(viewer__hide=True)
         .exclude(viewer__hide_profile_from_search=True)
-        .select_related("viewer")
-        .prefetch_related("viewer__photos")[: VISITOR_LIMIT * 20]
+        .order_by()
+        .values("viewer")
+        .annotate(visits=Count("id"), last_seen=Max("created_at"))
     )
-    for view in views:
-        if view.viewer_id not in seen:
-            seen[view.viewer_id] = (view.viewer, view.created_at)
-        if len(seen) >= VISITOR_LIMIT:
-            break
-
-    return [visitor_card(p, request, when) for p, when in seen.values()]
+    if repeat_only:
+        rows = rows.filter(visits__gte=2)
+    return rows.order_by("-last_seen")
 
 
-@router.get("/stats", auth=JWTAuth())
+@router.get("/visitors", auth=active_auth)
+def profile_visitors(request, filter: str = ""):
+    """Who looked at your profile, most recent first, one row per person.
+
+    Aggregated in the database rather than de-duplicated in Python. The old
+    version pulled 160 rows and kept the first per viewer, so one enthusiastic
+    viewer with 160 visits returned a single visitor and starved out everybody
+    else.
+    """
+    profile = get_object_or_404(Profile, user=request.user)
+
+    rows = list(visitor_rows(profile, repeat_only=filter == "repeat")[:VISITOR_LIMIT])
+    by_id = Profile.objects.filter(pk__in=[r["viewer"] for r in rows]).prefetch_related(
+        "photos"
+    ).in_bulk()
+
+    cards_out = []
+    for row in rows:
+        viewer = by_id.get(row["viewer"])
+        if viewer is None:
+            continue
+        card = cards.person_card(viewer, request, row["last_seen"], viewer=profile)
+        card["visits"] = row["visits"]
+        card["is_repeat"] = row["visits"] >= 2
+        cards_out.append(card)
+
+    return cards_out
+
+
+@router.get("/stats", auth=active_auth)
 def profile_stats(request):
     """Headline figures for the member dashboard.
 
@@ -186,18 +259,31 @@ def profile_stats(request):
     recent = ProfileView.objects.filter(viewed=profile, created_at__gte=since)
     unique_visitors = recent.values("viewer").aggregate(n=Count("viewer", distinct=True))["n"]
 
+    # Same `.order_by()` caveat as visitor_rows - see the note there.
+    repeat_visitors = (
+        recent.order_by().values("viewer").annotate(n=Count("id")).filter(n__gte=2).count()
+    )
+
+    interest_counts = interests.counts(profile)
+
     return {
         "window_days": STATS_WINDOW_DAYS,
         "profile_views": recent.count(),
         "unique_visitors": unique_visitors or 0,
+        "repeat_visitors": repeat_visitors,
         "views_made": ProfileView.objects.filter(viewer=profile, created_at__gte=since).count(),
         "matches": eligible_matches(profile).count(),
+        "new_matches": new_match_queryset(profile).count(),
+        "recently_joined": recent_match_queryset(profile).count(),
+        "interests_received": interest_counts["received_pending"],
+        "interests_unseen": interest_counts["received_unseen"],
+        "interests_accepted": interest_counts["accepted"],
         "completeness": profile.profile_completeness,
         "photos": profile.photos.count() + (1 if profile.display_picture else 0),
     }
 
 
-@router.patch("/save-step", auth=JWTAuth())
+@router.patch("/save-step", auth=active_auth)
 def update_profile_step(request, data: ProfileUpdateSchema):
     payload = data.dict(exclude_unset=True)
     step = payload.pop("step", None)
@@ -233,7 +319,7 @@ def update_profile_step(request, data: ProfileUpdateSchema):
     }
 
 
-@router.post("/me/photo", auth=JWTAuth())
+@router.post("/me/photo", auth=active_auth)
 def upload_profile_photo(request, file: UploadedFile = File(...)):
     """Upload or replace the authenticated user's profile photo.
 

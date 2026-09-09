@@ -22,6 +22,7 @@ import {
   MapPin,
   Music,
   Palette,
+  PersonStanding,
   Plane,
   Ruler,
   School,
@@ -49,8 +50,10 @@ export type FieldIcon = ComponentType<{
  * where fifty `icon:` keys with fifteen holes would not.
  *
  * Absent on purpose:
- *  - gender, livesWithFamily, hasChildren - the value is already a plain word
- *    ("Male", "Yes"); an icon beside it is a riddle, not a shortcut.
+ *  - livesWithFamily, hasChildren - the value is already a plain word ("Yes");
+ *    an icon beside it is a riddle, not a shortcut. `gender` was here too, but
+ *    it now leads a row in the hero facts grid where every other row has a
+ *    glyph, and the odd one out read as a rendering fault.
  *  - aboutMe, familyAbout, partnerAbout - free text needs a real heading.
  *  - religiosityDetail ("More specifically") - no glyph carries that meaning.
  * Anything not listed here falls back to its visible text label.
@@ -60,6 +63,7 @@ export const FIELD_ICONS: Record<string, FieldIcon> = {
   dob: CalendarDays,
   age: Cake,
   height: Ruler,
+  gender: PersonStanding,
   bodyPhysique: Dumbbell,
   maritalStatus: HeartHandshake,
   manglikLevel: Sparkles,

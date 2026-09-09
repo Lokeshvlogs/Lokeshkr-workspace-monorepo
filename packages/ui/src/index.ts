@@ -23,5 +23,13 @@ export { TextField } from './components/common/input/text/TextField';
 export { default as HorizontalFormSlider } from './components/common/slider/HorizontalFormSlider';
 export { default as SliderNavigation } from './components/common/slider/SliderNavigation';
 export { default as TimePicker } from './components/common/timepicker/TimePicker';
+export { default as ConversationList } from './components/messaging/ConversationList';
+export { default as MessageThread } from './components/messaging/MessageThread';
+export { default as MessageComposer } from './components/messaging/MessageComposer';
+export type {
+  MessagingConversation,
+  MessagingMessage,
+  MessagingPerson,
+} from './components/messaging/types';
 export * from './types/select';
 export * from './constants/selectOptions/timeDate';

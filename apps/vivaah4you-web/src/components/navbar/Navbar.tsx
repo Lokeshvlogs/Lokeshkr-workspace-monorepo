@@ -1,12 +1,52 @@
 'use client'
 
 import Link from 'next/link'
-import { MouseEvent, useState } from 'react'
+import { MouseEvent, useEffect, useState } from 'react'
 import { useAuth } from "@/components/authProvider";
+import { useMessagePolling } from '@/hooks/useMessagePolling';
 
 export default function Navbar() {
   const auth = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  /* Outstanding interests, for the badge. Read once per sign-in rather than
+     polled: nothing here is time-critical, and a navbar that refetches on a
+     timer is a request every member makes on every page. */
+  const [interestCount, setInterestCount] = useState(0);
+  const [unreadChats, setUnreadChats] = useState(0);
+
+  useEffect(() => {
+    if (!auth.isAuthenticated) {
+      setInterestCount(0);
+      return;
+    }
+
+    let cancelled = false;
+    fetch('/api/interests/counts')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setInterestCount(Number(data?.receivedPending ?? 0));
+      })
+      .catch(() => {
+        // A badge that cannot load should disappear, not break the navbar.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.isAuthenticated]);
+
+  // Unread messages, on the slowest cadence there is. Every member pays for
+  // this on every page, so it uses the badge interval and pauses with the tab.
+  useMessagePolling({
+    mode: 'badge',
+    enabled: auth.isAuthenticated,
+    onTick: async () => {
+      const data = await fetch('/api/messaging/poll').then((r) => r.json()).catch(() => null);
+      if (!data) return false;
+      setUnreadChats(Number(data.unreadTotal ?? 0));
+      return true;
+    },
+  });
 
   const handleLogoutClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -26,6 +66,14 @@ export default function Navbar() {
       </Link>
       {auth.isAuthenticated ? (
         <>
+          <Link href="/?view=chats" className="nav-with-badge text-gray-700 hover:text-gray-900">
+            Chats
+            {unreadChats > 0 && <span className="nav-badge">{unreadChats}</span>}
+          </Link>
+          <Link href="/?view=interests" className="nav-with-badge text-gray-700 hover:text-gray-900">
+            Interests
+            {interestCount > 0 && <span className="nav-badge">{interestCount}</span>}
+          </Link>
           <Link href="/?view=me" className="text-gray-700 hover:text-gray-900">My Profile</Link>
           <Link href="/settings" className="text-gray-700 hover:text-gray-900">Settings</Link>
           <button

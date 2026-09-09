@@ -15,7 +15,7 @@ from datetime import datetime
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
-from . import education, managed_by as managed_by_rules
+from . import education, managed_by as managed_by_rules, presence
 
 # camelCase key sent by the wizard -> model field name
 CAMEL_TO_MODEL = {
@@ -541,8 +541,14 @@ def apply_payload(profile, payload: dict) -> list:
     return touched
 
 
-def profile_to_api(profile, request=None, public: bool = False) -> dict:
-    """Serialise a Profile back into the camelCase shape the frontend expects."""
+def profile_to_api(profile, request=None, public: bool = False, viewer=None) -> dict:
+    """Serialise a Profile back into the camelCase shape the frontend expects.
+
+    `viewer` is the signed-in member doing the looking, when there is one. It
+    only affects presence: an anonymous caller is told nothing about when
+    somebody was last around, because minute-by-minute activity on a named
+    profile is a usage log and polling one is too easy to leave open.
+    """
     picture = None
     if profile.display_picture:
         try:
@@ -691,6 +697,17 @@ def profile_to_api(profile, request=None, public: bool = False) -> dict:
             profile.managed_by, profile.profile_for, owner=not public
         ),
     }
+
+    # Date, not a timestamp. All "Joined 3 weeks ago" needs, and one less
+    # behavioural signal on a public payload. `created_at` stays owner-only.
+    data["joinedAt"] = profile.created_at.date().isoformat() if profile.created_at else None
+
+    # Own profile: the exact stamp, it is your own. Signed-in viewer: floored
+    # to the hour by `presence.to_api`. Anonymous: the key is absent entirely.
+    if not public:
+        data["presence"] = presence.to_api(profile.last_active_at, exact=True)
+    elif viewer is not None:
+        data["presence"] = presence.to_api(profile.last_active_at, exact=False)
 
     if not public:
         # Contact details and the exact birth timestamp stay off public pages.
