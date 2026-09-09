@@ -1,3 +1,5 @@
+import type { PresenceBlock } from '@/lib/presence'
+
 /** One qualification. See services/vivaah4u-api/apps/profiles/models.py. */
 export interface ProfileEducationEntry {
   level: string
@@ -36,6 +38,7 @@ export interface PublicProfile {
   currentCity: string
   placeOfBirthCountry: string
   placeOfBirthCity: string
+  citizenshipCountry: string
   familyLivingInCountry: string
   familyLivingInCity: string
   familyIncome: string
@@ -151,6 +154,11 @@ export interface PublicProfile {
    * the evidence behind it stays server-side.
    */
   verification_level: VerificationLevel
+  /**
+   * Absent for anonymous readers - the API only tells a signed-in viewer when
+   * somebody was last around. Null when the member has never been stamped.
+   */
+  presence?: PresenceBlock | null
 }
 
 /** Mirrors VerificationLevel in services/vivaah4u-api/apps/profiles/verification.py. */

@@ -63,7 +63,26 @@ INSTALLED_APPS = [
     'apps.auth_api', #For authentication APIs
     'apps.profiles',
     'apps.catalog',
+    'apps.messaging',
 ]
+
+# --- Messaging ---
+#
+# apps.messaging is written to be reused: it imports nothing from apps.profiles
+# and every hook below has a working default, so the app also runs in a project
+# that sets none of this. These five lines are the whole integration.
+MESSAGING_PARTICIPANT_MODEL = "profiles.Profile"
+MESSAGING_PARTICIPANT_RESOLVER = "apps.profiles.messaging_hooks.participant_for_request"
+MESSAGING_PARTICIPANT_SERIALIZER = "apps.profiles.messaging_hooks.participant_card"
+# The matrimonial rule - a conversation needs a mutually accepted interest -
+# lives on the host side of the seam, not inside the reusable app.
+MESSAGING_CAN_START = "apps.profiles.messaging_hooks.can_start_conversation"
+MESSAGING_CAN_POST = "apps.profiles.messaging_hooks.can_post_message"
+# So a message also counts as activity for presence.
+MESSAGING_AUTH = "apps.profiles.auth.ActiveJWTAuth"
+
+MESSAGING_MAX_BODY_LENGTH = 4000
+MESSAGING_PAGE_SIZE = 30
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

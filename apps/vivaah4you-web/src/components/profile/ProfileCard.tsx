@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 
 import NameWithBadge from '@/components/profile/NameWithBadge'
+import InterestButton from '@/components/profile/InterestButton'
 
 export type ProfileCardData = {
   /** Present for real profiles; absent for the sample/placeholder cards. */
@@ -132,10 +133,15 @@ export default function ProfileCard({
           </ul>
         )}
 
-        {href ? (
-          <Link href={href} className="card-cta" onClick={handleOpen}>View profile</Link>
+        {href && profileId ? (
+          <div className="card-actions">
+            <Link href={href} className="card-cta" onClick={handleOpen}>View profile</Link>
+            <InterestButton profileId={profileId} variant="card" />
+          </div>
         ) : (
-          <button type="button" className="card-cta">Connect</button>
+          // Sample cards on the signed-out home page have no profile behind
+          // them, so there is nobody to express interest in.
+          <button type="button" className="card-cta" disabled>Connect</button>
         )}
       </div>
     </article>

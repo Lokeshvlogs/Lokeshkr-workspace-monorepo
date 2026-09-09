@@ -5,13 +5,20 @@ import Link from 'next/link'
 import { VerifiedBadge } from '@lokesh-workspace/ui'
 
 import Avatar from '@/components/profile/Avatar'
+import { relativeTime } from '@/lib/presence'
 
 export interface MemberStats {
   windowDays: number
   profileViews: number
   uniqueVisitors: number
+  repeatVisitors: number
   viewsMade: number
   matches: number
+  newMatches: number
+  recentlyJoined: number
+  interestsReceived: number
+  interestsUnseen: number
+  interestsAccepted: number
   completeness: number
   photos: number
 }
@@ -24,22 +31,9 @@ interface Visitor {
   photo: string | null
   lastSeen: string | null
   verificationLevel?: number
-}
-
-/** "3 days ago" from an ISO timestamp, without pulling in a date library. */
-function relativeTime(iso: string | null): string {
-  if (!iso) return ''
-  const then = new Date(iso).getTime()
-  if (Number.isNaN(then)) return ''
-
-  const minutes = Math.round((Date.now() - then) / 60000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.round(hours / 24)
-  if (days < 30) return `${days}d ago`
-  return `${Math.round(days / 30)}mo ago`
+  /** Visits in the stats window. 1 unless they came back. */
+  visits?: number
+  isRepeat?: boolean
 }
 
 interface InsightsPanelProps {
@@ -116,6 +110,11 @@ export default function InsightsPanel({ stats, loading, onOpenProfile }: Insight
                     <span className="visitor-meta">
                       {[visitor.city, relativeTime(visitor.lastSeen)].filter(Boolean).join(' · ')}
                     </span>
+                    {/* The most actionable line on the dashboard: somebody who
+                        came back is worth more than somebody who glanced. */}
+                    {visitor.isRepeat && (
+                      <span className="visitor-repeat">Viewed you {visitor.visits} times</span>
+                    )}
                   </span>
                 </Link>
               </li>
@@ -144,6 +143,14 @@ export default function InsightsPanel({ stats, loading, onOpenProfile }: Insight
               <div className="activity-row">
                 <dt>Members you can match with</dt>
                 <dd>{stats.matches}</dd>
+              </div>
+              <div className="activity-row">
+                <dt>Came back for another look</dt>
+                <dd>{stats.repeatVisitors}</dd>
+              </div>
+              <div className="activity-row">
+                <dt>Interests awaiting your reply</dt>
+                <dd>{stats.interestsReceived}</dd>
               </div>
             </dl>
             <p className="panel-foot">Counts cover the last {stats.windowDays} days.</p>

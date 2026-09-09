@@ -4,26 +4,11 @@ import React from 'react'
 import Link from 'next/link'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
+import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
+import ProfileBio from '@/components/profile/ProfileBio'
 import PhotoStrip from '@/components/profile/PhotoStrip'
-import Avatar from '@/components/profile/Avatar'
-import NameWithBadge from '@/components/profile/NameWithBadge'
-import { formatHeight, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
-import { iconFor } from '@/lib/profileIcons'
+import { fullName } from '@/lib/profileDisplay'
 import type { MyProfile } from '@/types/profile'
-
-/** One fact about the member, shown as icon + value. */
-function HeroChip({ fieldKey, label, value }: { fieldKey: string; label: string; value: string }) {
-  if (!value) return null
-  const Icon = iconFor(fieldKey)
-
-  return (
-    <li className="profile-chip" title={label}>
-      {Icon && <Icon className="profile-chip-icon" strokeWidth={1.6} aria-hidden="true" />}
-      <span className="sr-only">{label}: </span>
-      {value}
-    </li>
-  )
-}
 
 interface Props {
   profile: MyProfile
@@ -43,63 +28,35 @@ export default function MyProfileView({ profile, onSave }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="profile-hero">
-        <Avatar src={profile.photo} name={name} className="profile-hero-avatar" decorative />
-
-        <div className="min-w-0 flex-1">
-          <h2>
-            <NameWithBadge
-              name={name}
-              level={profile.verification_level}
-              size="lg"
-              className="profile-hero-name"
-            />
-          </h2>
-          {profile.profile_id && <p className="profile-hero-id">{profile.profile_id}</p>}
-          {profile.managedByLabel && (
-            <p className="managed-by">{profile.managedByLabel}</p>
-          )}
-
-          <ul className="profile-chips">
-            <HeroChip fieldKey="age" label="Age" value={profile.age ? `${profile.age} yrs` : ''} />
-            <HeroChip
-              fieldKey="height"
-              label="Height"
-              value={formatHeight(profile.heightFeet, profile.heightInches)}
-            />
-            <HeroChip fieldKey="religion" label="Religion" value={labelFor('religion', profile.religion)} />
-            <HeroChip
-              fieldKey="profession"
-              label="Profession"
-              value={labelFor('profession', profile.profession)}
-            />
-            <HeroChip fieldKey="currentCity" label="Lives in" value={locationLabel(profile)} />
-          </ul>
-        </div>
-
-        <div className="profile-hero-actions">
-          <Link href="/profile/register" className="btn bg-color-primary text-white">
-            Edit in wizard
-          </Link>
-          {profile.profile_id && (
-            // A real navigation, not an inline view: opening yourself inline
-            // would be a self-view, and the point is to see the public page.
-            <Link
-              href={`/profile/${profile.profile_id}`}
-              className="btn border border-color-border text-color-primary"
-            >
-              View as public
+      <ProfileHeroPanel
+        profile={profile}
+        onSave={onSave}
+        subtitle={
+          <>
+            {profile.profile_id && <p className="profile-hero-id">{profile.profile_id}</p>}
+            {profile.managedByLabel && <p className="managed-by">{profile.managedByLabel}</p>}
+          </>
+        }
+        actions={
+          <>
+            <Link href="/profile/register" className="btn bg-color-primary text-white">
+              Edit in wizard
             </Link>
-          )}
-        </div>
-      </section>
+            {profile.profile_id && (
+              // A real navigation, not an inline view: opening yourself inline
+              // would be a self-view, and the point is to see the public page.
+              <Link
+                href={`/profile/${profile.profile_id}`}
+                className="btn border border-color-border text-color-primary"
+              >
+                View as public
+              </Link>
+            )}
+          </>
+        }
+      />
 
-      {profile.aboutMe && (
-        <section className="form-section">
-          <h3 className="form-section-title">About me</h3>
-          <p className="profile-about">{profile.aboutMe}</p>
-        </section>
-      )}
+      <ProfileBio value={profile.aboutMe ?? ''} heading="About me" onSave={onSave} />
 
       <PhotoStrip photos={profile.photos ?? []} name={name} />
 
@@ -107,7 +64,7 @@ export default function MyProfileView({ profile, onSave }: Props) {
         Tap the pencil beside any field to edit it here — no need to run through the wizard again.
       </p>
 
-      <ProfileDetails profile={profile} editable onSave={onSave} columns={1} />
+      <ProfileDetails profile={profile} editable onSave={onSave} columns={2} />
 
       {/* Private, and never rendered on the public page. Collapsed so it does
           not lead the view. */}

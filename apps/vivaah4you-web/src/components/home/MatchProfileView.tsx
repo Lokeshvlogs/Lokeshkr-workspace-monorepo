@@ -5,11 +5,12 @@ import React, { useEffect, useState } from 'react'
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
-import Avatar from '@/components/profile/Avatar'
-import NameWithBadge from '@/components/profile/NameWithBadge'
+import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
+import ProfileBio from '@/components/profile/ProfileBio'
 import { compareProfiles } from '@/lib/compatibility'
 import { fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
 import type { MyProfile, PublicProfile } from '@/types/profile'
+import InterestButton from '@/components/profile/InterestButton'
 
 interface Props {
   profileId: string
@@ -108,55 +109,47 @@ export default function MatchProfileView({ profileId, me, onBack }: Props) {
     <div className="flex flex-col gap-5">
       {backBar}
 
-      <section className="profile-hero">
-        <Avatar src={profile.photo} name={name} className="profile-hero-avatar" />
+      <ProfileHeroPanel
+        profile={profile}
+        subtitle={
+          <>
+            {profile.managedByLabel && <p className="managed-by">{profile.managedByLabel}</p>}
+            <p className="profile-hero-sub">
+              {[
+                labelFor('profession', profile.profession),
+                labelFor('educationLevel', profile.educationLevel),
+                locationLabel(profile),
+              ]
+                .filter(Boolean)
+                .join('  ·  ')}
+            </p>
+          </>
+        }
+        actions={
+          <InterestButton profileId={profile.profile_id} />
+        }
+      />
 
-        <div className="min-w-0 flex-1">
-          <h2>
-            <NameWithBadge
-              name={name}
-              level={profile.verification_level}
-              size="lg"
-              className="profile-hero-name"
-            >
-              {profile.age ? <span className="profile-hero-age">{profile.age}</span> : null}
-            </NameWithBadge>
-          </h2>
-          {profile.managedByLabel && (
-            <p className="managed-by">{profile.managedByLabel}</p>
-          )}
-          <p className="profile-hero-sub">
-            {[
-              labelFor('profession', profile.profession),
-              labelFor('educationLevel', profile.educationLevel),
-              locationLabel(profile),
-            ]
-              .filter(Boolean)
-              .join('  ·  ')}
-          </p>
-        </div>
-
-        <div className="profile-hero-actions">
-          <button type="button" className="btn bg-color-primary text-white">
-            Express interest
-          </button>
-        </div>
-      </section>
-
-      {/* Without my own profile there is nothing to compare against, so the
-          panel is omitted rather than rendered empty. */}
-      {me && <CompatibilityPanel compatibility={compareProfiles(me, profile)} theirName={firstName} />}
-
-      {profile.aboutMe && (
-        <section className="form-section">
-          <h3 className="form-section-title">About {firstName}</h3>
-          <p className="profile-about">{profile.aboutMe}</p>
-        </section>
-      )}
+      <ProfileBio value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />
 
       <PhotoStrip photos={profile.photos ?? []} name={name} />
 
-      <ProfileDetails profile={profile} columns={1} />
+      <ProfileDetails profile={profile} columns={2} />
+
+      {/* Below the profile, not above it. The comparison is what you read once
+          you have formed a view of the person; leading with it turned meeting
+          somebody into reading a scorecard. Omitted rather than rendered empty
+          when my own profile has not loaded - there is nothing to compare. */}
+      {me && (
+        <CompatibilityPanel
+          compatibility={compareProfiles(me, profile)}
+          theirName={firstName}
+          theirPhoto={profile.photo}
+          theirGender={profile.gender}
+          myName={fullName(me) || 'You'}
+          myPhoto={me.photo}
+        />
+      )}
 
       <p className="text-center text-xs text-color-placeholder-text">
         Contact details are shared only after both sides express interest.

@@ -9,12 +9,16 @@ export interface ChipOption<T extends string | number = string> {
 
 interface ChipGroupProps<T extends string | number> {
   label?: string;
+  /** Decorative glyph drawn ahead of the legend. */
+  icon?: React.ReactNode;
   options: ChipOption<T>[];
   value?: T | null;
   onChange: (value: T) => void;
   className?: string;
   chipClassName?: string;
   error?: string;
+  /** Focus left the group entirely - moving between its own chips does not count. */
+  onBlur?: () => void;
   name?: string;
   /** Shows a tick inside the selected chip. */
   showCheck?: boolean;
@@ -32,19 +36,40 @@ const Check = () => (
  */
 export default function ChipGroup<T extends string | number>({
   label,
+  icon,
   options,
   value,
   onChange,
   className = "",
   chipClassName = "",
   error,
+  onBlur,
   name,
   showCheck = true,
 }: ChipGroupProps<T>) {
   return (
-    <fieldset className={`chip-group ${className}`}>
-      {label && <legend className="chip-group-label">{label}</legend>}
-      <div className="chip-group-options" role="radiogroup" aria-label={label}>
+    <fieldset
+      className={`chip-group ${error ? "chip-group-error" : ""} ${className}`}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onBlur?.();
+      }}
+    >
+      {label && (
+        <legend className={`chip-group-label ${icon ? 'chip-group-label-icon' : ''}`}>
+          {icon && (
+            <span className="field-label-icon" aria-hidden="true">
+              {icon}
+            </span>
+          )}
+          {label}
+        </legend>
+      )}
+      <div
+        className="chip-group-options"
+        role="radiogroup"
+        aria-label={label}
+        aria-invalid={error ? "true" : "false"}
+      >
         {options.map((option) => {
           const selected = value === option.value;
           return (

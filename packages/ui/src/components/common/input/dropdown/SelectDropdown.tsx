@@ -3,12 +3,15 @@ import { Check, ChevronDown } from 'lucide-react';
 import React, { useState, useRef, useEffect, useMemo, CSSProperties, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption } from '../../../../types/select';
+import FloatingLabel from '../FloatingLabel';
 
 
 interface Props {
   id?: string;
   placeholder: string;
   label: string;
+  /** Decorative glyph drawn ahead of the floating label. */
+  icon?: React.ReactNode;
   options: SelectIconOption[];
   value?: any;
   name?: string;
@@ -77,7 +80,7 @@ interface Props {
   loading?: boolean;
 }
 
-export default function SelectDropdown({ id, label, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName, zIndex = 10, searchable = false, emptyText = 'No options found', typeahead = true, typeaheadTimeout = 800, selectedFirst = true, onSearchChange, loading = false }: Props) {
+export default function SelectDropdown({ id, label, icon, placeholder, value, name, options, className = '', selectLabelClassName = '', selectPopupClassName = '', showButtonValue = false, iconClassName = '', optionsLabelClassName = '', extraLabelClassName = '', extraLabelAlighn = 'right', onChange, onBlur, onClick, disabled = false, align = 'left', errorValue, showError = true, LabelBorderScale = 75, PlaceHolderX = 2, PlaceHolderY = 5, LabelX = 2, LabelY = -18, labelClassName, zIndex = 10, searchable = false, emptyText = 'No options found', typeahead = true, typeaheadTimeout = 800, selectedFirst = true, onSearchChange, loading = false }: Props) {
   
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -426,9 +429,7 @@ export default function SelectDropdown({ id, label, placeholder, value, name, op
       >
         {/* Floated by CSS off data-filled / aria-expanded - see .text-field-label
             in styles.css. The old per-call-site LabelX/LabelY nudges are gone. */}
-        <label htmlFor={id} className={`text-field-label ${labelClassName ?? ''}`}>
-          {label}
-        </label>
+        <FloatingLabel htmlFor={id} label={label} icon={icon} className={labelClassName ?? ''} />
 
         {displayFlag && <img src={displayFlag} alt={displayLabel} className={`select-icon ${iconClassName}`} />}
 

@@ -6,6 +6,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 export type CenterView =
   | { kind: 'matches' }
   | { kind: 'me' }
+  | { kind: 'interests' }
+  | { kind: 'chats' }
   | { kind: 'match'; profileId: string }
 
 /**
@@ -32,6 +34,10 @@ export function useCenterView() {
   const requested = params.get('view')
   if (requested === 'me') {
     view = { kind: 'me' }
+  } else if (requested === 'interests') {
+    view = { kind: 'interests' }
+  } else if (requested === 'chats') {
+    view = { kind: 'chats' }
   } else if (requested === 'match') {
     const id = params.get('id')
     if (id) view = { kind: 'match', profileId: id }
@@ -56,9 +62,13 @@ export function useCenterView() {
       const url =
         next.kind === 'me'
           ? `${pathname}?view=me`
-          : next.kind === 'match'
-            ? `${pathname}?view=match&id=${encodeURIComponent(next.profileId)}`
-            : pathname
+          : next.kind === 'interests'
+            ? `${pathname}?view=interests`
+            : next.kind === 'chats'
+            ? `${pathname}?view=chats`
+            : next.kind === 'match'
+              ? `${pathname}?view=match&id=${encodeURIComponent(next.profileId)}`
+              : pathname
 
       // The effect above owns scrolling, so the router must not also do it.
       router.push(url, { scroll: false })
@@ -68,7 +78,9 @@ export function useCenterView() {
 
   const showMatches = useCallback(() => go({ kind: 'matches' }), [go])
   const showMe = useCallback(() => go({ kind: 'me' }), [go])
+  const showInterests = useCallback(() => go({ kind: 'interests' }), [go])
+  const showChats = useCallback(() => go({ kind: 'chats' }), [go])
   const showMatch = useCallback((profileId: string) => go({ kind: 'match', profileId }), [go])
 
-  return { view, showMatches, showMe, showMatch }
+  return { view, showMatches, showMe, showInterests, showChats, showMatch }
 }

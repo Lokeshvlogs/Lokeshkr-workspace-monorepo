@@ -4,6 +4,10 @@ import React, { CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useS
 import { createPortal } from "react-dom";
 
 interface Props {
+  /** Message to show under the trigger; also puts it in its error state. */
+  errorValue?: string;
+  /** Focus left the trigger. Suppressed while the calendar is open. */
+  onBlur?: () => void;
   /** "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm". */
   value?: string;
   onChange: (value: string) => void;
@@ -73,6 +77,8 @@ export default function BirthDateTimePicker({
   placeholder = "Select date of birth",
   className = "",
   disabled = false,
+  errorValue,
+  onBlur,
 }: Props) {
   const parsed = useMemo(() => parseValue(value), [value]);
   const [open, setOpen] = useState(false);
@@ -206,9 +212,11 @@ export default function BirthDateTimePicker({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
-        className="dob-trigger"
+        onBlur={() => { if (!open) onBlur?.(); }}
+        className={`dob-trigger ${errorValue ? "dob-trigger-error" : ""}`}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-invalid={errorValue ? "true" : "false"}
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
           <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -219,6 +227,8 @@ export default function BirthDateTimePicker({
         </span>
         {selected && <span className="dob-age">{ageFrom(selected)} yrs</span>}
       </button>
+
+      {errorValue && <p className="error-text" role="alert">{errorValue}</p>}
 
       {open && popupStyle && typeof document !== "undefined" && createPortal(
         <div ref={popupRef} style={popupStyle} className="dob-popup" role="dialog" aria-label="Choose date of birth">

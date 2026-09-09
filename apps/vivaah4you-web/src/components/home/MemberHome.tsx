@@ -6,6 +6,8 @@ import MatchesSection from '@/components/profile/MatchesSection'
 import WelcomeHeader from '@/components/home/WelcomeHeader'
 import MyProfileView from '@/components/home/MyProfileView'
 import MatchProfileView from '@/components/home/MatchProfileView'
+import InterestsView from '@/components/home/InterestsView'
+import ChatsView from '@/components/home/ChatsView'
 import InsightsPanel, { type MemberStats } from '@/components/home/InsightsPanel'
 import { useCenterView } from '@/components/home/useCenterView'
 import { useAuth } from '@/components/authProvider'
@@ -140,6 +142,10 @@ export default function MemberHome() {
                   </button>
                 </div>
               ))}
+
+            {view.kind === 'interests' && <InterestsView onOpenProfile={openProfile} />}
+
+            {view.kind === 'chats' && <ChatsView onOpenProfile={openProfile} />}
 
             {view.kind === 'match' && (
               <MatchProfileView profileId={view.profileId} me={profile} onBack={showMatches} />

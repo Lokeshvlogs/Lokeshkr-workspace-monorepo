@@ -22,7 +22,7 @@ interface Props {
  *
  * This branch was written out five separate times - twice identically in the
  * two profile-hero views, plus the match card, the welcome band, the visitor
- * list and a hand-rolled one in ProfileHeader - each carrying its own copy of
+ * list and a hand-rolled one in the public profile header - each carrying its own copy of
  * the eslint-disable below. Each call site keeps passing its existing class, so
  * this renders exactly what it replaced.
  */

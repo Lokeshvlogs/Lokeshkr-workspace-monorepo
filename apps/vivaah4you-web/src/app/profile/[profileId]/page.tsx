@@ -4,11 +4,13 @@ import React, { use, useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
-import ProfileHeader from '@/components/profile/ProfileHeader'
+import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
+import ProfileBio from '@/components/profile/ProfileBio'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import { fullName } from '@/lib/profileDisplay'
 import { useAuth } from '@/components/authProvider'
 import type { PublicProfile } from '@/types/profile'
+import InterestButton from '@/components/profile/InterestButton'
 
 export default function PublicProfilePage({
   params,
@@ -70,19 +72,28 @@ export default function PublicProfilePage({
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-color-primary-surface/40 px-4 py-10">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-        <ProfileHeader
+        <ProfileHeroPanel
           profile={profile}
+          subtitle={
+            <>
+              {profile.profile_id && <p className="profile-hero-id">{profile.profile_id}</p>}
+              {profile.managedByLabel && <p className="managed-by">{profile.managedByLabel}</p>}
+            </>
+          }
           actions={
             auth.isAuthenticated ? (
-              <button type="button" className="btn bg-color-primary text-white">
-                Express interest
-              </button>
+              <InterestButton profileId={profile.profile_id} />
             ) : (
               <Link href={`/login?next=/profile/${profile.profile_id}`} className="btn bg-color-primary text-white">
                 Sign in to connect
               </Link>
             )
           }
+        />
+
+        <ProfileBio
+          value={profile.aboutMe ?? ''}
+          heading={`About ${profile.firstName || 'this member'}`}
         />
 
         <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || "this member"} />

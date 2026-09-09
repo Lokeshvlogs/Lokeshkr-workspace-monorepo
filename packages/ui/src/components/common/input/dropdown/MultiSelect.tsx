@@ -3,10 +3,17 @@ import { Check, ChevronDown } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState, CSSProperties, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SelectIconOption } from '../../../../types/select';
+import FloatingLabel from '../FloatingLabel';
 
 interface Props {
   id?: string;
   label: string;
+  /**
+   * Drawn ahead of the floating label. Decorative only - it is sized in `em`
+   * so it shrinks with the label as the field fills, and `label` remains the
+   * accessible name.
+   */
+  icon?: React.ReactNode;
   options: SelectIconOption[];
   /**
    * The chosen values. `[]` is the canonical "nothing chosen".
@@ -17,6 +24,11 @@ interface Props {
   value: string[] | string | null | undefined;
   /** Emits the complete next array, never a delta. */
   onChange: (values: string[]) => void;
+  /**
+   * Focus left the control. Suppressed while the list is open, so opening it
+   * - which moves focus into the portal - does not read as leaving the field.
+   */
+  onBlur?: () => void;
   searchable?: boolean;
   /** Refuses further picks once reached; already-chosen values stay removable. */
   maxSelected?: number;
@@ -48,9 +60,11 @@ interface Props {
 export default function MultiSelect({
   id,
   label,
+  icon,
   options,
   value: rawValue,
   onChange,
+  onBlur,
   searchable = false,
   maxSelected,
   exclusiveValue,
@@ -317,8 +331,9 @@ export default function MultiSelect({
           aria-invalid={errorValue ? 'true' : 'false'}
           onClick={() => !disabled && setOpen(o => !o)}
           onKeyDown={onKeyDown}
+          onBlur={() => { if (!open) onBlur?.(); }}
         >
-          <label htmlFor={id} className="text-field-label">{label}</label>
+          <FloatingLabel htmlFor={id} label={label} icon={icon} />
 
           <span className="select-label truncate">{summary}</span>
 

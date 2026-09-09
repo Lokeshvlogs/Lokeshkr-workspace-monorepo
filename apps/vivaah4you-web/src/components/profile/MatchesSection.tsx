@@ -119,6 +119,14 @@ function MatchSkeleton() {
   )
 }
 
+const MATCH_TABS = [
+  { key: 'all', label: 'All matches' },
+  { key: 'new', label: 'New' },
+  { key: 'recent', label: 'Recently joined' },
+] as const
+
+type MatchTab = (typeof MATCH_TABS)[number]['key']
+
 interface MatchesSectionProps {
   /** Opens a match in place. Absent on the signed-out marketing page. */
   onOpenProfile?: (profileId: string) => void
@@ -130,6 +138,10 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<MatchFilters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<SortKey>('best')
+  const [tab, setTab] = useState<MatchTab>('all')
+  /* Held separately from `entries` so the badge does not drop to zero the
+     moment the member opens the New tab and the list is replaced. */
+  const [newCount, setNewCount] = useState(0)
 
   useEffect(() => {
     // Matches are members-only, so there is nothing to fetch when signed out.
@@ -141,13 +153,14 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
     let cancelled = false
     setLoading(true)
 
-    fetch('/api/profile/matches')
+    fetch(`/api/profile/matches?tab=${tab}`)
       .then((r) => r.json())
-      .then((data: unknown) => {
-        if (cancelled || !Array.isArray(data)) return
-        setEntries(
-          (data as PublicProfile[]).map((profile) => ({ card: toCard(profile), profile })),
-        )
+      .then((data: { results?: PublicProfile[] }) => {
+        if (cancelled) return
+        // The endpoint returns a paged envelope. Reading `data` as an array
+        // here - which it used to be - silently emptied the grid.
+        const rows = Array.isArray(data?.results) ? data.results : []
+        setEntries(rows.map((profile) => ({ card: toCard(profile), profile })))
       })
       .catch(() => {
         // Leave the list empty; the empty state below explains it.
@@ -159,7 +172,37 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
     return () => {
       cancelled = true
     }
+  }, [auth.isAuthenticated, tab])
+
+  // The badge count is read once per sign-in, not from whichever tab happens to
+  // be open.
+  useEffect(() => {
+    if (!auth.isAuthenticated) return
+    let cancelled = false
+
+    fetch('/api/profile/stats')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setNewCount(Number(data?.newMatches ?? 0))
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
   }, [auth.isAuthenticated])
+
+  const openTab = (next: MatchTab) => {
+    setTab(next)
+    // Marking seen is an explicit POST on opening the tab, never a side effect
+    // of the list load - a background refetch would otherwise clear the badge
+    // before anything had been read.
+    if (next === 'new') {
+      fetch('/api/profile/matches/seen', { method: 'POST' })
+        .then(() => setNewCount(0))
+        .catch(() => {})
+    }
+  }
 
   const visible = useMemo(() => {
     const filtered = entries.filter((entry) => matchesFilters(entry.profile, filters))
@@ -187,6 +230,24 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
 
   return (
     <section id="profiles" className="scroll-mt-20">
+      <div className="match-tabs" role="tablist" aria-label="Match lists">
+        {MATCH_TABS.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === entry.key}
+            onClick={() => openTab(entry.key)}
+            className={`match-tab ${tab === entry.key ? 'match-tab-active' : ''}`}
+          >
+            {entry.label}
+            {entry.key === 'new' && newCount > 0 && (
+              <span className="match-tab-badge">{newCount}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <MatchSearchBar
         filters={filters}
         onChange={setFilters}

@@ -11,22 +11,22 @@
 :root {
   /* The brand ramp, lightest to darkest:
      surface -> tint -> border -> extra-light -> light -> primary -> strong. */
-  --color-primary: #ec4899;
-  --color-primary-strong: #be185d;
-  --color-primary-light: #f96cba;
-  --color-primary-extra-light: #fab2dd;
+  --color-primary: #ff1f8f;
+  --color-primary-strong: #cb0b6b;
+  --color-primary-light: #ff66b3;
+  --color-primary-extra-light: #ffadd6;
   /* Hover fills, active rows and unfilled slider track. One step darker than
      `surface`, which is reserved for large calm areas like panel backgrounds. */
-  --color-primary-tint: #fce7f3;
-  --color-primary-surface: #fdf2f8;
+  --color-primary-tint: #ffe4f1;
+  --color-primary-surface: #fff0f8;
   /* The other half of every brand gradient. The only non-pink accent. */
   --color-secondary: #fb923c;
   --color-bg: #ffffff;
-  --color-border: #fbcfe8;
+  --color-border: #ffcbe5;
   --color-error: #ef4444;
   --color-success: #22c55e;
-  --color-placeholder-text: #6b7280;
-  --color-primary-text: #111827;
+  --color-placeholder-text: #2c2b2b;
+  --color-primary-text: #5a5f6c;
   /* Derived, so it follows primary. Custom properties resolve lazily, so
      overriding --color-primary on <html> re-resolves this too. */
   --color-focus-ring: color-mix(in srgb, var(--color-primary) 16%, transparent);
@@ -187,6 +187,39 @@
 }
 
 .input-error ~ .text-field-label,
+/* Only applied when a field passes an `icon`. Flex would otherwise defeat the
+   ellipsis that `.text-field-label` sets on itself, so the truncation moves to
+   the text span. Sizing in `em` lets the icon shrink with the label as it
+   floats up. */
+.text-field-label-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Unscoped, because the same glyph slot is used by the floated label, the
+   ChipGroup legend and the static `.field-label`. Sized in `em` so it tracks
+   whatever type size it lands next to. */
+.field-label-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  width: 1.05em;
+  height: 1.05em;
+  opacity: 0.8;
+}
+
+.field-label-icon > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.text-field-label-icon > .field-label-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .text-field-label-error,
 .select-error .text-field-label {
   color: var(--color-error, #ef4444);
@@ -658,13 +691,38 @@ button.chip-selected:hover {
   color: var(--color-primary, #ec4899);
 }
 
+/* An errored ChipGroup has no border of its own - the fieldset is borderless -
+   so the state has to land on the chips. Only the unchosen ones are marked: a
+   chip the member has actually picked is not the thing that is wrong. */
+.chip-group-error .chip:not(.chip-selected) {
+  border-color: var(--color-error, #ef4444);
+}
+
+.dob-trigger-error.dob-trigger-error,
+.dob-trigger-error.dob-trigger-error:hover {
+  border-color: var(--color-error, #ef4444);
+}
+
+/* An education row that is missing one of the parts the wizard requires. */
+.education-card-error.education-card-error {
+  border-color: var(--color-error, #ef4444);
+}
+
 /* --- Form layout helpers --- */
 .form-section {
   @apply rounded-xl border border-color-border bg-white p-5;
 }
 
 .form-section-title {
-  @apply text-base font-semibold text-color-primary;
+  @apply flex items-center gap-2 text-base font-semibold text-color-primary;
+}
+
+/* Section and field icons both inherit `currentColor`, so they pick up the
+   heading's primary tint and the label's text tint respectively without
+   needing a colour of their own. */
+.form-section-icon {
+  @apply flex-none;
+  opacity: 0.85;
 }
 
 .form-section-hint {
@@ -681,6 +739,16 @@ button.chip-selected:hover {
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+/* `.field-label-row` is the icon-bearing variant - a legend or label cannot be
+   flex and keep its own ellipsis at the same time, so the row is opt-in the
+   same way `.text-field-label-icon` is. */
+.field-label-row,
+.chip-group-label-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 /* --- Avatar cropper --- */
@@ -829,8 +897,11 @@ button.chip-selected:hover {
   color: var(--color-primary, #ec4899);
 }
 
-/* Revealed on hover, but always present for keyboard and touch users. */
-.group:hover .field-edit-btn,
+/* Revealed on hover, but always present for keyboard and touch users.
+   This keyed off `.group:hover` until it was noticed that nothing renders that
+   class - FieldRow emits a bare `.field-row` - so the pencil sat at opacity 0
+   on every hover-capable device and only a Tab could surface it. */
+.field-row:hover .field-edit-btn,
 .field-edit-btn:focus-visible {
   @apply opacity-100;
 }
@@ -1487,6 +1558,23 @@ button.chip-selected:hover {
   100% { background-position: 0 50%; }
 }
 
+/* The HorizontalFormSlider track. The width and transform are per-step and stay
+   inline; the presentation lives here so a reduced-motion user can opt out of
+   the slide, which an inline `transition` could never be overridden for. */
+.hfs-viewport {
+  overflow: hidden;
+  transition: height 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hfs-track {
+  display: flex;
+  /* Essential, not cosmetic. Flex items stretch to the tallest sibling by
+     default, so every step would measure as tall as the longest one and the
+     adaptive height in HorizontalFormSlider would always return the maximum. */
+  align-items: flex-start;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .match-skeleton-media,
   .match-skeleton-line,
@@ -1500,7 +1588,9 @@ button.chip-selected:hover {
   .card:hover .card-img {
     transform: none;
   }
-  .strength-ring-value {
+  .strength-ring-value,
+  .hfs-track,
+  .hfs-viewport {
     transition: none;
   }
 }
@@ -1641,8 +1731,11 @@ button.chip-selected:hover {
   @apply grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_19rem];
 }
 
+/* Capped so the centre column never runs to ~1160px at 2xl - past about 68rem
+   the field rows are all label and empty space, whatever the grid does. */
 .dashboard-main {
   @apply order-1 min-w-0 xl:order-none;
+  max-width: 68rem;
 }
 
 .dashboard-side {
@@ -1788,15 +1881,64 @@ button.chip-selected:hover {
 
 /* --- Profile hero, shared by the inline own-profile and match views --- */
 .profile-hero {
-  @apply flex flex-col items-center gap-5 rounded-2xl p-6 sm:flex-row sm:items-start;
+  @apply flex flex-col items-center gap-6 rounded-2xl p-6 sm:flex-row sm:items-start;
   border: 1px solid var(--color-border, #fbcfe8);
   background-color: var(--color-bg, #ffffff);
   box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
 }
 
+/* Positioning context for the presence dot. */
+.profile-hero-portrait {
+  @apply relative shrink-0;
+}
+
 .profile-hero-avatar {
-  @apply h-24 w-24 shrink-0 rounded-full object-cover;
+  @apply h-36 w-36 shrink-0 rounded-full object-cover;
   border: 4px solid var(--color-primary-surface, #fdf2f8);
+}
+
+.profile-hero-body {
+  @apply min-w-0 flex-1;
+}
+
+/* Only rendered when the server actually reported activity, so this never
+   claims somebody is offline - it is either "here" or absent. */
+.presence-dot {
+  @apply absolute rounded-full;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  height: 1.125rem;
+  width: 1.125rem;
+  background-color: var(--color-placeholder-text, #6b7280);
+  border: 3px solid var(--color-bg, #ffffff);
+}
+
+.presence-dot-online {
+  background-color: var(--color-success, #22c55e);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 22%, transparent);
+}
+
+.presence-line {
+  @apply mt-1 text-xs font-medium;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.presence-line-online {
+  color: var(--color-success, #22c55e);
+}
+
+/* The headline facts, beside the picture. Two columns on anything wider than a
+   phone, because these are short values and one long column beside a 144px
+   portrait left the panel lopsided. */
+.hero-facts {
+  @apply mt-3 grid grid-cols-1 gap-x-8 gap-y-0.5 sm:grid-cols-2;
+}
+
+/* Inside the hero each row has roughly half the width of one in a section
+   card, so the section's label lane is far too greedy here and pushed the
+   values out of line with each other. */
+.hero-facts .field-row {
+  grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr) auto;
 }
 
 .profile-hero-avatar-initial {
@@ -1830,28 +1972,6 @@ button.chip-selected:hover {
 }
 
 /* Facts as icon-led pills, in place of a run-on summary line. */
-.profile-chips {
-  @apply mt-3 flex flex-wrap gap-2;
-}
-
-.profile-chip {
-  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
-  background-color: var(--color-primary-surface, #fdf2f8);
-  color: #4b5563;
-  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
-}
-
-.profile-chip-icon {
-  @apply h-3.5 w-3.5 shrink-0;
-  color: var(--color-primary, #ec4899);
-}
-
-.profile-about {
-  @apply mt-2 text-sm;
-  color: #4b5563;
-  line-height: 1.6;
-  white-space: pre-line;
-}
 
 .profile-private-summary {
   @apply cursor-pointer text-sm font-semibold;
@@ -1989,8 +2109,22 @@ button.chip-selected:hover {
 }
 
 .dual-range-label {
-  @apply text-sm font-semibold;
+  @apply flex items-center text-sm font-semibold;
   color: var(--color-primary-text, #111827);
+}
+
+/* Slightly larger than the label text it replaces - on its own it has to read
+   as the field's identity rather than as a decoration beside a word. */
+.dual-range-icon {
+  @apply inline-flex flex-none items-center;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--color-primary, #ec4899);
+}
+
+.dual-range-icon > svg {
+  width: 100%;
+  height: 100%;
 }
 
 .dual-range-readout {
@@ -2140,13 +2274,84 @@ button.chip-selected:hover {
   color: rgba(255, 255, 255, 0.92);
 }
 
+/* --- The bio ---
+   Set as a quote because it is the one part of a profile written in the
+   member's own voice; as another grey field row it disappeared into the rest
+   of the page. */
+.profile-bio-head {
+  @apply mb-2 flex items-start justify-between gap-3;
+}
+
+.profile-bio-edit {
+  @apply flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition;
+  border-color: var(--color-border, #fbcfe8);
+  color: var(--color-primary, #ec4899);
+  background-color: var(--color-bg, #ffffff);
+}
+
+.profile-bio-edit svg {
+  @apply h-3.5 w-3.5;
+}
+
+.profile-bio-edit:hover {
+  background-color: var(--color-primary-surface, #fdf2f8);
+  border-color: var(--color-primary, #ec4899);
+}
+
+.profile-bio {
+  position: relative;
+  margin: 0;
+  padding-left: 2.25rem;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  font-style: italic;
+  color: var(--color-primary-text, #111827);
+}
+
+/* An opening quotation mark rather than a left border - it reads as speech
+   instead of as a callout box. */
+.profile-bio::before {
+  content: 'C';
+  position: absolute;
+  left: 0;
+  top: -0.35em;
+  font-size: 3.25rem;
+  line-height: 1;
+  font-style: normal;
+  color: var(--color-primary, #ec4899);
+  opacity: 0.28;
+}
+
+.profile-bio-empty {
+  @apply text-sm italic;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
 /* --- Icon-led profile fields --- */
 
 /* Icon, value, and an optional trailing control. The label is present but
    visually hidden when an icon stands in for it, so the row still reads as a
    term/definition pair to a screen reader. */
+/* Two lanes, not a flex line. As `flex` with a `flex-1` value, a two-word
+   answer like "Hindu" was stretched across the full width of the card and the
+   rest of the row read as empty space. The label lane is fixed so values line
+   up down the column. */
 .field-row {
-  @apply flex items-start gap-2.5 py-1.5 text-sm;
+  @apply grid items-start gap-x-2.5 gap-y-0.5 py-2 text-sm;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 640px) {
+  .field-row {
+    grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+/* The icon shares the label lane, so an icon-led row and a labelled one line
+   their values up at the same place. */
+.field-row > .field-icon {
+  grid-column: 1;
 }
 
 .field-icon {
@@ -2156,12 +2361,12 @@ button.chip-selected:hover {
 
 /* Fields with no icon keep a visible label, so a value is never orphaned. */
 .field-label-text {
-  @apply shrink-0;
+  @apply min-w-0 truncate;
   color: var(--color-placeholder-text, #6b7280);
 }
 
 .field-value {
-  @apply min-w-0 flex-1 font-medium;
+  @apply min-w-0 font-medium;
   color: var(--color-primary-text, #111827);
   overflow-wrap: anywhere;
 }
@@ -2205,77 +2410,117 @@ button.chip-selected:hover {
   line-height: 1.55;
 }
 
-/* Stated preferences, ticked off. */
-.compat-prefs {
-  @apply mb-5 flex flex-col gap-1.5 border-b pb-5;
-  border-color: var(--color-border, #fbcfe8);
+/* One grid, shared by the faces and every row beneath them, so a column always
+   sits under the person it is about: what they asked for on the left, whether
+   you meet it on the right.
+
+   Capped and centred rather than filling the card - at full width the two
+   columns ended up at opposite edges of a very wide panel with a desert
+   between them. */
+.compat-grid {
+  @apply mx-auto grid w-full items-center gap-4;
+  max-width: 32rem;
+  grid-template-columns: minmax(0, 1fr) minmax(3.5rem, 5rem) 4.5rem;
 }
 
-.compat-pref {
-  @apply flex items-center gap-2.5 text-sm;
+.compat-faces {
+  @apply mb-4;
 }
 
-.compat-pref-label {
-  @apply shrink-0;
+.compat-face {
+  @apply flex min-w-0 flex-col gap-1.5;
+}
+
+/* Left column is theirs and is as wide as the preference text, so the picture
+   is aligned to its start; the right column is exactly the width of a picture,
+   so yours and the ticks under it both centre. */
+.compat-face-left {
+  @apply items-start;
+}
+
+.compat-face-right {
+  @apply items-center;
+}
+
+.compat-face-avatar {
+  @apply h-16 w-16 rounded-full object-cover;
+  border: 3px solid var(--color-bg, #ffffff);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.compat-face-name {
+  @apply max-w-full truncate text-xs font-semibold;
   color: var(--color-placeholder-text, #6b7280);
 }
 
-.compat-pref-value {
-  @apply min-w-0 flex-1 truncate text-right font-medium;
-  color: var(--color-primary-text, #111827);
+/* The tie between the two pictures: the score ring above the line, the word
+   on it. The ring is the same component as the one in the panel head, so the
+   figure reads as the same number rather than a second opinion. */
+.compat-link {
+  @apply flex flex-col items-center gap-1.5;
 }
 
-/* Column headings above the side-by-side rows. */
-.compat-cols {
-  @apply mb-1 grid items-center gap-2 text-xs font-bold uppercase;
-  grid-template-columns: minmax(0, 1fr) 3.5rem minmax(0, 1fr);
-  letter-spacing: 0.06em;
+.compat-link-line {
+  @apply flex w-full items-center gap-2;
+}
+
+/* The rules either side, so the label reads as sitting on the line rather
+   than floating above a gap in it. */
+.compat-link-line::before,
+.compat-link-line::after {
+  content: '';
+  @apply h-px flex-1;
+  background-color: var(--color-border, #ffcbe5);
+}
+
+.compat-link-label {
+  @apply shrink-0 text-[0.625rem] font-bold uppercase;
+  letter-spacing: 0.08em;
   color: var(--color-placeholder-text, #6b7280);
-}
-
-.compat-cols > :last-child {
-  @apply truncate text-right;
 }
 
 .compat-rows {
   @apply flex flex-col;
 }
 
+/* No rules between rows: a dozen hairlines made the panel read as a
+   spreadsheet. */
 .compat-row {
-  @apply grid items-center gap-2 border-b py-2 text-sm last:border-b-0;
-  grid-template-columns: minmax(0, 1fr) 3.5rem minmax(0, 1fr);
-  border-color: var(--color-border, #fbcfe8);
+  @apply py-1.5 text-sm;
 }
 
-/* Rows nobody has answered stay legible but recede - they are not findings. */
-.compat-row-unknown {
+.compat-subhead {
+  @apply mb-3 mt-5 text-center text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+/* One preference: what it is, and what they asked for. Stacked rather than
+   side by side so a range like "5 ft 2 in - 5 ft 8 in" is never truncated. */
+.compat-want {
+  @apply flex min-w-0 flex-col;
+}
+
+.compat-want-label {
+  @apply truncate text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.compat-want-value {
+  @apply truncate font-medium;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+/* Rows with nothing to judge stay legible but recede - they are not findings.
+   Three verdicts land here: they stated nothing, they said "any", or you have
+   not answered the field being tested. */
+.compat-row-unknown,
+.compat-row-unanswered,
+.compat-row-no-preference {
   opacity: 0.55;
 }
 
-.compat-me {
-  @apply min-w-0 font-medium;
-  color: var(--color-primary-text, #111827);
-  overflow-wrap: anywhere;
-}
-
-.compat-them {
-  @apply min-w-0 text-right font-medium;
-  color: var(--color-primary-text, #111827);
-  overflow-wrap: anywhere;
-}
-
-.compat-axis {
-  @apply flex flex-col items-center gap-1;
-}
-
-.compat-icon {
-  @apply h-4 w-4;
-  color: var(--color-placeholder-text, #6b7280);
-}
-
-.compat-axis-label {
-  @apply text-center text-[10px] leading-tight;
-  color: var(--color-placeholder-text, #6b7280);
+.compat-verdict {
+  @apply flex justify-center;
 }
 
 /* Fill, outline and dash differ by shape as well as colour, so the verdict
@@ -2289,7 +2534,7 @@ button.chip-selected:hover {
 }
 
 .compat-mark-same {
-  background-color: var(--color-primary, #ec4899);
+  background-color: var(--color-success, #22c55e);
   color: #ffffff;
 }
 
@@ -2305,36 +2550,17 @@ button.chip-selected:hover {
   color: var(--color-placeholder-text, #6b7280);
 }
 
-/* Three columns crush below sm; stack the two values instead of shrinking
-   them to a word each. */
+/* The label lane is generous on a wide card and far too greedy on a phone.
+   Dropping the viewer's own column left only three items, so the row survives
+   the narrow screen by shrinking rather than stacking. */
 @media (max-width: 639px) {
-  .compat-cols {
-    display: none;
+  .compat-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(2rem, 3rem) 3.5rem;
+    gap: 0.5rem;
   }
 
-  .compat-row {
-    grid-template-columns: 2.25rem minmax(0, 1fr);
-    align-items: start;
-  }
-
-  /* Placed explicitly: the DOM order is value / axis / value, so leaving this
-     to auto-placement would put the first value in the icon column. */
-  .compat-axis {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .compat-me {
-    grid-column: 2;
-    grid-row: 1;
-    @apply text-left;
-  }
-
-  .compat-them {
-    grid-column: 2;
-    grid-row: 2;
-    @apply text-left;
-    color: var(--color-placeholder-text, #6b7280);
+  .compat-face-avatar {
+    @apply h-12 w-12;
   }
 }
 
@@ -2580,4 +2806,406 @@ button.chip-selected:hover {
 .stat-suffix {
   @apply ml-0.5 text-base font-bold;
   opacity: 0.7;
+}
+
+/* --- Tabs and count badges ---
+   Shared by the match lists and the interests inbox, so the two read as the
+   same control rather than two takes on one idea. */
+.match-tabs {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.match-tab {
+  @apply relative inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition;
+  border-color: var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.match-tab:hover {
+  border-color: var(--color-primary-light, #ff66b3);
+  color: var(--color-primary-strong, #cb0b6b);
+}
+
+.match-tab-active {
+  background-color: var(--color-primary, #ff1f8f);
+  border-color: var(--color-primary, #ff1f8f);
+  color: #ffffff;
+}
+
+.match-tab-active:hover {
+  color: #ffffff;
+}
+
+/* Reads on the unselected tabs, where the tab itself is white. */
+.match-tab-badge {
+  @apply inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-xs font-bold;
+  background-color: var(--color-primary-tint, #ffe4f1);
+  color: var(--color-primary-strong, #cb0b6b);
+}
+
+.match-tab-active .match-tab-badge {
+  background-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+/* The unseen marker. Separate from the count on purpose - the count says how
+   much is outstanding, this says whether any of it is new. */
+.match-tab-dot {
+  @apply absolute rounded-full;
+  top: 0.3rem;
+  right: 0.3rem;
+  height: 0.5rem;
+  width: 0.5rem;
+  background-color: var(--color-error, #ef4444);
+}
+
+.nav-with-badge {
+  @apply inline-flex items-center gap-1.5;
+}
+
+.nav-badge {
+  @apply inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-xs font-bold text-white;
+  background-color: var(--color-primary, #ff1f8f);
+}
+
+/* --- Express interest --- */
+.interest-action {
+  @apply inline-flex flex-col items-stretch gap-1;
+}
+
+/* Kept visible and disabled rather than swapped out: the member needs to see
+   that their tap registered. */
+.interest-done {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.interest-error {
+  @apply text-xs;
+  color: var(--color-error, #ef4444);
+}
+
+.card-actions {
+  @apply flex items-center gap-2;
+}
+
+.card-actions > * {
+  @apply min-w-0 flex-1;
+}
+
+/* --- Interests inbox --- */
+.interest-list {
+  @apply flex flex-col gap-2;
+}
+
+.interest-row {
+  @apply flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3;
+  border-color: var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+}
+
+.interest-person {
+  @apply flex min-w-0 flex-1 items-center gap-3 text-left;
+}
+
+.interest-portrait {
+  @apply relative shrink-0;
+}
+
+.interest-avatar {
+  @apply h-12 w-12 rounded-full object-cover;
+  border: 2px solid var(--color-primary-surface, #fff0f8);
+}
+
+/* The dot is placed against the smaller avatar here, so it cannot reuse the
+   hero's offsets. */
+.interest-row .presence-dot {
+  right: -0.125rem;
+  bottom: -0.125rem;
+  height: 0.75rem;
+  width: 0.75rem;
+  border-width: 2px;
+}
+
+.interest-name {
+  @apply flex items-center gap-1.5 truncate text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.interest-meta {
+  @apply block truncate text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.interest-message {
+  @apply mt-1 block truncate text-xs italic;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.interest-actions {
+  @apply flex shrink-0 items-center gap-2;
+}
+
+.interest-badge {
+  @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+  background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: #15803d;
+}
+
+.interest-badge-quiet {
+  background-color: var(--color-primary-surface, #fff0f8);
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+/* A returning visitor is the most actionable line on the dashboard. */
+.visitor-repeat {
+  @apply block text-xs font-semibold;
+  color: var(--color-primary-strong, #cb0b6b);
+}
+
+/* --- Messaging ---
+   Paired with the components in components/messaging, which are written to
+   travel with apps/messaging. The class names carry no product vocabulary for
+   the same reason. */
+.msg-shell {
+  @apply grid gap-4;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 900px) {
+  .msg-shell {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.msg-pane {
+  @apply flex min-w-0 flex-col rounded-2xl border p-4;
+  border-color: var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+}
+
+/* On a phone the list and the thread are one column, so opening a chat has to
+   replace the list rather than sit under it. */
+@media (max-width: 899px) {
+  .msg-pane-hidden-sm {
+    display: none;
+  }
+}
+
+.msg-pane-thread {
+  @apply gap-3 p-0;
+  min-height: 28rem;
+}
+
+.msg-list {
+  @apply flex flex-col;
+}
+
+.msg-row {
+  @apply flex w-full items-center gap-3 rounded-xl p-2 text-left transition;
+}
+
+.msg-row:hover {
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+.msg-row-active {
+  background-color: var(--color-primary-tint, #ffe4f1);
+}
+
+.msg-row-portrait {
+  @apply relative shrink-0;
+}
+
+.msg-avatar {
+  @apply h-11 w-11 rounded-full object-cover;
+}
+
+.msg-online-dot {
+  @apply absolute rounded-full;
+  right: -0.0625rem;
+  bottom: -0.0625rem;
+  height: 0.7rem;
+  width: 0.7rem;
+  background-color: var(--color-success, #22c55e);
+  border: 2px solid var(--color-bg, #ffffff);
+}
+
+.msg-row-body {
+  @apply flex min-w-0 flex-1 flex-col gap-0.5;
+}
+
+.msg-row-head {
+  @apply flex items-baseline justify-between gap-2;
+}
+
+.msg-row-name {
+  @apply truncate text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.msg-row-time,
+.msg-row-preview {
+  @apply text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.msg-row-time {
+  @apply shrink-0;
+}
+
+.msg-row-preview {
+  @apply truncate;
+}
+
+.msg-unread {
+  @apply inline-flex min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold text-white;
+  background-color: var(--color-primary, #ff1f8f);
+}
+
+.msg-head {
+  @apply flex items-center gap-2 border-b p-4;
+  border-color: var(--color-border, #ffcbe5);
+}
+
+.msg-back {
+  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl leading-none;
+  color: var(--color-primary, #ff1f8f);
+}
+
+@media (min-width: 900px) {
+  .msg-back {
+    display: none;
+  }
+}
+
+.msg-head-person {
+  @apply flex min-w-0 flex-col text-left;
+}
+
+.msg-head-name {
+  @apply truncate text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.msg-head-detail {
+  @apply truncate text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.msg-thread {
+  @apply flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 py-3;
+  max-height: 26rem;
+}
+
+.msg-day {
+  @apply my-2 text-center text-xs font-semibold;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.msg-bubble {
+  @apply flex max-w-[80%] flex-col gap-0.5 rounded-2xl px-3 py-2 text-sm;
+}
+
+.msg-bubble-mine {
+  @apply self-end;
+  background-color: var(--color-primary, #ff1f8f);
+  color: #ffffff;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.msg-bubble-theirs {
+  @apply self-start;
+  background-color: var(--color-primary-surface, #fff0f8);
+  color: var(--color-primary-text, #5a5f6c);
+  border-bottom-left-radius: 0.375rem;
+}
+
+/* In flight. Dimmed rather than hidden - the text is really there, it just is
+   not confirmed yet. */
+.msg-bubble-pending {
+  opacity: 0.6;
+}
+
+.msg-bubble-failed {
+  background-color: var(--color-error, #ef4444);
+  color: #ffffff;
+}
+
+.msg-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.msg-time {
+  @apply text-[0.6875rem];
+  opacity: 0.75;
+}
+
+.msg-older {
+  @apply mx-auto mb-2 rounded-full border px-3 py-1 text-xs font-semibold;
+  border-color: var(--color-border, #ffcbe5);
+  color: var(--color-primary, #ff1f8f);
+}
+
+.msg-composer {
+  @apply flex items-end gap-2 border-t p-3;
+  border-color: var(--color-border, #ffcbe5);
+}
+
+.msg-input {
+  @apply min-w-0 flex-1 resize-none rounded-2xl border px-3 py-2 text-sm;
+  border-color: var(--color-border, #ffcbe5);
+  color: var(--color-primary-text, #5a5f6c);
+  max-height: 8rem;
+}
+
+.msg-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #ff1f8f);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
+}
+
+.msg-send {
+  @apply shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-white transition;
+  background-color: var(--color-primary, #ff1f8f);
+}
+
+.msg-send:disabled {
+  opacity: 0.5;
+}
+
+.msg-empty {
+  @apply py-8 text-center;
+}
+
+.msg-empty-text {
+  @apply text-sm;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.msg-skeleton {
+  @apply rounded-xl;
+  height: 12rem;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-surface, #fff0f8) 25%,
+    var(--color-primary-tint, #ffe4f1) 37%,
+    var(--color-primary-surface, #fff0f8) 63%
+  );
+  background-size: 400% 100%;
+  animation: msg-shimmer 1.4s ease infinite;
+}
+
+@keyframes msg-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg-skeleton {
+    animation: none;
+  }
 }

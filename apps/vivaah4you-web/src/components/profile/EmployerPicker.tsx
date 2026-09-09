@@ -1,4 +1,5 @@
 'use client'
+import { Building2 } from 'lucide-react'
 
 import React, { useEffect, useRef, useState } from 'react'
 import { SelectDropdown, TextField } from '@lokesh-workspace/ui'
@@ -86,6 +87,7 @@ export default function EmployerPicker({
     <div className="flex flex-col gap-4">
       <SelectDropdown
         label="Employer"
+        icon={<Building2 />}
         placeholder=""
         options={withCurrent}
         value={slug}
@@ -107,6 +109,7 @@ export default function EmployerPicker({
         <TextField
           id="employer-name"
           label="Employer name"
+          icon={<Building2 />}
           value={name}
           onChange={(e) => onChange(OTHER_EMPLOYER, e.target.value)}
         />

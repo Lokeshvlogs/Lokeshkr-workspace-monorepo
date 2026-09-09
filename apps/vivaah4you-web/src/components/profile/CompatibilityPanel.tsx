@@ -3,17 +3,17 @@
 import React from 'react'
 import Link from 'next/link'
 
-import { iconFor } from '@/lib/profileIcons'
-import type { AttrVerdict, Compatibility, PrefVerdict } from '@/lib/compatibility'
+import type { Compatibility, PrefVerdict } from '@/lib/compatibility'
+import Avatar from '@/components/profile/Avatar'
 
-/** Ring showing how much of what you asked for this person meets. */
-function ScoreRing({ value }: { value: number }) {
+/** Ring showing how much of what was asked for is met. */
+function ScoreRing({ value, label }: { value: number; label: string }) {
   const radius = 26
   const circumference = 2 * Math.PI * radius
   const clamped = Math.max(0, Math.min(100, value))
 
   return (
-    <div className="strength-ring strength-ring-sm" role="img" aria-label={`${clamped}% of your preferences met`}>
+    <div className="strength-ring strength-ring-sm" role="img" aria-label={label}>
       <svg viewBox="0 0 64 64" className="strength-ring-svg" aria-hidden="true">
         <circle className="strength-ring-track" cx="32" cy="32" r={radius} />
         <circle
@@ -31,7 +31,7 @@ function ScoreRing({ value }: { value: number }) {
 }
 
 /**
- * The mark in the middle of a comparison row.
+ * The mark against one preference.
  *
  * Shape carries the meaning as well as colour - filled, outlined and dashed are
  * distinguishable without seeing hue - and the word itself is always present
@@ -50,41 +50,69 @@ function Mark({ verdict, word }: { verdict: 'same' | 'differ' | 'unknown'; word:
   )
 }
 
-const ATTR_WORD: Record<AttrVerdict, string> = {
-  same: 'Same',
-  differ: 'Different',
-  unknown: 'Not answered',
+const MARK_FOR: Record<PrefVerdict, 'same' | 'differ' | 'unknown'> = {
+  pass: 'same',
+  fail: 'differ',
+  'no-preference': 'unknown',
+  unanswered: 'unknown',
+  unknown: 'unknown',
 }
 
-const PREF_WORD: Record<PrefVerdict, string> = {
-  pass: 'Met',
-  fail: 'Not met',
+const WORD_FOR: Record<PrefVerdict, string> = {
+  pass: 'You meet this',
+  fail: 'You do not meet this',
   'no-preference': 'No preference',
-  unanswered: 'You have not said',
-  unknown: 'They have not said',
+  unanswered: 'Not stated',
+  unknown: 'You have not answered this',
+}
+
+/** "His" / "Her", falling back to the name when gender is unstated. */
+function possessive(gender: string | undefined, name: string): string {
+  if (gender === 'male') return 'His'
+  if (gender === 'female') return 'Her'
+  return `${name}'s`
 }
 
 interface Props {
   compatibility: Compatibility
-  /** Their first name, used as the right-hand column heading. */
+  /** Their first name, used in labels and under their photo. */
   theirName: string
+  theirPhoto?: string | null
+  /** 'male' | 'female' | 'other', for "His" / "Her". */
+  theirGender?: string
+  myName?: string
+  myPhoto?: string | null
 }
 
-export default function CompatibilityPanel({ compatibility, theirName }: Props) {
-  const { attributes, preferences, met, considered, score, mutual } = compatibility
-
-  // Preferences worth showing: the ones that were actually stated. Rows the
-  // member never filled in belong in the wizard, not on this panel.
-  const shownPrefs = preferences.filter((p) => p.verdict !== 'unanswered')
+/**
+ * Whether you fit what this member is looking for.
+ *
+ * Reads in one direction on purpose - their stated preferences against your
+ * profile - because that is the question a reader actually has when deciding
+ * whether to reach out. This panel used to lead with the opposite ("does this
+ * person meet what you asked for") and carry both, which put two different
+ * percentages on one card and answered neither question clearly.
+ */
+export default function CompatibilityPanel({
+  compatibility,
+  theirName,
+  theirPhoto,
+  theirGender,
+  myName = 'You',
+  myPhoto,
+}: Props) {
+  const { reverse, reverseMet, reverseConsidered, reverseScore, mutual } = compatibility
+  const whose = possessive(theirGender, theirName)
 
   return (
-    <section className="panel compat" aria-label={`How you compare with ${theirName}`}>
+    <section className="panel compat" aria-label={`How you fit ${theirName}'s preferences`}>
       <div className="compat-head">
-        {score === null ? (
+        {reverseScore === null ? (
           <div className="compat-noscore">
-            <p className="compat-noscore-title">No partner preferences set</p>
+            <p className="compat-noscore-title">{theirName} has not set any preferences</p>
             <p className="compat-noscore-text">
-              Tell us what you are looking for and we can show how well each profile fits.
+              There is nothing to measure against yet. Your own preferences still help us find
+              people for you.
             </p>
             <Link href="/profile/register?step=5" className="btn-primary mt-3">
               Set your preferences
@@ -92,79 +120,69 @@ export default function CompatibilityPanel({ compatibility, theirName }: Props) 
           </div>
         ) : (
           <>
-            <ScoreRing value={score} />
+            <ScoreRing
+              value={reverseScore}
+              label={`You meet ${reverseScore}% of ${theirName}'s preferences`}
+            />
             <div className="min-w-0">
               <p className="compat-score-title">
-                Meets {met} of {considered} {considered === 1 ? 'thing' : 'things'} you asked for
+                You meet {reverseMet} of {reverseConsidered}{' '}
+                {reverseConsidered === 1 ? 'thing' : 'things'} {theirName} asked for
               </p>
               {mutual === 'both' && (
                 <p className="compat-badge">You each match what the other is looking for</p>
               )}
-              {mutual === 'them-only' && (
-                <p className="compat-score-text">You match their preferences.</p>
+              {mutual === 'you-only' && (
+                <p className="compat-score-text">They also meet your preferences.</p>
               )}
             </div>
           </>
         )}
       </div>
 
-      {shownPrefs.length > 0 && (
-        <ul className="compat-prefs">
-          {shownPrefs.map((pref) => (
-            <li key={pref.key} className={`compat-pref compat-pref-${pref.verdict}`}>
-              <Mark
-                verdict={pref.verdict === 'pass' ? 'same' : pref.verdict === 'fail' ? 'differ' : 'unknown'}
-                word={PREF_WORD[pref.verdict]}
-              />
-              <span className="compat-pref-label">{pref.label}</span>
-              <span className="compat-pref-value">
-                {pref.verdict === 'no-preference'
-                  ? 'No preference'
-                  : pref.actual || 'Not answered'}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <h3 className="compat-subhead">{whose} preferences</h3>
 
-      <div className="compat-cols" aria-hidden="true">
-        <span>You</span>
-        <span />
-        <span>{theirName}</span>
+      {/* Their picture on the left, over the column of things they asked for;
+          yours on the right, over the column of ticks. Both sit on the same
+          grid as the rows, so each column falls under the person it is about. */}
+      <div className="compat-faces compat-grid">
+        <div className="compat-face compat-face-left">
+          <Avatar src={theirPhoto} name={theirName} className="compat-face-avatar" decorative />
+          <span className="compat-face-name">{theirName}</span>
+        </div>
+
+        <div className="compat-link">
+          {reverseScore !== null && (
+            <ScoreRing value={reverseScore} label={`${reverseScore}% match with ${theirName}`} />
+          )}
+          <span className="compat-link-line">
+            <span className="compat-link-label">Match</span>
+          </span>
+        </div>
+
+        <div className="compat-face compat-face-right">
+          <Avatar src={myPhoto} name={myName} className="compat-face-avatar" decorative />
+          <span className="compat-face-name">You</span>
+        </div>
       </div>
 
-      {/* Plain elements rather than a <dl>: a definition list would need each
-          row to be <dt> then <dd>, and this row is value / label / value. The
-          reading order below still comes out as a sentence. */}
+      {/* Every preference, answered or not: someone deciding whether to reach
+          out wants to see what was left open as much as what was asked for. */}
       <div className="compat-rows">
-        {attributes.map((row) => {
-          const Icon = iconFor(row.key)
-          return (
-            <div key={row.key} className={`compat-row compat-row-${row.verdict}`}>
-              <span className="compat-me">
-                <span className="sr-only">You: </span>
-                {row.mine || '—'}
-              </span>
+        {reverse.map((pref) => (
+          <div key={pref.key} className={`compat-row compat-grid compat-row-${pref.verdict}`}>
+            <span className="compat-want">
+              <span className="compat-want-label">{pref.label}</span>
+              <span className="compat-want-value">{pref.wanted || 'No preference'}</span>
+            </span>
 
-              <span className="compat-axis" title={row.label}>
-                {Icon ? (
-                  <>
-                    <Icon className="compat-icon" strokeWidth={1.6} aria-hidden="true" />
-                    <span className="sr-only">{row.label}</span>
-                  </>
-                ) : (
-                  <span className="compat-axis-label">{row.label}</span>
-                )}
-                <Mark verdict={row.verdict} word={ATTR_WORD[row.verdict]} />
-              </span>
+            <span aria-hidden="true" />
 
-              <span className="compat-them">
-                <span className="sr-only">{theirName}: </span>
-                {row.theirs || '—'}
-              </span>
-            </div>
-          )
-        })}
+            <span className="compat-verdict">
+              <Mark verdict={MARK_FOR[pref.verdict]} word={WORD_FOR[pref.verdict]} />
+            </span>
+          </div>
+        ))}
       </div>
     </section>
   )
