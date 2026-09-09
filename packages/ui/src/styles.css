@@ -565,6 +565,25 @@ button.chip-selected:hover {
 /* Chips are pills by default. This squares them off to the standard button
    radius, for chip-styled action buttons (Save / Cancel) that should match a
    regular button rather than a filter pill. */
+.chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  padding: 0 0.25rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background-color: var(--color-primary-tint, #ffe4f1);
+  color: var(--color-primary-strong, #cb0b6b);
+}
+
+/* Reversed inside a selected chip, where the chip itself is already pink. */
+.chip-selected .chip-count {
+  background-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
 .chip-square {
   border-radius: var(--radius, 8px);
 }
@@ -1602,22 +1621,50 @@ button.chip-selected:hover {
     radial-gradient(700px 280px at 95% 0%, color-mix(in srgb, var(--color-secondary) 5%, transparent), transparent 60%);
 }
 
-/* Welcome band. */
+/* Welcome band.
+   Warmer than a header bar: a soft pink bloom off the top-right corner over
+   white, so the page opens with the brand rather than with a toolbar. */
 .welcome {
-  @apply mb-6 overflow-hidden rounded-2xl;
+  @apply relative overflow-hidden rounded-3xl;
   border: 1px solid var(--color-border, #fbcfe8);
-  background: linear-gradient(115deg, #ffffff 0%, var(--color-primary-surface, #fdf2f8) 100%);
+  background:
+    radial-gradient(620px 240px at 88% -30%, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 70%),
+    linear-gradient(115deg, #ffffff 0%, var(--color-primary-surface, #fff0f8) 100%);
   box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
+  animation: lift-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Sections arrive in sequence rather than all at once - it reads as the page
+   assembling itself instead of a screen being switched on. */
+@keyframes lift-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.pills,
+.rail {
+  animation: lift-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pills { animation-delay: 0.06s; }
+.rail  { animation-delay: 0.12s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome,
+  .pills,
+  .rail {
+    animation: none;
+  }
 }
 
 .welcome-main {
-  @apply flex flex-wrap items-center gap-4 px-5 py-5 sm:px-6;
+  @apply flex flex-wrap items-center gap-4 px-5 py-6 sm:px-7;
 }
 
 .welcome-avatar {
-  @apply h-14 w-14 shrink-0 rounded-full object-cover;
+  @apply h-16 w-16 shrink-0 rounded-full object-cover;
   border: 3px solid var(--color-bg, #ffffff);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 24%, transparent);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 32%, transparent);
 }
 
 .welcome-avatar-initial {
@@ -1682,47 +1729,6 @@ button.chip-selected:hover {
 
 .strength-ring-sm .strength-ring-label {
   @apply text-sm;
-}
-
-/* Three figures on one rule-separated row - no nested cards, so the band stays
-   light against the panels below it. Profile completeness is not among them:
-   it lives in the band above as a ring plus its call to action, and repeating
-   it here as a fourth figure said the same thing twice. */
-.welcome-stats {
-  @apply grid grid-cols-3 border-t;
-  border-color: var(--color-border, #fbcfe8);
-  background-color: rgba(255, 255, 255, 0.55);
-}
-
-/* Tighter side padding on small screens is what lets three tiles sit in a row
-   at 360px without the labels truncating. */
-.stat-tile {
-  @apply flex flex-col gap-0.5 px-3 py-4 sm:px-6;
-  border-left: 1px solid var(--color-border, #fbcfe8);
-}
-
-/* A fixed three-up row needs one divider rule, not the 2-up/4-up nth-child
-   dance this replaced - that drew a divider down the middle of tile 3 and hung
-   a stray top border on it below 640px. */
-.stat-tile:first-child {
-  border-left: 0;
-}
-
-.stat-value {
-  @apply text-2xl font-extrabold leading-none;
-  letter-spacing: -0.03em;
-  color: var(--color-primary, #ec4899);
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-label {
-  @apply mt-1.5 text-sm font-semibold;
-  color: var(--color-primary-text, #111827);
-}
-
-.stat-hint {
-  @apply text-xs;
-  color: var(--color-placeholder-text, #6b7280);
 }
 
 /* Two columns on wide screens. The sidebar folds away below xl so the centre
@@ -3177,103 +3183,194 @@ button.chip-selected:hover {
   color: var(--color-primary-text, #5a5f6c);
 }
 
-/* --- Dashboard stat cards ---
-   The welcome band carried three of these as plain text. A figure you cannot
-   click is a report; on a dashboard every figure should be a way in. */
-.stat-cards {
-  @apply mb-6 grid gap-3;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+/* --- The stat strip ---
+   These were four large cards filling the top of the page, which read as a
+   back-office summary screen rather than somewhere you came to meet people.
+   Matches lead now; the figures are a row of pills you can glance past. */
+.pills {
+  @apply flex flex-wrap items-center gap-2;
 }
 
-.stat-card {
-  @apply relative flex flex-col gap-0.5 overflow-hidden rounded-2xl p-4 transition;
-  border: 1px solid var(--color-border, #ffcbe5);
+.pill {
+  @apply inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition;
+  border-color: var(--color-border, #ffcbe5);
+  background-color: rgba(255, 255, 255, 0.75);
+  color: var(--color-placeholder-text, #4a3b3b);
+  backdrop-filter: blur(8px);
+}
+
+.pill:hover {
+  border-color: var(--color-primary, #ff1f8f);
   background-color: var(--color-bg, #ffffff);
-  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  transform: translateY(-1px);
 }
 
-.stat-card:hover {
-  border-color: var(--color-primary-light, #ff66b3);
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-primary) 16%, transparent);
-  transform: translateY(-2px);
+.pill-glyph {
+  @apply flex h-5 w-5 shrink-0 items-center justify-center;
+  color: var(--color-primary, #ff1f8f);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .stat-card:hover {
-    transform: none;
-  }
+.pill-glyph svg {
+  @apply h-full w-full;
 }
 
-/* A wash of the card's own colour, so four cards read as four things rather
-   than one repeated four times. */
-.stat-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.06;
-  background: currentColor;
-  pointer-events: none;
-}
-
-.stat-card-matches { color: var(--color-primary, #ff1f8f); }
-.stat-card-interests { color: #7c3aed; }
-.stat-card-visitors { color: #0ea5e9; }
-.stat-card-messages { color: var(--color-success, #22c55e); }
-
-.stat-card-top {
-  @apply mb-1 flex items-center gap-2;
-}
-
-.stat-card-icon {
-  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl;
-  background-color: color-mix(in srgb, currentColor 14%, transparent);
-}
-
-.stat-card-icon svg {
-  @apply h-5 w-5;
-}
-
-.stat-card-badge {
-  @apply ml-auto rounded-full px-2 py-0.5 text-[0.6875rem] font-bold text-white;
-  background-color: currentColor;
-}
-
-.stat-card-dot {
-  @apply ml-auto h-2 w-2 rounded-full;
-  background-color: var(--color-error, #ef4444);
-}
-
-.stat-card-value {
-  @apply text-3xl font-extrabold leading-none;
-  letter-spacing: -0.03em;
+.pill-value {
+  @apply font-extrabold;
   color: var(--color-primary-text, #5a5f6c);
   font-variant-numeric: tabular-nums;
 }
 
-.stat-card-label {
-  @apply mt-1.5 text-sm font-semibold;
+.pill-label {
+  @apply font-medium;
+}
+
+.pill-dot {
+  @apply h-1.5 w-1.5 shrink-0 rounded-full;
+  background-color: var(--color-error, #ef4444);
+}
+
+.pill-loading {
+  width: 7rem;
+  height: 2.375rem;
+  border-style: dashed;
+}
+
+/* --- The rail ---
+   A different shape from the grid below it: portrait cards on a horizontal
+   track, so it reads as an invitation to browse rather than another page of
+   results. */
+.rail {
+  @apply flex flex-col gap-3;
+}
+
+.rail-head {
+  @apply flex flex-wrap items-center justify-between gap-3;
+}
+
+.rail-title {
+  @apply text-lg font-bold;
+  letter-spacing: -0.02em;
   color: var(--color-primary-text, #5a5f6c);
 }
 
-.stat-card-hint {
-  @apply text-xs;
+.rail-chips {
+  @apply flex flex-wrap gap-1.5;
+}
+
+/* Scroll-snap so a flick lands on a card rather than between two. */
+.rail-track {
+  @apply flex gap-3 overflow-x-auto pb-2;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.rail-track > * {
+  scroll-snap-align: start;
+}
+
+.rail-card {
+  @apply relative flex w-40 shrink-0 flex-col overflow-hidden rounded-2xl transition;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+  animation: rail-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rail-card:hover {
+  border-color: var(--color-primary, #ff1f8f);
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--color-primary) 22%, transparent);
+  transform: translateY(-4px);
+}
+
+@keyframes rail-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.rail-card-media {
+  @apply relative block aspect-[4/5] w-full overflow-hidden;
+  background: linear-gradient(140deg, var(--color-primary-surface, #fff0f8), var(--color-primary-tint, #ffe4f1));
+}
+
+.rail-card-photo {
+  @apply h-full w-full object-cover;
+}
+
+.rail-card-photo-initial {
+  @apply flex h-full w-full items-center justify-center text-4xl font-bold text-white;
+  background: linear-gradient(135deg, var(--color-primary, #ff1f8f), var(--color-secondary, #fb923c));
+}
+
+.rail-live {
+  @apply absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.625rem] font-bold text-white;
+  background-color: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.rail-live-dot {
+  @apply h-1.5 w-1.5 rounded-full;
+  background-color: var(--color-success, #22c55e);
+  animation: rail-pulse 2s ease-in-out infinite;
+}
+
+@keyframes rail-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+.rail-card-body {
+  @apply flex min-w-0 flex-col gap-0.5 p-2.5;
+}
+
+.rail-card-name {
+  @apply flex items-baseline gap-1.5 truncate text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.rail-card-age {
+  @apply text-xs font-normal;
   color: var(--color-placeholder-text, #4a3b3b);
 }
 
-.stat-card-loading {
-  height: 8.5rem;
-  border-style: dashed;
-  box-shadow: none;
+.rail-card-meta {
+  @apply truncate text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
 }
 
-/* Feed on the left, the quieter figures on the right - the same shape as the
-   dashboard grid it replaces, minus the view switching. */
+.rail-card-loading {
+  height: 15rem;
+  border-style: dashed;
+  animation: none;
+}
+
+.rail-empty {
+  @apply py-6 text-sm;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+/* Feed on the left, the quieter figures on the right. */
 .dash-lower {
   @apply grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_19rem];
 }
 
 .dash-aside {
   @apply min-w-0;
+}
+
+/* Motion is decoration; none of it is how anything is understood. */
+@media (prefers-reduced-motion: reduce) {
+  .pill:hover,
+  .rail-card:hover {
+    transform: none;
+  }
+
+  .rail-card {
+    animation: none;
+  }
+
+  .rail-live-dot {
+    animation: none;
+  }
 }
 
 /* --- Activity feed --- */
@@ -3424,48 +3521,11 @@ button.chip-selected:hover {
   box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
-/* The refinements. Derived from the list already in hand, so switching between
-   them costs nothing and can never disagree with what is on screen. */
+/* The filter chips use the product's own chip control (see `.chip`), so a
+   filter here and a choice in the wizard read as the same thing. Only the row
+   that holds them is local. */
 .msg-chips {
   @apply flex flex-wrap gap-1.5;
-}
-
-.msg-chip {
-  @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition;
-  border-color: var(--color-border, #ffcbe5);
-  color: var(--color-placeholder-text, #4a3b3b);
-}
-
-.msg-chip:hover {
-  border-color: var(--color-primary-light, #ff66b3);
-  color: var(--color-primary-strong, #cb0b6b);
-}
-
-.msg-chip-active {
-  background-color: var(--color-primary, #ff1f8f);
-  border-color: var(--color-primary, #ff1f8f);
-  color: #ffffff;
-}
-
-.msg-chip-active:hover {
-  color: #ffffff;
-}
-
-.msg-chip-count {
-  @apply inline-flex min-w-[1rem] items-center justify-center rounded-full px-1 text-[0.625rem] font-bold;
-  background-color: var(--color-primary-tint, #ffe4f1);
-  color: var(--color-primary-strong, #cb0b6b);
-}
-
-.msg-chip-active .msg-chip-count {
-  background-color: rgba(255, 255, 255, 0.24);
-  color: #ffffff;
-}
-
-/* `min-height: 0` is load-bearing: without it a flex child refuses to shrink
-   below its content and the thread scrolls the drawer instead of itself. */
-.msg-drawer-body {
-  @apply flex min-h-0 flex-1 flex-col overflow-y-auto px-2 py-2;
 }
 
 /* The composer is inside the scrolling body, so it needs to stay put. */

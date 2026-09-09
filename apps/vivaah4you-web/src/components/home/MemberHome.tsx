@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
+import React, { Suspense, useEffect, useState } from 'react'
 
 import WelcomeHeader from '@/components/home/WelcomeHeader'
-import ActivityFeed from '@/components/home/ActivityFeed'
 import StatCards from '@/components/home/StatCards'
+import TrendingRail from '@/components/home/TrendingRail'
+import MatchesSection from '@/components/profile/MatchesSection'
 import { useAuth } from '@/components/authProvider'
 import type { MemberStats } from '@/types/stats'
 import type { MyProfile } from '@/types/profile'
@@ -13,10 +13,11 @@ import type { MyProfile } from '@/types/profile'
 /**
  * The signed-in home page.
  *
- * Was a view switcher: one shell that swapped the centre column between the
- * matches grid, your own profile, interests, chats and one match, all driven by
- * `?view=`. Every one of those is a route of its own now, so what is left is
- * the thing the switcher never was - a dashboard.
+ * Matches lead. An earlier pass made this a grid of stat cards over an activity
+ * feed, which read as a back-office summary screen - a page about the account
+ * rather than a page about people. The figures are still here as a strip you
+ * can glance past, and the activity feed has a route of its own for when
+ * somebody actually wants it.
  */
 export default function MemberHome() {
   const auth = useAuth()
@@ -48,54 +49,16 @@ export default function MemberHome() {
 
   return (
     <div className="dashboard">
-      <div className="container mx-auto px-4 py-8 sm:px-6">
+      <div className="container mx-auto flex flex-col gap-6 px-4 py-8 sm:px-6">
         <WelcomeHeader profile={profile} fallbackName={fallbackName} />
 
         <StatCards stats={stats} loading={loading} />
 
-        <div className="dash-lower">
-          <ActivityFeed />
+        <TrendingRail />
 
-          <aside className="dash-aside">
-            <section className="panel">
-              <h2 className="panel-title">Your activity</h2>
-              {loading || !stats ? (
-                <div className="panel-skeleton-rows" aria-hidden="true">
-                  <span />
-                  <span />
-                </div>
-              ) : (
-                <>
-                  <dl className="activity-list">
-                    <div className="activity-row">
-                      <dt>Profile views</dt>
-                      <dd>{stats.profileViews}</dd>
-                    </div>
-                    <div className="activity-row">
-                      <dt>Profiles you viewed</dt>
-                      <dd>{stats.viewsMade}</dd>
-                    </div>
-                    <div className="activity-row">
-                      <dt>Photos on your profile</dt>
-                      <dd>{stats.photos}</dd>
-                    </div>
-                    <div className="activity-row">
-                      <dt>Came back for another look</dt>
-                      <dd>{stats.repeatVisitors}</dd>
-                    </div>
-                  </dl>
-                  <p className="panel-foot">Counts cover the last {stats.windowDays} days.</p>
-                </>
-              )}
-
-              <div className="panel-links">
-                <Link href="/matches?tab=recent">Recently joined members</Link>
-                <Link href="/interests?tab=sent">Interests you sent</Link>
-                <Link href="/profile/me">Edit your profile</Link>
-              </div>
-            </section>
-          </aside>
-        </div>
+        <Suspense fallback={<div className="panel-skeleton" aria-hidden="true" />}>
+          <MatchesSection />
+        </Suspense>
       </div>
     </div>
   )

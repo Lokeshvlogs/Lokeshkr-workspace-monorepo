@@ -2,14 +2,14 @@ from datetime import timedelta
 from typing import List
 
 from django.db import transaction
-from django.db.models import Count, Max
+from django.db.models import Case, Count, IntegerField, Max, Value, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import File, Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from . import cards, interests
+from . import cards, interests, presence
 from .auth import active_auth, optional_auth
 from .mapping import apply_payload, profile_to_api
 from .models import Profile, ProfileView
@@ -161,6 +161,62 @@ def matches(request, tab: str = "all", limit: int = MATCH_PAGE_SIZE, offset: int
     ]
 
     return {"results": rows, "total": total, "has_more": offset + limit < total}
+
+
+TRENDING_TABS = ("trending", "online", "new")
+#: What counts as "right now" for the trending rail.
+TRENDING_WINDOW_DAYS = 7
+TRENDING_LIMIT = 12
+
+
+def trending_queryset(profile: Profile, tab: str):
+    """The rail of profiles worth looking at right now.
+
+    Every one of these is a real signal read off rows that already exist - no
+    editorial list, no invented "featured" flag. A rail that quietly promotes
+    whoever we like is the thing members learn to ignore.
+    """
+    pool = eligible_matches(profile)
+
+    if tab == "online":
+        cutoff = timezone.now() - presence.ONLINE_WINDOW
+        return pool.filter(last_active_at__gte=cutoff).order_by("-last_active_at")
+
+    if tab == "new":
+        since = timezone.now() - timedelta(days=TRENDING_WINDOW_DAYS)
+        return pool.filter(created_at__gte=since).order_by("-created_at")
+
+    # Most looked at over the window. `.order_by()` clears ProfileView's own
+    # Meta ordering, which Django would otherwise fold into the GROUP BY and
+    # return one row per view instead of one per profile.
+    since = timezone.now() - timedelta(days=TRENDING_WINDOW_DAYS)
+    counts = dict(
+        ProfileView.objects.filter(created_at__gte=since, viewed__in=pool)
+        .order_by()
+        .values("viewed")
+        .annotate(n=Count("id"))
+        .values_list("viewed", "n")
+    )
+    if not counts:
+        return pool.none()
+
+    ranked = sorted(counts.items(), key=lambda pair: -pair[1])[:TRENDING_LIMIT]
+    ids = [pk for pk, _ in ranked]
+
+    # Preserve the ranking the database cannot express through `pk__in`.
+    order = Case(*[When(pk=pk, then=Value(i)) for i, pk in enumerate(ids)], output_field=IntegerField())
+    return pool.filter(pk__in=ids).order_by(order)
+
+
+@router.get("/trending", auth=active_auth)
+def trending(request, tab: str = "trending"):
+    """A short rail of profiles, by whichever signal was asked for."""
+    profile = get_object_or_404(Profile, user=request.user)
+    if tab not in TRENDING_TABS:
+        raise HttpError(400, "Unknown tab.")
+
+    qs = trending_queryset(profile, tab).prefetch_related("photos")[:TRENDING_LIMIT]
+    return {"results": [profile_to_api(p, request, public=True, viewer=profile) for p in qs]}
 
 
 @router.post("/matches/seen", auth=active_auth)

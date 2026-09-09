@@ -45,6 +45,8 @@ from apps.profiles.api import (
     new_match_queryset,
     recent_match_queryset,
     visitor_rows,
+    trending_queryset,
+    TRENDING_WINDOW_DAYS,
 )
 from apps.profiles.verification import VerificationLevel
 
@@ -1220,3 +1222,67 @@ class StatsCounterTests(TestCase):
         self.assertEqual(
             stats["interests_declined"], interests.for_tab(self.asha, "declined").count()
         )
+
+
+class TrendingTests(TestCase):
+    """The rail carries real signals - a promoted list is the thing members
+    learn to scroll past."""
+
+    def setUp(self):
+        self.asha = _member("asha-t", "F")
+
+    def _man(self, username, days_ago=0):
+        profile = _member(username, "M")
+        if days_ago:
+            Profile.objects.filter(pk=profile.pk).update(
+                created_at=timezone.now() - timedelta(days=days_ago)
+            )
+        return profile
+
+    def _views(self, viewed, n, days_ago=0):
+        for i in range(n):
+            viewer = _member(f"viewer-{viewed.pk}-{i}", "F")
+            row = ProfileView.objects.create(viewer=viewer, viewed=viewed)
+            if days_ago:
+                ProfileView.objects.filter(pk=row.pk).update(
+                    created_at=timezone.now() - timedelta(days=days_ago)
+                )
+
+    def test_trending_is_ordered_by_recent_views(self):
+        quiet = self._man("quiet-t")
+        popular = self._man("popular-t")
+        self._views(quiet, 1)
+        self._views(popular, 4)
+
+        self.assertEqual(list(trending_queryset(self.asha, "trending"))[0], popular)
+
+    def test_views_outside_the_window_do_not_count(self):
+        stale = self._man("stale-t")
+        self._views(stale, 9, days_ago=TRENDING_WINDOW_DAYS + 3)
+
+        self.assertEqual(list(trending_queryset(self.asha, "trending")), [])
+
+    def test_online_reads_the_presence_column(self):
+        away = self._man("away-t")
+        here = self._man("here-t")
+        Profile.objects.filter(pk=here.pk).update(last_active_at=timezone.now())
+        Profile.objects.filter(pk=away.pk).update(
+            last_active_at=timezone.now() - timedelta(hours=3)
+        )
+
+        self.assertEqual(list(trending_queryset(self.asha, "online")), [here])
+
+    def test_new_is_the_last_week_only(self):
+        fresh = self._man("fresh-t", days_ago=2)
+        self._man("older-t", days_ago=TRENDING_WINDOW_DAYS + 4)
+
+        self.assertEqual(list(trending_queryset(self.asha, "new")), [fresh])
+
+    def test_every_tab_respects_the_match_pool(self):
+        """Blocked and hidden profiles must not reappear via the rail."""
+        blocked = self._man("blocked-t")
+        self._views(blocked, 5)
+        Block.objects.create(blocker=self.asha, blocked=blocked)
+
+        for tab in ("trending", "online", "new"):
+            self.assertNotIn(blocked, trending_queryset(self.asha, tab), tab)
