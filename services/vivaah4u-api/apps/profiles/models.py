@@ -767,3 +767,65 @@ class Block(models.Model):
 
     def __str__(self):
         return f"{self.blocker_id} blocked {self.blocked_id}"
+
+
+class FamilyMember(models.Model):
+    """One person in a member's family.
+
+    The profile already carries counts and two occupations - "2 brothers, 1
+    sister, father an engineer". That is enough to score completeness and not
+    nearly enough to picture a family, which is what both sides are actually
+    weighing up. These are the named people behind those numbers.
+
+    Deliberately not linked to a Profile of their own: a father who is not a
+    member has no account, and requiring one would empty the feature.
+    """
+
+    class Relation(models.TextChoices):
+        FATHER = "father", "Father"
+        MOTHER = "mother", "Mother"
+        BROTHER = "brother", "Brother"
+        SISTER = "sister", "Sister"
+        GRANDFATHER = "grandfather", "Grandfather"
+        GRANDMOTHER = "grandmother", "Grandmother"
+        OTHER = "other", "Other"
+
+    #: Which generation a relation belongs on, for laying the graph out. The
+    #: member is 0; older is negative, so the tree reads top to bottom.
+    GENERATION = {
+        Relation.GRANDFATHER: -2,
+        Relation.GRANDMOTHER: -2,
+        Relation.FATHER: -1,
+        Relation.MOTHER: -1,
+        Relation.BROTHER: 0,
+        Relation.SISTER: 0,
+        Relation.OTHER: 0,
+    }
+
+    MAX_PER_PROFILE = 12
+
+    profile = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="family_members"
+    )
+    relation = models.CharField(max_length=20, choices=Relation.choices)
+    name = models.CharField(max_length=80, blank=True)
+    occupation = models.CharField(max_length=80, blank=True)
+    #: Free text rather than a date: "mid 50s" is what people actually know
+    #: about an in-law, and an exact birthday is more than this needs.
+    about = models.CharField(max_length=140, blank=True)
+    photo = models.ImageField(upload_to="family_photos/", null=True, blank=True)
+    is_married = models.BooleanField(default=False)
+
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position", "id"]
+        indexes = [models.Index(fields=["profile", "position"])]
+
+    @property
+    def generation(self) -> int:
+        return self.GENERATION.get(self.relation, 0)
+
+    def __str__(self):
+        return f"{self.get_relation_display()} of {self.profile_id}"

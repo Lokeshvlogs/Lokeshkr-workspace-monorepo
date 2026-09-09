@@ -562,9 +562,7 @@ button.chip-selected:hover {
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
-/* Chips are pills by default. This squares them off to the standard button
-   radius, for chip-styled action buttons (Save / Cancel) that should match a
-   regular button rather than a filter pill. */
+/* A count carried inside a chip. */
 .chip-count {
   display: inline-flex;
   align-items: center;
@@ -584,6 +582,9 @@ button.chip-selected:hover {
   color: #ffffff;
 }
 
+/* Chips are pills by default. This squares them off to the standard button
+   radius, for chip-styled action buttons (Save / Cancel) that should match a
+   regular button rather than a filter pill. */
 .chip-square {
   border-radius: var(--radius, 8px);
 }
@@ -2824,8 +2825,12 @@ button.chip-selected:hover {
 .match-tab {
   @apply relative inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition;
   border-color: var(--color-border, #ffcbe5);
-  background-color: var(--color-bg, #ffffff);
   color: var(--color-placeholder-text, #6b7280);
+}
+
+button.match-tab,
+.match-tab.match-tab {
+  background-color: var(--color-bg, #ffffff);
 }
 
 .match-tab:hover {
@@ -2833,13 +2838,17 @@ button.chip-selected:hover {
   color: var(--color-primary-strong, #cb0b6b);
 }
 
-.match-tab-active {
+/* Qualified for the same reason as `.chip-selected`, and it is the same bug:
+   preflight resets `[type="button"] { background-color: transparent }`, that
+   selector ties with a single class, and it is emitted after this file - so a
+   plain `.match-tab-active` lost the background and kept the white text.
+   Do not simplify these back to one class. */
+button.match-tab-active,
+button.match-tab-active:hover,
+.match-tab.match-tab-active,
+.match-tab.match-tab-active:hover {
   background-color: var(--color-primary, #ff1f8f);
   border-color: var(--color-primary, #ff1f8f);
-  color: #ffffff;
-}
-
-.match-tab-active:hover {
   color: #ffffff;
 }
 
@@ -3562,4 +3571,165 @@ button.chip-selected:hover {
   right: -0.125rem;
   background-color: var(--color-error, #ef4444);
   border: 2px solid var(--color-bg, #ffffff);
+}
+
+/* --- Family graph ---
+   A profile already said "2 brothers, 1 sister, father an engineer" - enough to
+   score completeness and nowhere near enough to picture a household. Laid out
+   by generation, oldest at the top, each node opening to what is known. */
+.family-head {
+  @apply mb-1 flex items-start justify-between gap-3;
+}
+
+.family-tree {
+  @apply mt-4 flex flex-col gap-1;
+}
+
+.family-row {
+  @apply relative flex flex-col items-center gap-2 py-2;
+}
+
+.family-row-label {
+  @apply text-[0.625rem] font-bold uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+/* The tie down from the generation above. Drawn rather than bordered so it
+   reads as a tree and not as a table rule. */
+.family-link {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  width: 1px;
+  height: 1.25rem;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--color-border, #ffcbe5)
+  );
+}
+
+.family-nodes {
+  @apply flex flex-wrap items-start justify-center gap-3;
+}
+
+.family-node {
+  @apply relative flex w-24 flex-col items-center gap-1 rounded-2xl p-2 text-center transition;
+  border: 1px solid transparent;
+  animation: family-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+button.family-node:hover {
+  border-color: var(--color-border, #ffcbe5);
+  background-color: var(--color-primary-surface, #fff0f8);
+  transform: translateY(-2px);
+}
+
+/* Opened, the node keeps its lift so it stays legible against its neighbours. */
+.family-node-open {
+  @apply w-40;
+  border-color: var(--color-primary, #ff1f8f);
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+/* The member themselves, so the eye finds the middle of the tree first. */
+.family-node-self .family-photo {
+  border-color: var(--color-primary, #ff1f8f);
+}
+
+@keyframes family-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: none; }
+}
+
+.family-portrait {
+  @apply relative;
+}
+
+.family-photo {
+  @apply h-14 w-14 rounded-full object-cover;
+  border: 2px solid var(--color-bg, #ffffff);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.family-photo-initial {
+  @apply flex items-center justify-center text-lg font-bold text-white;
+  background: linear-gradient(135deg, var(--color-primary-light, #ff66b3), var(--color-primary, #ff1f8f));
+}
+
+/* A quiet band on the portrait rather than a word taking a whole line. */
+.family-ring {
+  @apply absolute rounded-full;
+  right: -0.125rem;
+  bottom: -0.125rem;
+  height: 0.75rem;
+  width: 0.75rem;
+  border: 2px solid var(--color-bg, #ffffff);
+  background-color: var(--color-secondary, #fb923c);
+}
+
+.family-name {
+  @apply w-full truncate text-xs font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.family-relation {
+  @apply text-[0.6875rem];
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.family-detail {
+  @apply mt-1 flex w-full flex-col gap-0.5 border-t pt-1;
+  border-color: var(--color-border, #ffcbe5);
+}
+
+.family-detail-line {
+  @apply text-[0.6875rem] leading-snug;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+/* --- Editing the family --- */
+.family-edit-list {
+  @apply mt-3 flex flex-col gap-2;
+}
+
+.family-edit-row {
+  @apply flex flex-wrap items-center gap-2 rounded-xl p-2;
+  border: 1px solid var(--color-border, #ffcbe5);
+}
+
+.family-edit-photo {
+  @apply h-10 w-10 shrink-0 rounded-full object-cover;
+  border: 2px solid var(--color-bg, #ffffff);
+}
+
+.family-edit-photo-initial {
+  @apply flex items-center justify-center text-sm font-bold text-white;
+  background: linear-gradient(135deg, var(--color-primary-light, #ff66b3), var(--color-primary, #ff1f8f));
+}
+
+.family-edit-name {
+  @apply block truncate text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.family-edit-meta {
+  @apply block truncate text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.family-add {
+  @apply mt-4 rounded-xl p-3;
+  border: 1px dashed var(--color-border, #ffcbe5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .family-node {
+    animation: none;
+  }
+
+  button.family-node:hover {
+    transform: none;
+  }
 }

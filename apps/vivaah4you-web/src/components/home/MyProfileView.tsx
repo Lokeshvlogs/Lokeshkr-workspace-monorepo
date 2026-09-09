@@ -1,11 +1,13 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
 import ProfileBio from '@/components/profile/ProfileBio'
+import FamilyGraph from '@/components/profile/FamilyGraph'
+import FamilyEditor from '@/components/profile/FamilyEditor'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import { fullName } from '@/lib/profileDisplay'
 import type { MyProfile } from '@/types/profile'
@@ -24,6 +26,7 @@ interface Props {
  * twice on one screen.
  */
 export default function MyProfileView({ profile, onSave }: Props) {
+  const [editingFamily, setEditingFamily] = useState(false)
   const name = fullName(profile) || 'Your profile'
 
   return (
@@ -57,6 +60,17 @@ export default function MyProfileView({ profile, onSave }: Props) {
       />
 
       <ProfileBio value={profile.aboutMe ?? ''} heading="About me" onSave={onSave} />
+
+      {editingFamily ? (
+        <FamilyEditor onClose={() => setEditingFamily(false)} />
+      ) : (
+        <FamilyGraph
+          selfLabel="You and your siblings"
+          selfName={profile.firstName || 'You'}
+          selfPhoto={profile.photo}
+          onEdit={() => setEditingFamily(true)}
+        />
+      )}
 
       <PhotoStrip photos={profile.photos ?? []} name={name} />
 

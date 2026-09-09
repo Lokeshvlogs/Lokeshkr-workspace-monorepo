@@ -70,7 +70,7 @@ export default function TrendingRail({ from = '/' }: { from?: string }) {
               type="button"
               aria-pressed={tab === entry.key}
               onClick={() => setTab(entry.key)}
-              className={`chip chip-square ${tab === entry.key ? 'chip-selected' : ''}`}
+              className={`chip ${tab === entry.key ? 'chip-selected' : ''}`}
             >
               <span aria-hidden="true">{entry.glyph}</span>
               {entry.label}

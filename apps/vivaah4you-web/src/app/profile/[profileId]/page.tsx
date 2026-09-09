@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
 import ProfileBio from '@/components/profile/ProfileBio'
+import FamilyGraph from '@/components/profile/FamilyGraph'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
 import { compareProfiles } from '@/lib/compatibility'
@@ -140,6 +141,13 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
         />
 
         <ProfileBio value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />
+
+        <FamilyGraph
+          profileId={profile.profile_id}
+          selfLabel={`${firstName} and their siblings`}
+          selfName={firstName}
+          selfPhoto={profile.photo}
+        />
 
         <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
 

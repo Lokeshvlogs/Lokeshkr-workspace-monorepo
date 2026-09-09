@@ -153,7 +153,7 @@ export default function MessengerDrawer() {
                   type="button"
                   aria-pressed={filter === key}
                   onClick={() => setFilter(key)}
-                  className={`chip chip-square ${filter === key ? 'chip-selected' : ''}`}
+                  className={`chip ${filter === key ? 'chip-selected' : ''}`}
                 >
                   {FILTER_LABEL[key]}
                   {count > 0 && <span className="chip-count">{count}</span>}

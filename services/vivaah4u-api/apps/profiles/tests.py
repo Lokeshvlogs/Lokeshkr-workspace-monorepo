@@ -15,6 +15,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.db.utils import IntegrityError
+from ninja.errors import HttpError
 from django.test import TestCase
 from django.utils import timezone
 
@@ -31,6 +32,7 @@ from apps.profiles import managed_by as managed_by_rules
 from apps.profiles.education import NO_REPUTATION, rank_of
 from apps.profiles.models import (
     Block,
+    FamilyMember,
     Interest,
     Profile,
     ProfileEducation,
@@ -1286,3 +1288,98 @@ class TrendingTests(TestCase):
 
         for tab in ("trending", "online", "new"):
             self.assertNotIn(blocked, trending_queryset(self.asha, tab), tab)
+
+
+class FamilyMemberTests(TestCase):
+    def setUp(self):
+        self.asha = _member("asha-f", "F")
+
+    def _add(self, relation, **kwargs):
+        return FamilyMember.objects.create(profile=self.asha, relation=relation, **kwargs)
+
+    def test_generation_places_relations_on_the_right_row(self):
+        """The graph's layout comes from the model, so the two cannot drift."""
+        self.assertEqual(self._add(FamilyMember.Relation.GRANDFATHER).generation, -2)
+        self.assertEqual(self._add(FamilyMember.Relation.FATHER).generation, -1)
+        self.assertEqual(self._add(FamilyMember.Relation.SISTER).generation, 0)
+
+    def test_unknown_relations_sit_on_the_members_own_row(self):
+        """`GENERATION` is a lookup with a default, so a relation added later
+        renders somewhere sensible rather than crashing the graph."""
+        member = self._add(FamilyMember.Relation.OTHER)
+        self.assertEqual(member.generation, 0)
+
+    def test_members_are_ordered_by_position(self):
+        second = self._add(FamilyMember.Relation.BROTHER, position=2, name="B")
+        first = self._add(FamilyMember.Relation.FATHER, position=1, name="A")
+
+        self.assertEqual(list(self.asha.family_members.all()), [first, second])
+
+    def test_deleting_a_profile_takes_its_family(self):
+        self._add(FamilyMember.Relation.MOTHER)
+        self.asha.user.delete()
+        self.assertEqual(FamilyMember.objects.count(), 0)
+
+    def test_a_family_member_needs_no_account(self):
+        """A father who is not a member has no profile of his own; requiring
+        one would empty the feature."""
+        member = self._add(FamilyMember.Relation.FATHER, name="Ravi", occupation="Teacher")
+        self.assertEqual(member.name, "Ravi")
+        self.assertFalse(hasattr(member, "user"))
+
+
+class FamilyApiTests(TestCase):
+    def setUp(self):
+        self.asha = _member("asha-fa", "F")
+        self.ravi = _member("ravi-fa", "M")
+        self.request = SimpleNamespace(
+            user=self.asha.user, build_absolute_uri=lambda url: url, auth=self.asha
+        )
+
+    def test_a_hidden_profiles_family_is_hidden_with_it(self):
+        from apps.profiles.family_api import public_family
+
+        # A profile_id is only assigned once gender AND age are set, and the
+        # endpoint looks members up by it.
+        self.ravi.age = 30
+        self.ravi.save()
+        self.ravi.refresh_from_db()
+        self.assertTrue(self.ravi.profile_id, "fixture needs a profile_id to be found at all")
+
+        FamilyMember.objects.create(profile=self.ravi, relation="father", name="Suresh")
+
+        # Visible first, so the test proves the hiding rather than the lookup.
+        self.assertEqual(len(public_family(self.request, self.ravi.profile_id)["results"]), 1)
+
+        Profile.objects.filter(pk=self.ravi.pk).update(hide=True)
+
+        with self.assertRaises(HttpError) as caught:
+            public_family(self.request, self.ravi.profile_id)
+        self.assertEqual(caught.exception.status_code, 404)
+
+    def test_you_cannot_edit_somebody_elses_family(self):
+        """404 and not 403 - a 403 confirms the row exists."""
+        from apps.profiles.family_api import _owned
+
+        theirs = FamilyMember.objects.create(profile=self.ravi, relation="mother")
+
+        with self.assertRaises(HttpError) as caught:
+            _owned(self.request, theirs.pk)
+        self.assertEqual(caught.exception.status_code, 404)
+
+    def test_the_cap_is_enforced(self):
+        from apps.profiles.family_api import MemberIn, add_member
+
+        for i in range(FamilyMember.MAX_PER_PROFILE):
+            FamilyMember.objects.create(profile=self.asha, relation="other", position=i)
+
+        with self.assertRaises(HttpError) as caught:
+            add_member(self.request, MemberIn(relation="brother"))
+        self.assertEqual(caught.exception.status_code, 409)
+
+    def test_an_unknown_relation_is_refused(self):
+        from apps.profiles.family_api import MemberIn, add_member
+
+        with self.assertRaises(HttpError) as caught:
+            add_member(self.request, MemberIn(relation="pet-dog"))
+        self.assertEqual(caught.exception.status_code, 400)
