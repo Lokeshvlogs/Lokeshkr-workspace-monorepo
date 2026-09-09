@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { MouseEvent, useEffect, useState } from 'react'
 import { useAuth } from "@/components/authProvider";
-import { useMessagePolling } from '@/hooks/useMessagePolling';
+import { useMessenger } from '@/components/messenger/MessengerProvider';
 
 export default function Navbar() {
   const auth = useAuth();
@@ -12,7 +12,7 @@ export default function Navbar() {
      polled: nothing here is time-critical, and a navbar that refetches on a
      timer is a request every member makes on every page. */
   const [interestCount, setInterestCount] = useState(0);
-  const [unreadChats, setUnreadChats] = useState(0);
+  const { openDrawer, unreadTotal } = useMessenger();
 
   useEffect(() => {
     if (!auth.isAuthenticated) {
@@ -35,19 +35,6 @@ export default function Navbar() {
     };
   }, [auth.isAuthenticated]);
 
-  // Unread messages, on the slowest cadence there is. Every member pays for
-  // this on every page, so it uses the badge interval and pauses with the tab.
-  useMessagePolling({
-    mode: 'badge',
-    enabled: auth.isAuthenticated,
-    onTick: async () => {
-      const data = await fetch('/api/messaging/poll').then((r) => r.json()).catch(() => null);
-      if (!data) return false;
-      setUnreadChats(Number(data.unreadTotal ?? 0));
-      return true;
-    },
-  });
-
   const handleLogoutClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     auth.logout();
@@ -55,26 +42,34 @@ export default function Navbar() {
 
   const links = (
     <>
-      {/* Signed in, the matches grid is the dashboard's default centre view, so
-          this clears the ?view param rather than jumping to an anchor - the
-          hash link left the dashboard showing whatever it was already on. */}
+      {/* `/` is the dashboard now, not the matches grid, so "Matches" points at
+          its own route and home gets its own link. */}
       <Link
         href={auth.isAuthenticated ? '/' : '/#register'}
         className="text-gray-700 hover:text-gray-900"
       >
-        {auth.isAuthenticated ? 'Matches' : 'Join free'}
+        {auth.isAuthenticated ? 'Dashboard' : 'Join free'}
       </Link>
       {auth.isAuthenticated ? (
         <>
-          <Link href="/?view=chats" className="nav-with-badge text-gray-700 hover:text-gray-900">
+          <Link href="/matches" className="text-gray-700 hover:text-gray-900">Matches</Link>
+          {/* Opens the drawer rather than navigating - chat is a panel over
+              whatever you are doing now, not a destination. */}
+          <button
+            type="button"
+            onClick={() => openDrawer()}
+            aria-haspopup="dialog"
+            className="nav-with-badge text-gray-700 hover:text-gray-900"
+          >
             Chats
-            {unreadChats > 0 && <span className="nav-badge">{unreadChats}</span>}
-          </Link>
-          <Link href="/?view=interests" className="nav-with-badge text-gray-700 hover:text-gray-900">
+            {unreadTotal > 0 && <span className="nav-badge">{unreadTotal}</span>}
+          </button>
+          <Link href="/interests" className="nav-with-badge text-gray-700 hover:text-gray-900">
             Interests
             {interestCount > 0 && <span className="nav-badge">{interestCount}</span>}
           </Link>
-          <Link href="/?view=me" className="text-gray-700 hover:text-gray-900">My Profile</Link>
+          <Link href="/visitors" className="text-gray-700 hover:text-gray-900">Visitors</Link>
+          <Link href="/profile/me" className="text-gray-700 hover:text-gray-900">My Profile</Link>
           <Link href="/settings" className="text-gray-700 hover:text-gray-900">Settings</Link>
           <button
             type="button"

@@ -26,6 +26,8 @@ export async function GET() {
             interestsReceived: Number(result.data.interests_received ?? 0),
             interestsUnseen: Number(result.data.interests_unseen ?? 0),
             interestsAccepted: Number(result.data.interests_accepted ?? 0),
+            interestsSent: Number(result.data.interests_sent ?? 0),
+            interestsDeclined: Number(result.data.interests_declined ?? 0),
             completeness: Number(result.data.completeness ?? 0),
             photos: Number(result.data.photos ?? 0),
         },

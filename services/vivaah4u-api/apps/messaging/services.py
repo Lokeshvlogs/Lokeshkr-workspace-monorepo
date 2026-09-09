@@ -85,10 +85,16 @@ def unread_count(conversation, participant_row: Participant) -> int:
 
 
 def unread_totals(participant) -> dict:
-    """One query per conversation is fine at inbox size; the total is not."""
-    rows = Participant.objects.filter(participant=participant, is_active=True).select_related(
-        "conversation"
-    )
+    """One query per conversation is fine at inbox size; the total is not.
+
+    Archived conversations are excluded, matching `conversations_for`. Without
+    that they still counted: `list_conversations` filters them out, so an
+    archived thread with unread messages produced a badge that no list could
+    show and no amount of reading could clear.
+    """
+    rows = Participant.objects.filter(
+        participant=participant, is_active=True, archived_at__isnull=True
+    ).select_related("conversation")
     per_conversation = {}
     total = 0
     for row in rows:

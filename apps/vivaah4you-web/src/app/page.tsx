@@ -159,8 +159,14 @@ function GuestHome() {
         </section>
 
         {/* Renders the search bar and results for members, and the reason it is
-            members-only for everyone else. */}
-        <MatchesSection />
+            members-only for everyone else.
+
+            Wrapped because MatchesSection reads its filters from the query
+            string now - without a boundary here, prerendering / fails. The
+            member branch below has its own. */}
+        <Suspense fallback={<div className="panel-skeleton" aria-hidden="true" />}>
+          <MatchesSection />
+        </Suspense>
 
         <section id="features" className="mt-20 scroll-mt-24">
           <h2 className="section-title">Why Vivah4U</h2>

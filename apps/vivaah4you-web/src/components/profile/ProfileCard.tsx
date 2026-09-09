@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 import NameWithBadge from '@/components/profile/NameWithBadge'
 import InterestButton from '@/components/profile/InterestButton'
+import { profileHref } from '@/lib/navigation'
 
 export type ProfileCardData = {
   /** Present for real profiles; absent for the sample/placeholder cards. */
@@ -21,10 +22,10 @@ export type ProfileCardData = {
   /** Drives the verification mark beside the name. */
   verificationLevel?: number
   /**
-   * Opens the profile in place instead of navigating. The card stays a real
-   * link either way, so modifier-clicks still open the standalone page.
+   * The list this card is in, carried into the profile so its Back button can
+   * return here. Absent on the signed-out marketing page.
    */
-  onOpen?: (profileId: string) => void
+  from?: string
 }
 
 function PinIcon() {
@@ -46,21 +47,12 @@ export default function ProfileCard({
   details = [],
   photoCount = 0,
   verificationLevel = 0,
-  onOpen,
+  from,
 }: ProfileCardData) {
-  const href = profileId ? `/profile/${profileId}` : undefined
-
-  /**
-   * Intercept a plain left-click so the dashboard can show the profile in
-   * place, while leaving ⌘/ctrl/shift/middle-click to the browser - those mean
-   * "open in a new tab", and the standalone page is the right thing to get.
-   */
-  const handleOpen = (event: React.MouseEvent) => {
-    if (!onOpen || !profileId) return
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
-    event.preventDefault()
-    onOpen(profileId)
-  }
+  /* A plain link now. Profiles used to open in place in the dashboard, which
+     meant intercepting left-clicks and letting modifier-clicks through; with a
+     profile on its own route there is nothing to intercept. */
+  const href = profileId ? profileHref(profileId, from) : undefined
   // Two pills read as a tidy row; more than that turns the card into a list.
   const shown = details.slice(0, 3)
   const extra = details.length - shown.length
@@ -113,7 +105,6 @@ export default function ProfileCard({
           href={href}
           aria-label={`View ${name}'s profile`}
           className="card-media-link"
-          onClick={handleOpen}
         >
           {media}
         </Link>
@@ -135,7 +126,7 @@ export default function ProfileCard({
 
         {href && profileId ? (
           <div className="card-actions">
-            <Link href={href} className="card-cta" onClick={handleOpen}>View profile</Link>
+            <Link href={href} className="card-cta">View profile</Link>
             <InterestButton profileId={profileId} variant="card" />
           </div>
         ) : (

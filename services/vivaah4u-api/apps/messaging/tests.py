@@ -5,6 +5,7 @@ from django.db.utils import IntegrityError
 from unittest import mock
 
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.messaging import conf, services
 from apps.messaging.models import Conversation, Message, Participant, participants_key
@@ -270,3 +271,37 @@ class HostGateTests(TestCase):
         conversations = Conversation.objects.filter(kind="match")
         self.assertEqual(conversations.count(), 1)
         self.assertEqual(conversations.first().context_ref, str(interest.id))
+
+
+class ArchivedUnreadTests(TestCase):
+    """Archiving must not leave a badge nobody can clear."""
+
+    def setUp(self):
+        self.asha = _member("asha-arch")
+        self.ravi = _member("ravi-arch")
+        self.conversation = services.get_or_create_conversation([self.asha, self.ravi])
+
+    def test_archived_conversations_leave_the_unread_total(self):
+        """`conversations_for` hides archived threads, so counting their unread
+        produced a total no list could show and no reading could clear."""
+        services.post_message(self.conversation, self.asha, "Hello")
+        self.assertEqual(services.unread_totals(self.ravi)["total"], 1)
+
+        theirs = services.membership(self.conversation, self.ravi)
+        Participant.objects.filter(pk=theirs.pk).update(archived_at=timezone.now())
+
+        self.assertEqual(services.unread_totals(self.ravi)["total"], 0)
+
+    def test_archiving_is_per_participant(self):
+        """One side filing a thread away must not silence it for the other."""
+        services.post_message(self.conversation, self.ravi, "Are you there?")
+
+        mine = services.membership(self.conversation, self.asha)
+        Participant.objects.filter(pk=mine.pk).update(archived_at=timezone.now())
+
+        self.assertEqual(services.unread_totals(self.asha)["total"], 0)
+        self.assertEqual(
+            len(list(services.conversations_for(self.ravi))),
+            1,
+            "the other side still sees the thread",
+        )

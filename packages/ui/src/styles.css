@@ -2968,37 +2968,6 @@ button.chip-selected:hover {
    Paired with the components in components/messaging, which are written to
    travel with apps/messaging. The class names carry no product vocabulary for
    the same reason. */
-.msg-shell {
-  @apply grid gap-4;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 900px) {
-  .msg-shell {
-    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
-    align-items: start;
-  }
-}
-
-.msg-pane {
-  @apply flex min-w-0 flex-col rounded-2xl border p-4;
-  border-color: var(--color-border, #ffcbe5);
-  background-color: var(--color-bg, #ffffff);
-}
-
-/* On a phone the list and the thread are one column, so opening a chat has to
-   replace the list rather than sit under it. */
-@media (max-width: 899px) {
-  .msg-pane-hidden-sm {
-    display: none;
-  }
-}
-
-.msg-pane-thread {
-  @apply gap-3 p-0;
-  min-height: 28rem;
-}
-
 .msg-list {
   @apply flex flex-col;
 }
@@ -3065,22 +3034,6 @@ button.chip-selected:hover {
   background-color: var(--color-primary, #ff1f8f);
 }
 
-.msg-head {
-  @apply flex items-center gap-2 border-b p-4;
-  border-color: var(--color-border, #ffcbe5);
-}
-
-.msg-back {
-  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl leading-none;
-  color: var(--color-primary, #ff1f8f);
-}
-
-@media (min-width: 900px) {
-  .msg-back {
-    display: none;
-  }
-}
-
 .msg-head-person {
   @apply flex min-w-0 flex-col text-left;
 }
@@ -3097,7 +3050,7 @@ button.chip-selected:hover {
 
 .msg-thread {
   @apply flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 py-3;
-  max-height: 26rem;
+  min-height: 0;
 }
 
 .msg-day {
@@ -3208,4 +3161,345 @@ button.chip-selected:hover {
   .msg-skeleton {
     animation: none;
   }
+}
+
+/* --- Page shells ---
+   Every destination that used to be a centre-column view is a route now, and
+   each one needs the container the dashboard used to provide. */
+.page-shell {
+  @apply container mx-auto flex flex-col gap-5 px-4 py-8 sm:px-6;
+  max-width: 76rem;
+}
+
+.page-title {
+  @apply text-2xl font-bold;
+  letter-spacing: -0.026em;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+/* --- Dashboard stat cards ---
+   The welcome band carried three of these as plain text. A figure you cannot
+   click is a report; on a dashboard every figure should be a way in. */
+.stat-cards {
+  @apply mb-6 grid gap-3;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+
+.stat-card {
+  @apply relative flex flex-col gap-0.5 overflow-hidden rounded-2xl p-4 transition;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+}
+
+.stat-card:hover {
+  border-color: var(--color-primary-light, #ff66b3);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card:hover {
+    transform: none;
+  }
+}
+
+/* A wash of the card's own colour, so four cards read as four things rather
+   than one repeated four times. */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background: currentColor;
+  pointer-events: none;
+}
+
+.stat-card-matches { color: var(--color-primary, #ff1f8f); }
+.stat-card-interests { color: #7c3aed; }
+.stat-card-visitors { color: #0ea5e9; }
+.stat-card-messages { color: var(--color-success, #22c55e); }
+
+.stat-card-top {
+  @apply mb-1 flex items-center gap-2;
+}
+
+.stat-card-icon {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl;
+  background-color: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.stat-card-icon svg {
+  @apply h-5 w-5;
+}
+
+.stat-card-badge {
+  @apply ml-auto rounded-full px-2 py-0.5 text-[0.6875rem] font-bold text-white;
+  background-color: currentColor;
+}
+
+.stat-card-dot {
+  @apply ml-auto h-2 w-2 rounded-full;
+  background-color: var(--color-error, #ef4444);
+}
+
+.stat-card-value {
+  @apply text-3xl font-extrabold leading-none;
+  letter-spacing: -0.03em;
+  color: var(--color-primary-text, #5a5f6c);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card-label {
+  @apply mt-1.5 text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.stat-card-hint {
+  @apply text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.stat-card-loading {
+  height: 8.5rem;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+/* Feed on the left, the quieter figures on the right - the same shape as the
+   dashboard grid it replaces, minus the view switching. */
+.dash-lower {
+  @apply grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_19rem];
+}
+
+.dash-aside {
+  @apply min-w-0;
+}
+
+/* --- Activity feed --- */
+.feed-list {
+  @apply flex flex-col gap-1;
+}
+
+.feed-row {
+  @apply -mx-2 flex items-center gap-3 rounded-xl px-2 py-2 transition;
+}
+
+.feed-row:hover {
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+.feed-avatar {
+  @apply h-10 w-10 shrink-0 rounded-full object-cover;
+  border: 2px solid var(--color-bg, #ffffff);
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.12);
+}
+
+.feed-text {
+  @apply block text-sm;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.feed-text strong {
+  @apply font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.feed-time {
+  @apply block text-xs;
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+/* --- List pages (visitors) --- */
+.list-controls {
+  @apply flex flex-wrap items-center justify-between gap-3;
+}
+
+.list-search {
+  @apply min-w-0 flex-1 sm:max-w-xs;
+}
+
+.list-search-input {
+  @apply w-full rounded-full border px-4 py-2 text-sm;
+  border-color: var(--color-border, #ffcbe5);
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.list-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #ff1f8f);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
+}
+
+/* The visitor row from the old sidebar, given the room a page affords. */
+.visitor-grid {
+  @apply grid gap-3;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+}
+
+.visitor-card {
+  @apply flex items-center gap-3 rounded-2xl p-3 transition;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+}
+
+.visitor-card:hover {
+  border-color: var(--color-primary-light, #ff66b3);
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+.visitor-card-portrait {
+  @apply relative shrink-0;
+}
+
+.visitor-card-avatar {
+  @apply h-12 w-12 rounded-full object-cover;
+  border: 2px solid var(--color-bg, #ffffff);
+}
+
+/* The dot is placed against this avatar, so it cannot reuse the hero offsets. */
+.visitor-card .presence-dot {
+  right: -0.125rem;
+  bottom: -0.125rem;
+  height: 0.75rem;
+  width: 0.75rem;
+  border-width: 2px;
+}
+
+/* --- Messenger drawer ---
+   A panel over whatever you were doing, not a page you go to. It sits above
+   the sticky navbar (z-40) and below nothing else. */
+.msg-drawer {
+  @apply fixed right-0 top-0 z-50 flex h-dvh w-full flex-col sm:w-[24rem];
+  border-left: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: -18px 0 48px rgba(17, 24, 39, 0.14);
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.msg-drawer-open {
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg-drawer {
+    transition: none;
+  }
+}
+
+.msg-drawer-head {
+  @apply flex shrink-0 items-center gap-2 border-b px-3 py-3;
+  border-color: var(--color-border, #ffcbe5);
+}
+
+.msg-drawer-title {
+  @apply text-base font-bold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.msg-drawer-icon {
+  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl leading-none transition;
+  color: var(--color-primary, #ff1f8f);
+}
+
+.msg-drawer-icon:hover {
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+.msg-drawer-tools {
+  @apply flex shrink-0 flex-col gap-2 border-b px-3 py-3;
+  border-color: var(--color-border, #ffcbe5);
+}
+
+.msg-drawer-search {
+  @apply w-full rounded-full border px-3 py-1.5 text-sm;
+  border-color: var(--color-border, #ffcbe5);
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.msg-drawer-search:focus {
+  outline: none;
+  border-color: var(--color-primary, #ff1f8f);
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
+}
+
+/* The refinements. Derived from the list already in hand, so switching between
+   them costs nothing and can never disagree with what is on screen. */
+.msg-chips {
+  @apply flex flex-wrap gap-1.5;
+}
+
+.msg-chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition;
+  border-color: var(--color-border, #ffcbe5);
+  color: var(--color-placeholder-text, #4a3b3b);
+}
+
+.msg-chip:hover {
+  border-color: var(--color-primary-light, #ff66b3);
+  color: var(--color-primary-strong, #cb0b6b);
+}
+
+.msg-chip-active {
+  background-color: var(--color-primary, #ff1f8f);
+  border-color: var(--color-primary, #ff1f8f);
+  color: #ffffff;
+}
+
+.msg-chip-active:hover {
+  color: #ffffff;
+}
+
+.msg-chip-count {
+  @apply inline-flex min-w-[1rem] items-center justify-center rounded-full px-1 text-[0.625rem] font-bold;
+  background-color: var(--color-primary-tint, #ffe4f1);
+  color: var(--color-primary-strong, #cb0b6b);
+}
+
+.msg-chip-active .msg-chip-count {
+  background-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+/* `min-height: 0` is load-bearing: without it a flex child refuses to shrink
+   below its content and the thread scrolls the drawer instead of itself. */
+.msg-drawer-body {
+  @apply flex min-h-0 flex-1 flex-col overflow-y-auto px-2 py-2;
+}
+
+/* The composer is inside the scrolling body, so it needs to stay put. */
+.msg-drawer-body .msg-composer {
+  @apply sticky bottom-0 shrink-0;
+  background-color: var(--color-bg, #ffffff);
+}
+
+/* --- The way in --- */
+.msg-fab {
+  @apply fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white transition;
+  background-color: var(--color-primary, #ff1f8f);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-primary) 42%, transparent);
+}
+
+.msg-fab:hover {
+  background-color: var(--color-primary-strong, #cb0b6b);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg-fab:hover {
+    transform: none;
+  }
+}
+
+.msg-fab svg {
+  @apply h-6 w-6;
+}
+
+.msg-fab-badge {
+  @apply absolute flex min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-bold;
+  top: -0.125rem;
+  right: -0.125rem;
+  background-color: var(--color-error, #ef4444);
+  border: 2px solid var(--color-bg, #ffffff);
 }

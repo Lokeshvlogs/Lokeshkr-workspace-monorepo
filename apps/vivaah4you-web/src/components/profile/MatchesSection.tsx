@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import ProfileCard, { type ProfileCardData } from '@/components/profile/ProfileCard'
 import MatchSearchBar, {
@@ -9,6 +10,8 @@ import MatchSearchBar, {
   type MatchFilters,
   type SortKey,
 } from '@/components/profile/MatchSearchBar'
+import TabStrip, { type TabDef } from '@/components/common/TabStrip'
+import { currentPath } from '@/lib/navigation'
 import { useAuth } from '@/components/authProvider'
 import { formatHeight, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
 import type { PublicProfile } from '@/types/profile'
@@ -119,29 +122,73 @@ function MatchSkeleton() {
   )
 }
 
-const MATCH_TABS = [
+type MatchTab = 'all' | 'new' | 'recent'
+
+const MATCH_TABS: readonly TabDef<MatchTab>[] = [
   { key: 'all', label: 'All matches' },
   { key: 'new', label: 'New' },
   { key: 'recent', label: 'Recently joined' },
-] as const
+]
 
-type MatchTab = (typeof MATCH_TABS)[number]['key']
-
-interface MatchesSectionProps {
-  /** Opens a match in place. Absent on the signed-out marketing page. */
-  onOpenProfile?: (profileId: string) => void
+/**
+ * Filters and sort live in the query string.
+ *
+ * They used to be component state, which survived opening a profile only
+ * because the grid was never unmounted - it sat behind a `hidden` class in the
+ * dashboard. On its own route it unmounts, and state would be lost on every
+ * Back. The URL restores it for free, and makes a filtered search shareable.
+ */
+function filtersFromParams(params: URLSearchParams): MatchFilters {
+  const next = { ...EMPTY_FILTERS }
+  for (const key of Object.keys(EMPTY_FILTERS) as (keyof MatchFilters)[]) {
+    const value = params.get(key)
+    if (value) next[key] = value
+  }
+  return next
 }
 
-export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = {}) {
+function paramsFromState(filters: MatchFilters, sort: SortKey, tab: MatchTab): string {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) params.set(key, value)
+  }
+  if (sort !== 'best') params.set('sort', sort)
+  if (tab !== 'all') params.set('tab', tab)
+  return params.toString()
+}
+
+export default function MatchesSection() {
   const auth = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
+  const params = useSearchParams()
+
   const [entries, setEntries] = useState<MatchEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<MatchFilters>(EMPTY_FILTERS)
-  const [sort, setSort] = useState<SortKey>('best')
-  const [tab, setTab] = useState<MatchTab>('all')
   /* Held separately from `entries` so the badge does not drop to zero the
      moment the member opens the New tab and the list is replaced. */
   const [newCount, setNewCount] = useState(0)
+
+  const filters = useMemo(() => filtersFromParams(params), [params])
+  const sort = (params.get('sort') as SortKey) || 'best'
+  const rawTab = params.get('tab')
+  const tab: MatchTab = rawTab === 'new' || rawTab === 'recent' ? rawTab : 'all'
+
+  /* `replace`, not `push`: typing in the search box must not fill the history
+     stack with a step per keystroke. */
+  const write = useCallback(
+    (nextFilters: MatchFilters, nextSort: SortKey, nextTab: MatchTab) => {
+      const query = paramsFromState(nextFilters, nextSort, nextTab)
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    },
+    [pathname, router],
+  )
+
+  const setFilters = useCallback(
+    (next: MatchFilters) => write(next, sort, tab),
+    [write, sort, tab],
+  )
+  const setSort = useCallback((next: SortKey) => write(filters, next, tab), [write, filters, tab])
 
   useEffect(() => {
     // Matches are members-only, so there is nothing to fetch when signed out.
@@ -193,7 +240,7 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
   }, [auth.isAuthenticated])
 
   const openTab = (next: MatchTab) => {
-    setTab(next)
+    write(filters, sort, next)
     // Marking seen is an explicit POST on opening the tab, never a side effect
     // of the list load - a background refetch would otherwise clear the badge
     // before anything had been read.
@@ -203,6 +250,10 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
         .catch(() => {})
     }
   }
+
+  /* Carried into each card so a profile's Back button returns here - to this
+     tab and these filters, not just to /matches. */
+  const from = currentPath(pathname, params)
 
   const visible = useMemo(() => {
     const filtered = entries.filter((entry) => matchesFilters(entry.profile, filters))
@@ -230,23 +281,12 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
 
   return (
     <section id="profiles" className="scroll-mt-20">
-      <div className="match-tabs" role="tablist" aria-label="Match lists">
-        {MATCH_TABS.map((entry) => (
-          <button
-            key={entry.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === entry.key}
-            onClick={() => openTab(entry.key)}
-            className={`match-tab ${tab === entry.key ? 'match-tab-active' : ''}`}
-          >
-            {entry.label}
-            {entry.key === 'new' && newCount > 0 && (
-              <span className="match-tab-badge">{newCount}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        tabs={MATCH_TABS.map((t) => (t.key === 'new' ? { ...t, count: newCount } : t))}
+        active={tab}
+        onChange={openTab}
+        label="Match lists"
+      />
 
       <MatchSearchBar
         filters={filters}
@@ -261,7 +301,7 @@ export default function MatchesSection({ onOpenProfile }: MatchesSectionProps = 
         {loading
           ? Array.from({ length: 6 }, (_, i) => <MatchSkeleton key={i} />)
           : visible.map((entry) => (
-              <ProfileCard key={entry.card.profileId} {...entry.card} onOpen={onOpenProfile} />
+              <ProfileCard key={entry.card.profileId} {...entry.card} from={from} />
             ))}
       </div>
 

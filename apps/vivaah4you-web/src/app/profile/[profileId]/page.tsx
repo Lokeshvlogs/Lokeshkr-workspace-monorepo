@@ -1,26 +1,43 @@
 'use client'
 
-import React, { use, useEffect, useState } from 'react'
+import React, { Suspense, use, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
 import ProfileBio from '@/components/profile/ProfileBio'
 import PhotoStrip from '@/components/profile/PhotoStrip'
+import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
+import { compareProfiles } from '@/lib/compatibility'
 import { fullName } from '@/lib/profileDisplay'
+import { backTarget, DEFAULT_BACK } from '@/lib/navigation'
 import { useAuth } from '@/components/authProvider'
-import type { PublicProfile } from '@/types/profile'
+import type { MyProfile, PublicProfile } from '@/types/profile'
 import InterestButton from '@/components/profile/InterestButton'
 
-export default function PublicProfilePage({
-  params,
-}: {
-  params: Promise<{ profileId: string }>
-}) {
-  const { profileId } = use(params)
+/** The bar at the top of every state of this page, including the error one. */
+function BackBar({ href, label }: { href: string; label: string }) {
+  return (
+    <div className="center-bar">
+      <Link href={href} className="center-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        {label}
+      </Link>
+    </div>
+  )
+}
+
+function PublicProfilePageInner({ profileId }: { profileId: string }) {
   const auth = useAuth()
+  const params = useSearchParams()
+  const back = backTarget(params.get('from'))
 
   const [profile, setProfile] = useState<PublicProfile | null>(null)
+  // Only fetched when signed in, and only to drive the comparison panel.
+  const [me, setMe] = useState<MyProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -51,27 +68,58 @@ export default function PublicProfilePage({
     }
   }, [profileId])
 
+  // Separate from the profile fetch so a slow or failed read of your own
+  // profile only costs the comparison panel, not the page.
+  useEffect(() => {
+    if (!auth.isAuthenticated) {
+      setMe(null)
+      return
+    }
+
+    let cancelled = false
+    fetch('/api/profile/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled) setMe(data)
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [auth.isAuthenticated])
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-color-placeholder-text">Loading profile…</p>
+      <div className="mx-auto w-full max-w-4xl px-4 py-10">
+        <BackBar {...back} />
+        <div className="panel-skeleton mt-5" aria-hidden="true" />
       </div>
     )
   }
 
   if (error || !profile) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-20 text-center">
-        <h1 className="text-xl font-semibold text-gray-900">Profile not available</h1>
-        <p className="mt-2 text-color-placeholder-text">{error}</p>
-        <Link href="/" className="link mt-4 inline-block">Back to home</Link>
+      <div className="mx-auto w-full max-w-4xl px-4 py-10">
+        <BackBar {...back} />
+        <div className="center-error mt-5">
+          <p className="match-empty-title">Profile not available</p>
+          <p className="match-empty-text">{error}</p>
+          <Link href={DEFAULT_BACK.href} className="btn-primary mt-4 inline-block">
+            Back to dashboard
+          </Link>
+        </div>
       </div>
     )
   }
 
+  const firstName = profile.firstName || 'this member'
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-color-primary-surface/40 px-4 py-10">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+        <BackBar {...back} />
+
         <ProfileHeroPanel
           profile={profile}
           subtitle={
@@ -91,19 +139,52 @@ export default function PublicProfilePage({
           }
         />
 
-        <ProfileBio
-          value={profile.aboutMe ?? ''}
-          heading={`About ${profile.firstName || 'this member'}`}
-        />
+        <ProfileBio value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />
 
-        <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || "this member"} />
+        <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
 
-        <ProfileDetails profile={profile} />
+        <ProfileDetails profile={profile} columns={2} />
+
+        {/* Below the profile, not above it: the comparison is what you read
+            once you have formed a view of the person. Used to be exclusive to
+            the dashboard's inline profile, which no longer exists. */}
+        {me && (
+          <CompatibilityPanel
+            compatibility={compareProfiles(me, profile)}
+            theirName={firstName}
+            theirPhoto={profile.photo}
+            theirGender={profile.gender}
+            myName={fullName(me) || 'You'}
+            myPhoto={me.photo}
+          />
+        )}
 
         <p className="text-center text-xs text-color-placeholder-text">
           Contact details are shared only after both sides express interest.
         </p>
       </div>
     </div>
+  )
+}
+
+export default function PublicProfilePage({
+  params,
+}: {
+  params: Promise<{ profileId: string }>
+}) {
+  const { profileId } = use(params)
+
+  // `useSearchParams` opts the tree into client-side rendering, which Next
+  // requires a Suspense boundary for during prerender.
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto w-full max-w-4xl px-4 py-10">
+          <div className="panel-skeleton" aria-hidden="true" />
+        </div>
+      }
+    >
+      <PublicProfilePageInner profileId={profileId} />
+    </Suspense>
   )
 }

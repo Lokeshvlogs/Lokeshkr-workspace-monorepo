@@ -6,35 +6,18 @@ import { VerifiedBadge } from '@lokesh-workspace/ui'
 import Avatar from '@/components/profile/Avatar'
 import CompletenessRing from '@/components/profile/CompletenessRing'
 import { firstIncompleteStep, missingFields } from '@/lib/profileCompletion'
-import type { MemberStats } from '@/components/home/InsightsPanel'
 import type { MyProfile } from '@/types/profile'
-
-/** Headline figures, shown across the welcome band. */
-function StatTile({
-  value,
-  label,
-  hint,
-}: { value: number; label: string; hint?: string }) {
-  return (
-    <div className="stat-tile">
-      <span className="stat-value">{value}</span>
-      <span className="stat-label">{label}</span>
-      {hint && <span className="stat-hint">{hint}</span>}
-    </div>
-  )
-}
 
 interface WelcomeHeaderProps {
   profile: MyProfile | null
-  stats: MemberStats | null
   fallbackName: string
-  /** Shows the member's own profile in the centre column. */
-  onViewProfile: () => void
 }
 
 /**
- * The signed-in welcome band: who you are, how far along you are, and the three
- * figures worth knowing at a glance.
+ * The signed-in welcome band: who you are and how far along you are.
+ *
+ * The three figures it used to carry are stat cards below now - they were text
+ * here, and a number you cannot click is a report rather than a way in.
  *
  * Profile strength lives here rather than in a panel of its own - it is one
  * number and one action, and it disappears entirely once there is nothing left
@@ -42,9 +25,7 @@ interface WelcomeHeaderProps {
  */
 export default function WelcomeHeader({
   profile,
-  stats,
   fallbackName,
-  onViewProfile,
 }: WelcomeHeaderProps) {
   const firstName = profile?.firstName || fallbackName
   const completeness = profile?.profile_completeness ?? 0
@@ -77,9 +58,9 @@ export default function WelcomeHeader({
           {/* The quick links that used to sit at the foot of the profile
               strength panel; this is the only remaining way in to your own
               profile from the dashboard. */}
-          <button type="button" onClick={onViewProfile} className="welcome-link">
+          <Link href="/profile/me" className="welcome-link">
             View my profile
-          </button>
+          </Link>
         </div>
 
         {showStrength && (
@@ -102,11 +83,6 @@ export default function WelcomeHeader({
         )}
       </div>
 
-      <div className="welcome-stats">
-        <StatTile value={stats?.profileViews ?? 0} label="Profile views" hint="last 30 days" />
-        <StatTile value={stats?.uniqueVisitors ?? 0} label="Visitors" hint="unique people" />
-        <StatTile value={stats?.matches ?? 0} label="Matches" hint="available now" />
-      </div>
     </header>
   )
 }

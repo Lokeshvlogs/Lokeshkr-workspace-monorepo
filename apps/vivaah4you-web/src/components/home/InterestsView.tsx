@@ -2,7 +2,11 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 
+import Link from 'next/link'
+
 import Avatar from '@/components/profile/Avatar'
+import TabStrip from '@/components/common/TabStrip'
+import { profileHref } from '@/lib/navigation'
 import NameWithBadge from '@/components/profile/NameWithBadge'
 import { presenceFor } from '@/lib/presence'
 import {
@@ -22,12 +26,11 @@ const EMPTY_TEXT: Record<InterestTab, string> = {
 }
 
 interface Props {
-  onOpenProfile?: (profileId: string) => void
-  /** Lets the dashboard refresh its badge after an accept or decline. */
+  /** Lets a parent refresh its badge after an accept or decline. */
   onCountsChange?: (counts: InterestCounts) => void
 }
 
-export default function InterestsView({ onOpenProfile, onCountsChange }: Props) {
+export default function InterestsView({ onCountsChange }: Props = {}) {
   const [tab, setTab] = useState<InterestTab>('received')
   const [rows, setRows] = useState<InterestRow[]>([])
   const [counts, setCounts] = useState<InterestCounts>(EMPTY_COUNTS)
@@ -103,24 +106,17 @@ export default function InterestsView({ onOpenProfile, onCountsChange }: Props) 
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="match-tabs" role="tablist" aria-label="Interests">
-        {INTEREST_TABS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`match-tab ${tab === key ? 'match-tab-active' : ''}`}
-          >
-            {TAB_LABEL[key]}
-            {tabCount(key) > 0 && <span className="match-tab-badge">{tabCount(key)}</span>}
-            {key === 'received' && counts.receivedUnseen > 0 && (
-              <span className="match-tab-dot" aria-label={`${counts.receivedUnseen} new`} />
-            )}
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        tabs={INTEREST_TABS.map((key) => ({
+          key,
+          label: TAB_LABEL[key],
+          count: tabCount(key),
+          dot: key === 'received' && counts.receivedUnseen > 0,
+        }))}
+        active={tab}
+        onChange={setTab}
+        label="Interests"
+      />
 
       {loading ? (
         <div className="panel-skeleton" aria-hidden="true" />
@@ -138,11 +134,9 @@ export default function InterestsView({ onOpenProfile, onCountsChange }: Props) 
 
             return (
               <li key={row.id} className="interest-row">
-                <button
-                  type="button"
-                  className="interest-person"
-                  onClick={() => person.profileId && onOpenProfile?.(person.profileId)}
-                >
+                {/* A real link, not a button: profiles have their own route
+                    now, and ctrl-click did nothing here before. */}
+                <Link href={profileHref(person.profileId, '/interests')} className="interest-person">
                   <span className="interest-portrait">
                     <Avatar src={person.photo} name={name} className="interest-avatar" decorative />
                     {presence.online && <span className="presence-dot presence-dot-online" />}
@@ -160,7 +154,7 @@ export default function InterestsView({ onOpenProfile, onCountsChange }: Props) 
                     </span>
                     {row.message && <span className="interest-message">“{row.message}”</span>}
                   </span>
-                </button>
+                </Link>
 
                 <div className="interest-actions">
                   {row.direction === 'received' && row.status === 'pending' && (

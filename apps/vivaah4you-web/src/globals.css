@@ -760,7 +760,10 @@ body,
 .theme-panel {
   position: fixed;
   right: 1rem;
-  bottom: 1rem;
+  /* Lifted clear of the messenger button, which owns the bottom-right corner.
+     Dev-only, so it yields to the real control rather than the other way
+     round. */
+  bottom: 6rem;
   z-index: 2147483000;
   font-family: ui-sans-serif, system-ui, sans-serif;
   color-scheme: light;

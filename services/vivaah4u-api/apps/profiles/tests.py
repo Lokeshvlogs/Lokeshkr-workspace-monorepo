@@ -10,6 +10,7 @@ Run with:  service.bat vivaah4u-api test
 """
 
 import json
+from types import SimpleNamespace
 from datetime import timedelta
 
 from django.contrib.auth.models import User
@@ -1179,3 +1180,43 @@ class RepeatVisitorTests(TestCase):
         Profile.objects.filter(pk=self.ravi.pk).update(hide=True)
 
         self.assertEqual(list(visitor_rows(self.asha)), [])
+
+
+class StatsCounterTests(TestCase):
+    """The dashboard reads these; `counts()` computed them and the endpoint
+    used to drop them on the floor."""
+
+    def setUp(self):
+        self.asha = _member("asha-s", "F")
+        self.ravi = _member("ravi-s", "M")
+        self.kiran = _member("kiran-s", "M")
+
+    def test_sent_and_declined_reach_the_stats_payload(self):
+        from apps.profiles.api import profile_stats
+
+        pending, _ = interests.send(self.asha, self.ravi)
+        turned_down, _ = interests.send(self.asha, self.kiran)
+        interests.decline(turned_down.id, self.kiran)
+
+        request = SimpleNamespace(user=self.asha.user, build_absolute_uri=lambda url: url)
+        stats = profile_stats(request)
+
+        self.assertEqual(stats["interests_sent"], 1, "one still awaiting a reply")
+        self.assertEqual(stats["interests_declined"], 1)
+        # The keys it already had must keep working.
+        self.assertIn("interests_received", stats)
+        self.assertIn("interests_accepted", stats)
+
+    def test_counters_agree_with_the_tabs_they_link_to(self):
+        """Each card is a link, so a figure that disagrees with its own list
+        sends people to an empty page."""
+        from apps.profiles.api import profile_stats
+
+        interests.send(self.asha, self.ravi)
+        request = SimpleNamespace(user=self.asha.user, build_absolute_uri=lambda url: url)
+        stats = profile_stats(request)
+
+        self.assertEqual(stats["interests_sent"], interests.for_tab(self.asha, "sent").count())
+        self.assertEqual(
+            stats["interests_declined"], interests.for_tab(self.asha, "declined").count()
+        )

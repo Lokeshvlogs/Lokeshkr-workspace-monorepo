@@ -6,11 +6,21 @@ import { toConversation } from '@/lib/messaging'
 const EMPTY = { results: [], total: 0, hasMore: false }
 
 export async function GET(request: NextRequest) {
-  const offset = request.nextUrl.searchParams.get('offset') ?? ''
-  const query = offset ? `?offset=${encodeURIComponent(offset)}` : ''
+  const search = request.nextUrl.searchParams
+  const forwarded = new URLSearchParams()
+  for (const key of ['limit', 'offset']) {
+    const value = search.get(key)
+    if (value) forwarded.set(key, value)
+  }
+  const query = forwarded.toString() ? `?${forwarded}` : ''
 
-  const { ok, data } = await djangoFetch(`/messaging/conversations${query}`)
-  if (!ok) return NextResponse.json(EMPTY, { status: 200 })
+  const { ok, status, data } = await djangoFetch(`/messaging/conversations${query}`)
+
+  // The status is passed through rather than flattened to 200. This used to
+  // answer 200 with an empty list on any failure, so a backend outage was
+  // indistinguishable from having no chats - and the drawer said "No chats
+  // yet. A chat opens as soon as an interest is accepted."
+  if (!ok) return NextResponse.json(EMPTY, { status })
 
   return NextResponse.json({
     results: (data?.results ?? []).map(toConversation),

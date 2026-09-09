@@ -278,6 +278,8 @@ def profile_stats(request):
         "interests_received": interest_counts["received_pending"],
         "interests_unseen": interest_counts["received_unseen"],
         "interests_accepted": interest_counts["accepted"],
+        "interests_sent": interest_counts["sent_pending"],
+        "interests_declined": interest_counts["declined"],
         "completeness": profile.profile_completeness,
         "photos": profile.photos.count() + (1 if profile.display_picture else 0),
     }

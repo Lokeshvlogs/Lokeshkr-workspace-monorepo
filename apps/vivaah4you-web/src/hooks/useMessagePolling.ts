@@ -14,8 +14,8 @@ import { useEffect, useRef, useState } from 'react'
 export const POLL_INTERVAL = {
   /** Reading a thread, tab focused. Asks only for messages after the last id. */
   thread: 3_000,
-  /** Thread open, tab in the background. */
-  threadBlurred: 20_000,
+  /* There is deliberately no "thread, tab blurred" mode: a hidden tab is
+     paused outright below, not slowed, so nothing could ever select it. */
   /** Looking at the inbox list. */
   inbox: 15_000,
   /** Navbar badge only. */
