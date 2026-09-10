@@ -40,10 +40,19 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 async function call(path: string, init: RequestInit, token?: string): Promise<Response> {
+  /*
+   * A multipart body must NOT carry a hand-written Content-Type: the boundary
+   * is generated alongside the body, and fetch only sets the header correctly
+   * when it is left alone. Defaulting every call to application/json sent file
+   * uploads to Django with a JSON content type and a multipart payload, which
+   * arrived as a validation error for a missing file.
+   */
+  const isMultipart = typeof FormData !== 'undefined' && init.body instanceof FormData
+
   return fetch(`${DJANGO_API_ENDPOINT}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isMultipart ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.headers ?? {}),
     },

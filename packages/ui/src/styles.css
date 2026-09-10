@@ -3595,27 +3595,77 @@ button.match-tab-active:hover,
   color: var(--color-placeholder-text, #4a3b3b);
 }
 
-/* The tie down from the generation above. Drawn rather than bordered so it
-   reads as a tree and not as a table rule. */
+/* The stem down from the generation above, into the row's bar. */
 .family-link {
   position: absolute;
-  top: -0.5rem;
+  top: -0.25rem;
   left: 50%;
-  width: 1px;
-  height: 1.25rem;
+  width: 2px;
+  height: 1.5rem;
+  border-radius: 1px;
   background: linear-gradient(
     to bottom,
     transparent,
-    var(--color-border, #ffcbe5)
+    var(--color-primary-extra-light, #ffadd6)
   );
 }
 
+/* No wrapping: a tree that reflows stops being a tree, because the bar and the
+   drops below are positioned against one row. It scrolls sideways instead. */
 .family-nodes {
-  @apply flex flex-wrap items-start justify-center gap-3;
+  @apply flex items-start justify-center gap-3 overflow-x-auto;
+  padding-inline: 0.25rem;
+}
+
+/* --- The connectors ---
+   Drawn on the nodes themselves rather than as one element, which is what lets
+   the bar stop at the first and last node's centre instead of running past
+   them into the gutter. */
+.family-nodes[data-linked] > * {
+  padding-top: 1.1rem;
+}
+
+/* The drop from the bar into this node. */
+.family-nodes[data-linked] > *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 1.1rem;
+  border-radius: 1px;
+  background-color: var(--color-primary-extra-light, #ffadd6);
+}
+
+/* This node's share of the horizontal bar. */
+.family-nodes[data-linked] > *::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+  background-color: var(--color-primary-extra-light, #ffadd6);
+}
+
+/* Trimmed to the centre at each end, so the bar spans the family rather than
+   overhanging it. */
+.family-nodes[data-linked] > :first-child::after {
+  left: 50%;
+}
+
+.family-nodes[data-linked] > :last-child::after {
+  right: 50%;
+}
+
+/* An only child needs the drop, not a bar with nothing to join. */
+.family-nodes[data-linked] > :only-child::after {
+  display: none;
 }
 
 .family-node {
-  @apply relative flex w-24 flex-col items-center gap-1 rounded-2xl p-2 text-center transition;
+  @apply relative flex w-24 shrink-0 flex-col items-center gap-1 rounded-2xl p-2 text-center transition;
   border: 1px solid transparent;
   animation: family-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -3687,6 +3737,42 @@ button.family-node:hover {
 .family-detail-line {
   @apply text-[0.6875rem] leading-snug;
   color: var(--color-placeholder-text, #4a3b3b);
+}
+
+/* Two families side by side: smaller nodes, no card of its own, and the
+   detail panel suppressed - at this size it is a picture of a household, not
+   somewhere to read. */
+.family-compare {
+  @apply grid gap-4;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 720px) {
+  .family-compare {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.family-compact {
+  @apply rounded-2xl p-3;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+.family-compact .family-node {
+  @apply w-16;
+}
+
+.family-compact .family-node-open {
+  @apply w-28;
+}
+
+.family-compact .family-photo {
+  @apply h-10 w-10;
+}
+
+.family-compact .family-tree {
+  @apply mt-2;
 }
 
 /* --- Editing the family --- */

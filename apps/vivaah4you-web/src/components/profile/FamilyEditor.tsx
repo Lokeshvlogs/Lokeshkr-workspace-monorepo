@@ -5,6 +5,7 @@ import { ChipGroup, TextField } from '@lokesh-workspace/ui'
 
 import Avatar from '@/components/profile/Avatar'
 import { RELATIONS, RELATION_LABEL, type FamilyMember, type Relation } from '@/lib/family'
+import { detailMessage } from '@/lib/errors'
 
 const RELATION_OPTIONS = RELATIONS.map((value) => ({ value, label: RELATION_LABEL[value] }))
 
@@ -54,7 +55,7 @@ export default function FamilyEditor({ onClose }: Props) {
 
     if (!response?.ok) {
       const data = await response?.json().catch(() => null)
-      setError(data?.detail ?? 'Could not add them. Please try again.')
+      setError(detailMessage(data, 'Could not add them. Please try again.'))
       return
     }
 
@@ -87,7 +88,7 @@ export default function FamilyEditor({ onClose }: Props) {
 
     if (!response?.ok) {
       const data = await response?.json().catch(() => null)
-      setError(data?.detail ?? 'Could not upload that photo.')
+      setError(detailMessage(data, 'Could not upload that photo.'))
       return
     }
     await load()

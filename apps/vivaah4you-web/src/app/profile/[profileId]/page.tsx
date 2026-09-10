@@ -16,6 +16,7 @@ import { backTarget, DEFAULT_BACK } from '@/lib/navigation'
 import { useAuth } from '@/components/authProvider'
 import type { MyProfile, PublicProfile } from '@/types/profile'
 import InterestButton from '@/components/profile/InterestButton'
+import { detailMessage } from '@/lib/errors'
 
 /** The bar at the top of every state of this page, including the error one. */
 function BackBar({ href, label }: { href: string; label: string }) {
@@ -52,7 +53,11 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
         if (cancelled) return
 
         if (!response.ok) {
-          setError(response.status === 404 ? 'This profile does not exist or is hidden.' : (data.detail ?? 'Could not load this profile.'))
+          setError(
+            response.status === 404
+              ? 'This profile does not exist or is hidden.'
+              : detailMessage(data, 'Could not load this profile.'),
+          )
         } else {
           setProfile(data)
         }
@@ -142,12 +147,17 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
 
         <ProfileBio value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />
 
-        <FamilyGraph
-          profileId={profile.profile_id}
-          selfLabel={`${firstName} and their siblings`}
-          selfName={firstName}
-          selfPhoto={profile.photo}
-        />
+        {/* Only when there is no comparison below: signed in, that panel shows
+            this family beside the reader's own, and rendering it here as well
+            put the same tree on the page twice. */}
+        {!me && (
+          <FamilyGraph
+            profileId={profile.profile_id}
+            selfLabel={`${firstName} and their siblings`}
+            selfName={firstName}
+            selfPhoto={profile.photo}
+          />
+        )}
 
         <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
 
@@ -164,6 +174,7 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
             theirGender={profile.gender}
             myName={fullName(me) || 'You'}
             myPhoto={me.photo}
+            theirProfileId={profile.profile_id}
           />
         )}
 

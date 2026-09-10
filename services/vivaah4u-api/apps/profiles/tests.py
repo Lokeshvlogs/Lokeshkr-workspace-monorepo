@@ -1383,3 +1383,61 @@ class FamilyApiTests(TestCase):
         with self.assertRaises(HttpError) as caught:
             add_member(self.request, MemberIn(relation="pet-dog"))
         self.assertEqual(caught.exception.status_code, 400)
+
+
+class FamilyPhotoTests(TestCase):
+    """The upload path, end to end through Django's own multipart parsing."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="asha-ph", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+        self.profile.gender = "F"
+        self.profile.save()
+        self.member = FamilyMember.objects.create(
+            profile=self.profile, relation="brother", name="Arun"
+        )
+
+    def _png(self):
+        """The smallest valid PNG - enough for ImageField to accept it."""
+        import base64
+        return base64.b64decode(
+            b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        )
+
+    def test_a_multipart_upload_attaches_the_photo(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.profiles.family_api import upload_member_photo
+
+        upload = SimpleUploadedFile("arun.png", self._png(), content_type="image/png")
+        request = SimpleNamespace(user=self.user, build_absolute_uri=lambda url: url)
+
+        result = upload_member_photo(request, self.member.pk, file=upload)
+
+        self.member.refresh_from_db()
+        self.assertTrue(self.member.photo, "the file should be attached to the row")
+        self.assertIsNotNone(result["photo"])
+
+    def test_a_non_image_is_refused(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.profiles.family_api import upload_member_photo
+
+        upload = SimpleUploadedFile("notes.txt", b"hello", content_type="text/plain")
+        request = SimpleNamespace(user=self.user, build_absolute_uri=lambda url: url)
+
+        with self.assertRaises(HttpError) as caught:
+            upload_member_photo(request, self.member.pk, file=upload)
+        self.assertEqual(caught.exception.status_code, 400)
+
+    def test_you_cannot_attach_a_photo_to_somebody_elses_family(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.profiles.family_api import upload_member_photo
+
+        other = _member("ravi-ph", "M")
+        theirs = FamilyMember.objects.create(profile=other, relation="father")
+
+        upload = SimpleUploadedFile("x.png", self._png(), content_type="image/png")
+        request = SimpleNamespace(user=self.user, build_absolute_uri=lambda url: url)
+
+        with self.assertRaises(HttpError) as caught:
+            upload_member_photo(request, theirs.pk, file=upload)
+        self.assertEqual(caught.exception.status_code, 404)

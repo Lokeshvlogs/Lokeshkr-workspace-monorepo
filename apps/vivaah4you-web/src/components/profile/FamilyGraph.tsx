@@ -15,6 +15,10 @@ interface Props {
   selfPhoto?: string | null
   /** Owner-only: reveals the edit affordances. */
   onEdit?: () => void
+  /** Smaller nodes and no card of its own, for showing two families together. */
+  compact?: boolean
+  /** Replaces the "Family" heading. */
+  heading?: string
 }
 
 /**
@@ -34,6 +38,8 @@ export default function FamilyGraph({
   selfName = 'Them',
   selfPhoto,
   onEdit,
+  compact = false,
+  heading = 'Family',
 }: Props) {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,12 +70,13 @@ export default function FamilyGraph({
     }
   }, [profileId])
 
+  const shell = compact ? 'family family-compact' : 'form-section family'
+
   if (loading) {
     return (
-      <section className="form-section">
-        <p className="form-section-title">Family</p>
+      <section className={shell}>
+        <p className="form-section-title">{heading}</p>
         <div className="panel-skeleton-rows mt-3" aria-hidden="true">
-          <span />
           <span />
         </div>
       </section>
@@ -83,9 +90,9 @@ export default function FamilyGraph({
   const rows = toRows(members, selfLabel)
 
   return (
-    <section className="form-section family">
+    <section className={shell}>
       <div className="family-head">
-        <p className="form-section-title">Family</p>
+        <p className="form-section-title">{heading}</p>
         {onEdit && (
           <button type="button" className="profile-bio-edit" onClick={onEdit}>
             {members.length === 0 ? 'Add your family' : 'Edit'}
@@ -95,8 +102,9 @@ export default function FamilyGraph({
 
       {members.length === 0 ? (
         <p className="form-section-hint">
-          Add the people you live with. Families read each other&rsquo;s profiles as closely as
-          they read yours.
+          {onEdit
+            ? 'Add the people you live with. Families read each other’s profiles as closely as they read yours.'
+            : 'No family added yet.'}
         </p>
       ) : (
         <div className="family-tree">
@@ -104,11 +112,12 @@ export default function FamilyGraph({
             <div key={row.generation} className="family-row">
               <p className="family-row-label">{row.label}</p>
 
-              {/* The tie to the generation above. Drawn rather than bordered so
-                  it reads as a tree and not as a table rule. */}
+              {/* The stem down from the generation above. */}
               {rowIndex > 0 && <span className="family-link" aria-hidden="true" />}
 
-              <div className="family-nodes">
+              {/* `data-linked` turns on the bar across the row and the drop
+                  into each node - the top row has no parent to hang from. */}
+              <div className="family-nodes" data-linked={rowIndex > 0 ? 'true' : undefined}>
                 {row.generation === 0 && (
                   <div className="family-node family-node-self">
                     <span className="family-portrait">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { detailMessage } from '@/lib/errors'
 
 export type InterestState = 'idle' | 'sending' | 'sent' | 'mutual' | 'error'
 
@@ -32,7 +33,7 @@ export function useInterest() {
 
       if (!response.ok) {
         setState('error')
-        setError(data?.detail ?? 'Could not send this right now.')
+        setError(detailMessage(data, 'Could not send this right now.'))
         return false
       }
 
