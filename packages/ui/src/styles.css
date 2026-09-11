@@ -509,6 +509,17 @@
   @apply w-full border-0 p-0 m-0;
 }
 
+/* The ask under a chip group's label - "Pick at least 3", or how many are
+   still wanted. Matches `.form-section-hint` in weight so a hint reads the same
+   wherever it appears, but it is its own class: this one sits inside a
+   fieldset, between the legend and the chips. */
+.chip-group-hint {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-muted-text, #4a3b3b);
+}
+
 .chip-group-options {
   @apply flex flex-wrap gap-2;
 }

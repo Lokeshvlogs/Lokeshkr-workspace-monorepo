@@ -143,6 +143,17 @@ const INTEREST_ICONS: Record<string, React.ReactNode> = {
  * kind a category is; the `options` field is what tells them apart at render
  * time.
  */
+/**
+ * How many choices open the next category on their own.
+ *
+ * Three rather than one: a single tag is what somebody picks to get past a
+ * question, and three is roughly where a row starts to describe a person. It is
+ * an ask, never a gate - Skip and Done are always there, because every one of
+ * these is optional and a wizard that will not let you past an optional
+ * question is a wizard people abandon.
+ */
+const MIN_INTEREST_CHOICES = 3;
+
 const INTEREST_ROWS = [...TAG_CATEGORIES, ...PICK_CATEGORIES] as readonly {
   key: "interestsHobbies" | "interestsCuisines" | "interestsTravel"
     | "interestsMusic" | "interestsMovies" | "interestsBooks";
@@ -548,11 +559,16 @@ export default function ProfileRegisterPage() {
   /* Joint and extended households open straight into the member editor - the
      sibling counts above cannot describe who actually lives there. */
   const [familyNamesOpen, setFamilyNamesOpen] = useState(false);
-  /* Interest categories the member has waved past. Every category is optional,
-     so without this a gradual reveal would strand anyone with nothing to say
-     about music at the first row, unable to reach the ones they do care
-     about. */
-  const [skippedInterests, setSkippedInterests] = useState<ReadonlySet<string>>(new Set());
+  /* Interest categories the member has waved past with Skip or Done. Every
+     category is optional, so without this a gradual reveal would strand anyone
+     with nothing to say about music at the first row, unable to reach the ones
+     they do care about. */
+  const [dismissedInterests, setDismissedInterests] = useState<ReadonlySet<string>>(new Set());
+  /* How many interest rows are on screen. Held in state rather than derived on
+     every render so that it only ever grows: deriving it means that removing a
+     tag from a satisfied row takes the row below it off the screen, which reads
+     as the page breaking rather than as a rule being enforced. */
+  const [interestsShown, setInterestsShown] = useState(1);
   /* Steps the member has tried to leave. Nothing is marked red before that:
      a form that opens covered in errors reads as broken rather than as
      guidance. Once a step is in here its marks update live, so filling a
@@ -742,6 +758,31 @@ export default function ProfileRegisterPage() {
     if (step === undefined) return;
     setFurthestStep((prev) => (step > prev ? step : prev));
   }, [step]);
+
+  /**
+   * How many interest rows the answers so far have earned.
+   *
+   * A category is settled once it holds `MIN_INTEREST_CHOICES` choices or has
+   * been dismissed; the next row is the last one shown. Six full-width rows at
+   * once is what made this the longest thing in the wizard, and each one is a
+   * question worth reading on its own.
+   *
+   * Deliberately not gated on `firstRun` the way the step markers are. It does
+   * not need to be: a returning member's own answers settle the categories they
+   * filled, so the whole section opens on their first render.
+   */
+  const interestsEarned = useMemo(() => {
+    for (let i = 0; i < INTEREST_ROWS.length; i += 1) {
+      const key = INTEREST_ROWS[i].key;
+      const chosen = (form[key] as unknown[]).length;
+      if (chosen < MIN_INTEREST_CHOICES && !dismissedInterests.has(key)) return i + 1;
+    }
+    return INTEREST_ROWS.length;
+  }, [form, dismissedInterests]);
+
+  useEffect(() => {
+    setInterestsShown((prev) => (interestsEarned > prev ? interestsEarned : prev));
+  }, [interestsEarned]);
 
   // The save status belongs to the step it happened on.
   useEffect(() => {
@@ -982,29 +1023,29 @@ export default function ProfileRegisterPage() {
   const firstRun = registeredAt === null;
   const visibleSteps = firstRun ? Math.min(STEPS.length, furthestStep + 1) : STEPS.length;
 
-  /**
-   * How many interest categories to show.
-   *
-   * A category is settled once it has an entry or has been skipped, and the
-   * next appears only then - six full-width rows at once is what made this the
-   * longest thing in the wizard, and each one is a question worth reading.
-   *
-   * Deliberately not gated on `firstRun` like the step markers are. It does not
-   * need to be: a returning member has entries in the categories they filled,
-   * which count as settled, so their own answers reveal the whole section on
-   * the first render.
-   */
-  const interestsShown = (() => {
-    for (let i = 0; i < INTEREST_ROWS.length; i += 1) {
-      const key = INTEREST_ROWS[i].key;
-      const answered = (form[key] as unknown[]).length > 0;
-      if (!answered && !skippedInterests.has(key)) return i + 1;
-    }
-    return INTEREST_ROWS.length;
-  })();
+  const dismissInterest = (key: string) =>
+    setDismissedInterests((prev) => new Set(prev).add(key));
 
-  const skipInterest = (key: string) =>
-    setSkippedInterests((prev) => new Set(prev).add(key));
+  /**
+   * The line under a category's label: what is being asked, or what is left.
+   *
+   * Counts down rather than repeating itself, so it reads as progress instead
+   * of as a rule being restated. It disappears once the ask is met - a member
+   * who has chosen five does not need telling to choose three.
+   */
+  const interestAsk = (chosen: number, opensNext: boolean): string => {
+    if (chosen >= MIN_INTEREST_CHOICES) return "";
+    /* Promised only by the row that is actually holding the rest back. Said by
+       a row further up - one already skipped past - it would be describing
+       something that has already happened. */
+    const tail = opensNext ? " to open the next one" : " to go";
+    if (chosen === 0) {
+      return opensNext
+        ? `Choose at least ${MIN_INTEREST_CHOICES} to open the next one.`
+        : `Choose at least ${MIN_INTEREST_CHOICES}.`;
+    }
+    return `${MIN_INTEREST_CHOICES - chosen} more${tail}.`;
+  };
 
   /* Field keys are unique across steps, so these merge without colliding and a
      single lookup serves every step. */
@@ -1485,11 +1526,15 @@ export default function ProfileRegisterPage() {
                       better. */}
                   <div className="flex flex-col gap-6">
                     {INTEREST_ROWS.slice(0, interestsShown).map((category, index) => {
-                      const answered = (form[category.key] as unknown[]).length > 0;
-                      const canSkip =
-                        !answered &&
-                        index === interestsShown - 1 &&
-                        interestsShown < INTEREST_ROWS.length;
+                      const chosen = (form[category.key] as unknown[]).length;
+                      /* The row currently holding the rest back: the last one
+                         open, with more still behind it. */
+                      const frontier =
+                        index === interestsShown - 1 && interestsShown < INTEREST_ROWS.length;
+                      const ask = interestAsk(chosen, frontier);
+                      /* The way out. Three choices open the next row on their
+                         own, so once they are made there is nothing to press. */
+                      const stuck = frontier && chosen < MIN_INTEREST_CHOICES;
 
                       return (
                         <div key={category.key} className="wiz-reveal">
@@ -1497,6 +1542,7 @@ export default function ProfileRegisterPage() {
                             <ChipMultiGroup
                               label={category.label}
                               icon={INTEREST_ICONS[category.key]}
+                              hint={ask}
                               options={category.options as { value: string; label: string }[]}
                               value={form[category.key] as string[]}
                               onChange={(v) =>
@@ -1507,8 +1553,11 @@ export default function ProfileRegisterPage() {
                           ) : (
                             <MediaPickField
                               label={category.label}
+                              /* The ask leads; the category's own line explains
+                                 that a link does something, which is the part
+                                 nobody would guess. */
+                              hint={[ask, category.hint].filter(Boolean).join(" ")}
                               icon={INTEREST_ICONS[category.key]}
-                              hint={category.hint}
                               placeholder={category.placeholder}
                               value={form[category.key] as MediaPick[]}
                               onChange={(v) =>
@@ -1517,13 +1566,16 @@ export default function ProfileRegisterPage() {
                             />
                           )}
 
-                          {canSkip && (
+                          {stuck && (
                             <button
                               type="button"
                               className="chip chip-square mt-3"
-                              onClick={() => skipInterest(category.key)}
+                              onClick={() => dismissInterest(category.key)}
                             >
-                              Not for me — next
+                              {/* Two words for two different intentions:
+                                  nothing here interests me, versus what I have
+                                  is all I want to say. */}
+                              {chosen === 0 ? "Skip" : "Done"}
                             </button>
                           )}
                         </div>

@@ -14,6 +14,14 @@ interface Props {
   onChange: (values: string[]) => void;
   /** Refuses further picks once reached; already-chosen values stay removable. */
   maxSelected?: number;
+  /**
+   * A line under the label - what to choose, or how many are still wanted.
+   *
+   * Belongs to the group rather than being placed around it by the caller: it
+   * has to sit between the legend and the chips, and anything rendered outside
+   * the fieldset lands above the label instead.
+   */
+  hint?: string;
   className?: string;
 }
 
@@ -36,6 +44,7 @@ export default function ChipMultiGroup({
   value,
   onChange,
   maxSelected,
+  hint,
   className = "",
 }: Props) {
   const chosen = new Set(value);
@@ -67,6 +76,8 @@ export default function ChipMultiGroup({
           )}
         </legend>
       )}
+
+      {hint && <p className="chip-group-hint">{hint}</p>}
 
       <div className="chip-group-options" role="group" aria-label={label}>
         {options.map((option) => {
