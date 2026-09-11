@@ -41,7 +41,7 @@ import {
   PARTNER_DRINKING_CHOICES,
 } from '@/constants/selectOptions/partner'
 import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from '@/lib/profileDisplay'
-import { INTEREST_CATEGORIES } from '@/constants/selectOptions/interests'
+import { TAG_CATEGORIES } from '@/constants/selectOptions/interests'
 import type { PublicProfile } from '@/types/profile'
 
 /**
@@ -247,7 +247,10 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'dailyRoutine', label: 'Rhythm', section: 'Lifestyle', step: 4, editor: 'chips', options: routineOptions },
 
   // ---- Interests (step 4) ----
-  ...INTEREST_CATEGORIES.map((category) => ({
+  /* Tag categories only. Music, films and reading hold named picks and are
+     rendered by `ProfileMediaPicks` as artwork cards - a comma-joined <dd>
+     saying "Tum Hi Ho, Sholay" would throw away the whole point of asking. */
+  ...TAG_CATEGORIES.map((category) => ({
     key: category.key,
     label: category.label,
     section: 'Interests',

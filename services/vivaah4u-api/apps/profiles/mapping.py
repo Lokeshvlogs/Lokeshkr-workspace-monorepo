@@ -11,11 +11,20 @@ import base64
 import binascii
 import uuid
 from datetime import datetime
+from urllib.parse import urlparse
 
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
 from . import education, managed_by as managed_by_rules, presence
+from .constants import (
+    MAX_PICK_SUBTITLE,
+    MAX_PICK_TITLE,
+    MAX_PICK_URL,
+    MAX_PICKS,
+    PICK_IMAGE_HOSTS,
+    PICK_LINK_HOSTS,
+)
 
 # camelCase key sent by the wizard -> model field name
 CAMEL_TO_MODEL = {
@@ -152,9 +161,10 @@ BOOL_FIELDS = {"lives_with_family", "has_children"}
 # JSON list columns. An empty list is a real answer ("no preference"), so these
 # must accept [] rather than treating it as "unset".
 JSON_LIST_FIELDS = {
-    "interests_music",
-    "interests_movies",
-    "interests_books",
+    # interests_music, interests_movies and interests_books are deliberately
+    # absent: they hold named picks (objects), not slugs. `_to_str_list` would
+    # str() each object and truncate it at 60 characters without raising, which
+    # is the quietest possible way to destroy a column.
     "interests_cuisines",
     "interests_travel",
     "interests_hobbies",
@@ -464,6 +474,102 @@ def clean_achievements(value) -> list:
     return cleaned
 
 
+#: The three interest columns that hold named picks rather than slug lists.
+MEDIA_PICK_FIELDS = {
+    "interestsMusic": "interests_music",
+    "interestsMovies": "interests_movies",
+    "interestsBooks": "interests_books",
+}
+
+
+def _allowed_link(url: str, provider: str) -> str:
+    """A pick's link, or "" if it does not belong to the provider it claims.
+
+    Checked here and not only at the unfurl endpoint, because save-step accepts
+    whatever the client sends: the endpoint is a convenience, this is the
+    boundary.
+    """
+    if not url:
+        return ""
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return ""
+    if parsed.scheme != "https":
+        return ""
+    # Exact match on a lowercased hostname. A suffix test would accept
+    # `evil-youtube.com` and `youtube.com.attacker.net`.
+    return url if parsed.hostname and parsed.hostname.lower() in PICK_LINK_HOSTS.get(provider, ()) else ""
+
+
+def _allowed_image(url: str) -> str:
+    """A pick's artwork, or "" if it is not from a known artwork host.
+
+    Without this a crafted payload puts any URL on a public profile, and every
+    viewer's browser fetches it - a working IP logger aimed at whoever opens
+    the page.
+    """
+    if not url:
+        return ""
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return ""
+    if parsed.scheme != "https":
+        return ""
+    return url if parsed.hostname and parsed.hostname.lower() in PICK_IMAGE_HOSTS else ""
+
+
+def clean_media_picks(value, field: str) -> list:
+    """Normalise one category of named picks.
+
+    Shape follows `clean_achievements`: display-only data, so the shape is all
+    that is checked. The difference is that three of the four fields are URLs
+    and a provider slug, none of which may be taken on trust - an unrecognised
+    host is dropped to "" rather than rejected, so a member who pasted
+    something odd keeps the title they typed instead of losing the row.
+    """
+    if value in (None, ""):
+        return []
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field} must be a list")
+
+    cleaned = []
+    # Counted on kept rows, as in clean_achievements: the editor keeps a
+    # trailing blank, and capping the raw list first would let it eat a slot.
+    for raw in value:
+        if len(cleaned) >= MAX_PICKS:
+            break
+        if isinstance(raw, str):
+            raw = {"title": raw}
+        if not isinstance(raw, dict):
+            raise ValueError(f"each {field} entry must be an object")
+
+        title = str(raw.get("title") or "").strip()[:MAX_PICK_TITLE]
+        if not title:
+            continue
+
+        provider = str(raw.get("provider") or "").strip().lower()
+        if provider not in PICK_LINK_HOSTS:
+            provider = ""
+
+        url = _allowed_link(str(raw.get("url") or "").strip()[:MAX_PICK_URL], provider)
+        # A provider with no surviving link says nothing; drop it so the card
+        # does not claim a source it cannot link to.
+        if not url:
+            provider = ""
+
+        cleaned.append({
+            "title": title,
+            "subtitle": str(raw.get("subtitle") or "").strip()[:MAX_PICK_SUBTITLE],
+            "url": url,
+            "provider": provider,
+            "thumbnail": _allowed_image(str(raw.get("thumbnail") or "").strip()[:MAX_PICK_URL]),
+        })
+
+    return cleaned
+
+
 def apply_payload(profile, payload: dict) -> list:
     """Write camelCase wizard values onto the profile. Returns fields touched."""
     touched = []
@@ -485,6 +591,12 @@ def apply_payload(profile, payload: dict) -> list:
         if camel_key == "achievements":
             profile.achievements = clean_achievements(value)
             touched.append("achievements")
+            continue
+
+        if camel_key in MEDIA_PICK_FIELDS:
+            column = MEDIA_PICK_FIELDS[camel_key]
+            setattr(profile, column, clean_media_picks(value, camel_key))
+            touched.append(column)
             continue
 
         if camel_key == "employerSlug":

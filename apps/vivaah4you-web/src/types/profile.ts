@@ -19,6 +19,25 @@ export interface ProfileAchievement {
   detail: string
 }
 
+/**
+ * One named pick under Music, Films or Reading.
+ *
+ * `title` is the only field that is always present. Everything else is what the
+ * unfurl found, and a member who typed a name without pasting a link has a
+ * perfectly complete pick with four empty strings. The server drops `url` and
+ * `thumbnail` whose hosts it does not recognise, so neither can be trusted to
+ * be present just because `provider` is.
+ */
+export interface MediaPick {
+  title: string
+  /** Artist, author, year - whatever the provider offered as a second line. */
+  subtitle: string
+  url: string
+  /** A provider slug from `config/linkPreview`, or "" for a typed title. */
+  provider: string
+  thumbnail: string
+}
+
 /** Profile shape returned by the Django API (see apps/profiles/mapping.py). */
 export interface PublicProfile {
   profile_id: string
@@ -80,9 +99,17 @@ export interface PublicProfile {
   partnerAbout: string
 
   /** Interests, as option slugs. See constants/selectOptions/interests.ts. */
-  interestsMusic: string[]
-  interestsMovies: string[]
-  interestsBooks: string[]
+  /**
+   * Named picks: a song, film or book the member chose, with the artwork
+   * unfurled from the link they pasted.
+   *
+   * Genre tags before this, which said almost nothing - half of any Indian
+   * matrimonial site likes Bollywood, and "Bollywood" beside "Bollywood" is not
+   * a conversation. Food, travel and hobbies are still slug lists.
+   */
+  interestsMusic: MediaPick[]
+  interestsMovies: MediaPick[]
+  interestsBooks: MediaPick[]
   interestsCuisines: string[]
   interestsTravel: string[]
   interestsHobbies: string[]

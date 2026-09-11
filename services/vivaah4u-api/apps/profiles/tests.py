@@ -21,7 +21,12 @@ from django.utils import timezone
 
 from apps.catalog.models import Employer, Institution
 
-from apps.profiles.constants import PROFILE_COMPLETE_THRESHOLD
+from apps.profiles.constants import (
+    MAX_PICK_SUBTITLE,
+    MAX_PICK_TITLE,
+    MAX_PICKS,
+    PROFILE_COMPLETE_THRESHOLD,
+)
 from apps.profiles.mapping import (
     MAX_LIST_ITEMS,
     MAX_LIST_VALUE_LENGTH,
@@ -501,8 +506,11 @@ class InterestsTests(TestCase):
         self.profile = Profile.objects.get(user=self.user)
 
     def test_interests_round_trip(self):
-        apply_payload(self.profile, {"interestsMusic": ["ghazal", "sufi"]})
-        self.assertEqual(self.profile.interests_music, ["ghazal", "sufi"])
+        # Hobbies rather than music: music, films and reading hold named picks
+        # now, and their shape is covered by MediaPickTests. The three
+        # categories below are still slug lists.
+        apply_payload(self.profile, {"interestsHobbies": ["yoga", "cricket"]})
+        self.assertEqual(self.profile.interests_hobbies, ["yoga", "cricket"])
 
     def test_each_category_is_independent(self):
         """One column per category, so saving one must not clear the others.
@@ -512,19 +520,19 @@ class InterestsTests(TestCase):
         object would wipe every category it did not mention.
         """
         apply_payload(self.profile, {
-            "interestsMusic": ["ghazal"],
-            "interestsBooks": ["poetry"],
+            "interestsHobbies": ["yoga"],
+            "interestsTravel": ["mountains"],
         })
-        apply_payload(self.profile, {"interestsMusic": ["rock"]})
-        self.assertEqual(self.profile.interests_music, ["rock"])
-        self.assertEqual(self.profile.interests_books, ["poetry"])
+        apply_payload(self.profile, {"interestsHobbies": ["cricket"]})
+        self.assertEqual(self.profile.interests_hobbies, ["cricket"])
+        self.assertEqual(self.profile.interests_travel, ["mountains"])
 
     def test_interests_raise_the_headline_percentage(self):
         before = self.profile.compute_completeness()
         apply_payload(self.profile, {
-            "interestsMusic": ["ghazal"],
-            "interestsMovies": ["comedy"],
-            "interestsBooks": ["poetry"],
+            "interestsHobbies": ["yoga"],
+            "interestsCuisines": ["bengali"],
+            "interestsTravel": ["mountains"],
         })
         self.assertGreater(self.profile.compute_completeness(), before)
 
@@ -793,6 +801,156 @@ class MobilityPreferenceTests(TestCase):
         """`settleAbroad` is about you, so one answer is the right shape."""
         apply_payload(self.profile, {"settleAbroad": "open"})
         self.assertEqual(self.profile.settle_abroad, "open")
+
+
+class MediaPickTests(TestCase):
+    """Named picks for Music, Films and Reading.
+
+    These three columns stopped holding slug lists and started holding objects.
+    The tests that matter most are the ones about links: `url`, `thumbnail` and
+    `provider` all arrive from the client, and save-step will write whatever it
+    is handed.
+    """
+
+    YOUTUBE = "https://www.youtube.com/watch?v=Umqb9KENgmk"
+    THUMB = "https://i.ytimg.com/vi/Umqb9KENgmk/hqdefault.jpg"
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="nikhil", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+
+    def _pick(self, **overrides):
+        pick = {
+            "title": "Tum Hi Ho",
+            "subtitle": "Arijit Singh",
+            "url": self.YOUTUBE,
+            "provider": "youtube",
+            "thumbnail": self.THUMB,
+        }
+        pick.update(overrides)
+        return pick
+
+    def test_round_trip(self):
+        apply_payload(self.profile, {"interestsMusic": [self._pick()]})
+        self.assertEqual(self.profile.interests_music, [self._pick()])
+
+    def test_title_only_is_a_complete_pick(self):
+        """Typing a name without pasting a link is a real answer."""
+        apply_payload(self.profile, {"interestsMovies": [{"title": "Sholay"}]})
+        self.assertEqual(
+            self.profile.interests_movies,
+            [{"title": "Sholay", "subtitle": "", "url": "", "provider": "", "thumbnail": ""}],
+        )
+
+    def test_bare_string_is_upgraded(self):
+        apply_payload(self.profile, {"interestsBooks": ["Godaan"]})
+        self.assertEqual(self.profile.interests_books[0]["title"], "Godaan")
+
+    def test_blank_title_is_skipped(self):
+        """The editor keeps a trailing blank row; it must not become a pick."""
+        apply_payload(
+            self.profile,
+            {"interestsMusic": [self._pick(), {"title": "   "}, {"title": ""}]},
+        )
+        self.assertEqual(len(self.profile.interests_music), 1)
+
+    def test_cap_counts_kept_rows_not_raw_ones(self):
+        """Blanks must not consume a slot and push out a real pick."""
+        payload = []
+        for index in range(MAX_PICKS):
+            payload.append({"title": ""})
+            payload.append(self._pick(title=f"Song {index}"))
+
+        apply_payload(self.profile, {"interestsMusic": payload})
+        self.assertEqual(len(self.profile.interests_music), MAX_PICKS)
+        self.assertEqual(self.profile.interests_music[0]["title"], "Song 0")
+
+    def test_wrong_shape_is_rejected_not_coerced(self):
+        with self.assertRaises(ValueError):
+            apply_payload(self.profile, {"interestsMusic": {"title": "x"}})
+        with self.assertRaises(ValueError):
+            apply_payload(self.profile, {"interestsMusic": [["x"]]})
+
+    def test_title_and_subtitle_are_capped(self):
+        apply_payload(
+            self.profile,
+            {"interestsMusic": [self._pick(title="x" * 500, subtitle="y" * 500)]},
+        )
+        pick = self.profile.interests_music[0]
+        self.assertEqual(len(pick["title"]), MAX_PICK_TITLE)
+        self.assertEqual(len(pick["subtitle"]), MAX_PICK_SUBTITLE)
+
+    # ---- The link boundary ----
+
+    def test_unknown_link_host_is_dropped_and_the_title_survives(self):
+        apply_payload(
+            self.profile,
+            {"interestsMusic": [self._pick(url="https://example.com/x", provider="youtube")]},
+        )
+        pick = self.profile.interests_music[0]
+        self.assertEqual(pick["title"], "Tum Hi Ho")
+        self.assertEqual(pick["url"], "")
+        self.assertEqual(pick["provider"], "")
+
+    def test_host_match_is_exact_not_a_suffix(self):
+        """`evil-youtube.com` and `youtube.com.attacker.net` are not YouTube."""
+        for url in (
+            "https://evil-youtube.com/watch?v=1",
+            "https://youtube.com.attacker.net/watch?v=1",
+        ):
+            apply_payload(self.profile, {"interestsMusic": [self._pick(url=url)]})
+            self.assertEqual(self.profile.interests_music[0]["url"], "", url)
+
+    def test_link_must_belong_to_the_provider_it_claims(self):
+        apply_payload(
+            self.profile,
+            {"interestsMusic": [self._pick(url=self.YOUTUBE, provider="spotify")]},
+        )
+        self.assertEqual(self.profile.interests_music[0]["url"], "")
+
+    def test_http_link_is_dropped(self):
+        apply_payload(
+            self.profile,
+            {"interestsMusic": [self._pick(url="http://www.youtube.com/watch?v=1")]},
+        )
+        self.assertEqual(self.profile.interests_music[0]["url"], "")
+
+    def test_unknown_thumbnail_host_is_dropped(self):
+        """The one that matters: any URL here is fetched by every viewer."""
+        apply_payload(
+            self.profile,
+            {"interestsMusic": [self._pick(thumbnail="https://tracker.example/pixel.gif")]},
+        )
+        pick = self.profile.interests_music[0]
+        self.assertEqual(pick["thumbnail"], "")
+        self.assertEqual(pick["title"], "Tum Hi Ho")
+
+    def test_unknown_provider_slug_is_dropped(self):
+        apply_payload(
+            self.profile,
+            {"interestsMusic": [self._pick(provider="myspace")]},
+        )
+        pick = self.profile.interests_music[0]
+        self.assertEqual(pick["provider"], "")
+        # The link went with it: it can no longer be attributed to a provider.
+        self.assertEqual(pick["url"], "")
+
+    # ---- The columns that did NOT change ----
+
+    def test_tag_categories_still_hold_slugs(self):
+        apply_payload(self.profile, {"interestsHobbies": ["yoga", "cricket"]})
+        self.assertEqual(self.profile.interests_hobbies, ["yoga", "cricket"])
+
+    def test_picks_round_trip_through_the_api_payload(self):
+        apply_payload(self.profile, {"interestsMusic": [self._pick()]})
+        data = profile_to_api(self.profile, None, public=True)
+        self.assertEqual(data["interestsMusic"][0]["thumbnail"], self.THUMB)
+
+    def test_completeness_still_counts_a_filled_category(self):
+        """The slot is truthiness of the list, so the new shape reads the same."""
+        before = self.profile.compute_completeness()
+        apply_payload(self.profile, {"interestsMusic": [self._pick()]})
+        self.assertGreater(self.profile.compute_completeness(), before)
 
 
 class LifestylePreferenceTests(TestCase):

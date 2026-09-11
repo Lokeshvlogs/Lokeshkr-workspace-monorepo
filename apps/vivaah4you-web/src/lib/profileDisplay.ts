@@ -9,6 +9,7 @@ import {
   professionOptions,
 } from '@/constants/selectOptions/career'
 import { ALL_EMPLOYED_AS } from '@/constants/selectOptions/employedAs'
+import { TAG_CATEGORIES } from '@/constants/selectOptions/interests'
 import { familyIncomeOptions } from '@/constants/selectOptions/people'
 import {
   dietOptions,
@@ -75,6 +76,13 @@ const LABEL_MAPS: Record<string, Record<string, string>> = {
   // The lifestyle preferences share the candidate's own vocabularies, so they
   // share the label maps too - `spiritual_not_religious` must not reach
   // titleCase and come out as "Spiritual Not Religious".
+  /* The interest tags had no entry here at all, so every value fell through to
+     `titleCase` on its slug: `lo_fi` rendered as "Lo Fi" and
+     `not_much_reading` as "Not Much Reading". Built from the categories
+     themselves so a new tag cannot be added without its label. */
+  ...Object.fromEntries(
+    TAG_CATEGORIES.map((category) => [category.key, toLabelMap(category.options as SelectOption[])]),
+  ),
   partnerReligiosities: toLabelMap(RELIGIOSITY_OPTIONS),
   partnerSmoking: toLabelMap(smokingOptions),
   partnerDrinking: toLabelMap(drinkingOptions),

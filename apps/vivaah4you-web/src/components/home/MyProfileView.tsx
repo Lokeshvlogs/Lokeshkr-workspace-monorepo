@@ -6,6 +6,7 @@ import Link from 'next/link'
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
 import ProfileBio from '@/components/profile/ProfileBio'
+import ProfileMediaPicks from '@/components/profile/ProfileMediaPicks'
 import FamilyGraph from '@/components/profile/FamilyGraph'
 import FamilyEditor from '@/components/profile/FamilyEditor'
 import PhotoStrip from '@/components/profile/PhotoStrip'
@@ -100,6 +101,8 @@ export default function MyProfileView({ profile, onSave }: Props) {
       </p>
 
       <ProfileDetails profile={profile} editable onSave={onSave} columns={2} />
+
+      <ProfileMediaPicks profile={profile} onSave={onSave} />
 
       {/* Private, and never rendered on the public page. Collapsed so it does
           not lead the view. */}

@@ -1,115 +1,25 @@
 import type { SelectOption } from '@lokesh-workspace/ui'
 
 /**
- * What someone is actually like, as pickable tags.
+ * What someone is actually like.
  *
- * Curated lists rather than free text on purpose. "Bollywood", "bollywood" and
- * "hindi films" are the same taste but three different strings, so free tags
- * would look expressive and be useless the moment anything tried to match on
- * them. A shared vocabulary is what makes "you both love ghazals" possible.
+ * Two kinds of answer live here, and the split is the point.
  *
- * Lists lean Indian-first because the members are, but travel and cuisine stay
- * broad - plenty of members live abroad.
+ * **Tags** - food, travel, hobbies. Curated lists rather than free text:
+ * "Bollywood", "bollywood" and "hindi films" are one taste and three strings,
+ * so free tags look expressive and are useless the moment anything tries to
+ * match on them. A shared vocabulary is what makes "you both cook" possible.
+ * Lists lean Indian-first because the members do, though travel and cuisine
+ * stay broad - plenty of members live abroad.
  *
- * Values are stable slugs; only labels are safe to reword.
+ * **Picks** - music, films, reading. These used to be tags too, and they were
+ * the weakest thing on a profile: liking Bollywood is not a fact about anyone.
+ * A named song, film or book is, so those three ask for a title (and take a
+ * link, which gets unfurled into artwork). They carry no option list at all -
+ * see `MediaPick` in `types/profile.ts`.
+ *
+ * Tag values are stable slugs; only labels are safe to reword.
  */
-
-export const musicOptions: SelectOption[] = [
-  { value: 'bollywood', label: 'Bollywood' },
-  { value: 'indie', label: 'Indie' },
-  { value: 'hindustani_classical', label: 'Hindustani classical' },
-  { value: 'carnatic', label: 'Carnatic' },
-  { value: 'ghazal', label: 'Ghazals' },
-  { value: 'sufi', label: 'Sufi' },
-  { value: 'devotional', label: 'Devotional / bhajans' },
-  { value: 'folk', label: 'Folk' },
-  { value: 'punjabi', label: 'Punjabi / bhangra' },
-  { value: 'rock', label: 'Rock' },
-  { value: 'pop', label: 'Pop' },
-  { value: 'hip_hop', label: 'Hip-hop / rap' },
-  { value: 'edm', label: 'Electronic / EDM' },
-  { value: 'jazz_blues', label: 'Jazz / blues' },
-  { value: 'western_classical', label: 'Western classical' },
-  { value: 'lo_fi', label: 'Lo-fi / chill' },
-  { value: 'regional_cinema_music', label: 'Regional film music' },
-  { value: 'instrumental', label: 'Instrumental' },
-  { value: 'qawwali', label: 'Qawwali' },
-  { value: 'indi_pop', label: 'Indi-pop' },
-  { value: 'rnb_soul', label: 'R&B / soul' },
-  { value: 'country', label: 'Country' },
-  { value: 'metal', label: 'Rock / metal' },
-  { value: 'kpop', label: 'K-pop' },
-  { value: 'retro_bollywood', label: 'Retro Bollywood' },
-  { value: 'marathi_music', label: 'Marathi music' },
-  { value: 'tamil_music', label: 'Tamil music' },
-  { value: 'telugu_music', label: 'Telugu music' },
-  { value: 'bengali_music', label: 'Bengali music' },
-  { value: 'gospel_world', label: 'World music' },
-  { value: 'podcasts_audio', label: 'Podcasts' },
-]
-
-export const movieOptions: SelectOption[] = [
-  { value: 'bollywood_films', label: 'Bollywood' },
-  { value: 'regional_cinema', label: 'Regional cinema' },
-  { value: 'hollywood', label: 'Hollywood' },
-  { value: 'world_cinema', label: 'World cinema' },
-  { value: 'comedy', label: 'Comedy' },
-  { value: 'thriller', label: 'Thriller / mystery' },
-  { value: 'action', label: 'Action' },
-  { value: 'romance', label: 'Romance' },
-  { value: 'drama', label: 'Drama' },
-  { value: 'sci_fi', label: 'Sci-fi' },
-  { value: 'horror', label: 'Horror' },
-  { value: 'documentary', label: 'Documentaries' },
-  { value: 'anime', label: 'Anime' },
-  { value: 'classics', label: 'Old classics' },
-  { value: 'web_series', label: 'Web series / OTT' },
-  { value: 'sports_viewing', label: 'Live sport' },
-  { value: 'biopics', label: 'Biopics' },
-  { value: 'historical_films', label: 'Historical / period' },
-  { value: 'family_drama', label: 'Family dramas' },
-  { value: 'crime_series', label: 'Crime series' },
-  { value: 'reality_tv', label: 'Reality TV' },
-  { value: 'sitcoms', label: 'Sitcoms' },
-  { value: 'courtroom', label: 'Courtroom drama' },
-  { value: 'animation_films', label: 'Animation' },
-  { value: 'musicals', label: 'Musicals' },
-  { value: 'art_house', label: 'Art-house / parallel' },
-  { value: 'korean_drama', label: 'Korean drama' },
-  { value: 'stand_up_specials', label: 'Stand-up specials' },
-  { value: 'nature_docs', label: 'Nature documentaries' },
-]
-
-export const bookOptions: SelectOption[] = [
-  { value: 'fiction', label: 'Fiction' },
-  { value: 'literary_fiction', label: 'Literary fiction' },
-  { value: 'mythology', label: 'Mythology' },
-  { value: 'history', label: 'History' },
-  { value: 'biography', label: 'Biography / memoir' },
-  { value: 'self_help', label: 'Self-help' },
-  { value: 'business', label: 'Business / economics' },
-  { value: 'science', label: 'Popular science' },
-  { value: 'philosophy', label: 'Philosophy' },
-  { value: 'spirituality', label: 'Spirituality' },
-  { value: 'poetry', label: 'Poetry / shayari' },
-  { value: 'crime_thriller', label: 'Crime / thriller' },
-  { value: 'fantasy', label: 'Fantasy' },
-  { value: 'regional_literature', label: 'Regional literature' },
-  { value: 'comics', label: 'Comics / graphic novels' },
-  { value: 'not_much_reading', label: 'Not much of a reader' },
-  { value: 'classics_books', label: 'Classics' },
-  { value: 'travel_writing', label: 'Travel writing' },
-  { value: 'psychology', label: 'Psychology' },
-  { value: 'productivity', label: 'Productivity' },
-  { value: 'religious_texts', label: 'Religious texts' },
-  { value: 'urdu_poetry', label: 'Urdu poetry' },
-  { value: 'short_stories', label: 'Short stories' },
-  { value: 'science_fiction_books', label: 'Science fiction' },
-  { value: 'current_affairs', label: 'Current affairs' },
-  { value: 'cookbooks', label: 'Cookbooks' },
-  { value: 'audiobooks', label: 'Audiobooks' },
-  { value: 'parenting_relationships', label: 'Relationships' },
-]
 
 export const cuisineOptions: SelectOption[] = [
   { value: 'north_indian', label: 'North Indian' },
@@ -233,12 +143,54 @@ export const interestOptions: SelectOption[] = [
   { value: 'astrology', label: 'Astrology' },
 ]
 
-/** Every interest category, so the wizard and the profile view stay in step. */
-export const INTEREST_CATEGORIES = [
-  { key: 'interestsMusic', label: 'Music you love', options: musicOptions },
-  { key: 'interestsMovies', label: 'Films & shows', options: movieOptions },
-  { key: 'interestsBooks', label: 'Reading', options: bookOptions },
+/**
+ * The tag categories, in the order the wizard shows them.
+ *
+ * Hobbies leads because it is the one nobody has to think about - everybody can
+ * name something they do - and a first question that is easy to answer is what
+ * gets the rest of the section filled in.
+ */
+export const TAG_CATEGORIES = [
+  { key: 'interestsHobbies', label: 'Hobbies & interests', options: interestOptions },
   { key: 'interestsCuisines', label: 'Food you enjoy', options: cuisineOptions },
   { key: 'interestsTravel', label: 'Travel', options: travelOptions },
-  { key: 'interestsHobbies', label: 'Hobbies & interests', options: interestOptions },
+] as const
+
+/**
+ * The pick categories: a title, optionally a link, and whatever artwork the
+ * link yielded.
+ *
+ * `hint` names the sites worth pasting from. It is the only place a member is
+ * told that a link does anything, so it has to be specific - "paste a link"
+ * would leave them guessing which links work.
+ */
+export const PICK_CATEGORIES = [
+  {
+    key: 'interestsMusic',
+    label: 'Music you love',
+    /** Placeholder on the input. Phrased as an example, not an instruction. */
+    placeholder: 'Tum Hi Ho — or a YouTube / Spotify link',
+    hint: 'Songs you have on repeat. Paste a YouTube or Spotify link and the artwork comes with it.',
+  },
+  {
+    key: 'interestsMovies',
+    label: 'Films & shows',
+    placeholder: 'Sholay — or an IMDb link',
+    hint: 'Films, shows and series you would recommend. An IMDb link fills in the rest.',
+  },
+  {
+    key: 'interestsBooks',
+    label: 'Reading',
+    placeholder: 'Godaan — or a Goodreads link',
+    hint: 'Books worth passing on. Links from Goodreads, Google Books, Open Library or Wattpad all work.',
+  },
+] as const
+
+/**
+ * Every category, tags and picks together, for anything that needs the whole
+ * set rather than one kind - the profile view's ordering, for instance.
+ */
+export const INTEREST_CATEGORY_KEYS = [
+  ...TAG_CATEGORIES.map((category) => category.key),
+  ...PICK_CATEGORIES.map((category) => category.key),
 ] as const

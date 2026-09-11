@@ -95,9 +95,12 @@ class ProfileUpdateSchema(Schema):
     partnerProfessions: Optional[List[str]] = None
     partnerDiets: Optional[List[str]] = None
 
-    interestsMusic: Optional[List[str]] = None
-    interestsMovies: Optional[List[str]] = None
-    interestsBooks: Optional[List[str]] = None
+    # Named picks, not slugs: {title, subtitle, url, provider, thumbnail}.
+    # Typed as dicts here and shaped by `clean_media_picks`, the same division
+    # of labour as `achievements` below.
+    interestsMusic: Optional[List[dict]] = None
+    interestsMovies: Optional[List[dict]] = None
+    interestsBooks: Optional[List[dict]] = None
     interestsCuisines: Optional[List[str]] = None
     interestsTravel: Optional[List[str]] = None
     interestsHobbies: Optional[List[str]] = None

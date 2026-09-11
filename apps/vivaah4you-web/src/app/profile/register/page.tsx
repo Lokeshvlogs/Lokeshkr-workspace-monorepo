@@ -56,6 +56,7 @@ import {
   TextField,
 } from "@lokesh-workspace/ui";
 
+import type { MediaPick } from "@/types/profile";
 import PhotoGallery from "@/components/profile/PhotoGallery";
 import CompletenessRing from "@/components/profile/CompletenessRing";
 import { coerceToFormShape } from "@/lib/profileFormShape";
@@ -92,7 +93,8 @@ import {
   feetOptions,
   inchOptions,
 } from "@/constants/selectOptions/person";
-import { INTEREST_CATEGORIES } from "@/constants/selectOptions/interests";
+import { PICK_CATEGORIES, TAG_CATEGORIES } from "@/constants/selectOptions/interests";
+import MediaPickField from "@/components/profile/MediaPickField";
 import {
   PARENT_OCCUPATION_OPTIONS,
   RELIGIOSITY_OPTIONS,
@@ -121,18 +123,34 @@ const toNum = (value: string): number | null =>
   value === "" || value === null || value === undefined ? null : Number(value);
 
 /**
- * One glyph per interest row. Keyed off `INTEREST_CATEGORIES[].key` rather than
- * held on the category itself, so the constants file stays free of JSX and of a
- * React dependency.
+ * One glyph per interest row. Keyed off the category key rather than held on
+ * the category itself, so the constants file stays free of JSX and of a React
+ * dependency.
  */
 const INTEREST_ICONS: Record<string, React.ReactNode> = {
+  interestsHobbies: <Palette />,
+  interestsCuisines: <Utensils />,
+  interestsTravel: <Palmtree />,
   interestsMusic: <Music />,
   interestsMovies: <Film />,
   interestsBooks: <BookOpen />,
-  interestsCuisines: <Utensils />,
-  interestsTravel: <Palmtree />,
-  interestsHobbies: <Palette />,
 };
+
+/**
+ * The interest categories in the order they are revealed, tags then picks.
+ *
+ * One flat list because the reveal walks it in order and does not care which
+ * kind a category is; the `options` field is what tells them apart at render
+ * time.
+ */
+const INTEREST_ROWS = [...TAG_CATEGORIES, ...PICK_CATEGORIES] as readonly {
+  key: "interestsHobbies" | "interestsCuisines" | "interestsTravel"
+    | "interestsMusic" | "interestsMovies" | "interestsBooks";
+  label: string;
+  options?: readonly { value: string; label: string }[];
+  hint?: string;
+  placeholder?: string;
+}[];
 
 const STEPS = [
   { title: "Basic Details", hint: "How you appear to other families." },
@@ -279,9 +297,10 @@ const INITIAL_FORM = {
   drinking: "",
   hasChildren: false,
   dailyRoutine: "",
-  interestsMusic: [] as string[],
-  interestsMovies: [] as string[],
-  interestsBooks: [] as string[],
+  /* Named picks, not slugs - see MediaPick in types/profile.ts. */
+  interestsMusic: [] as MediaPick[],
+  interestsMovies: [] as MediaPick[],
+  interestsBooks: [] as MediaPick[],
   interestsCuisines: [] as string[],
   interestsTravel: [] as string[],
   interestsHobbies: [] as string[],
@@ -529,6 +548,11 @@ export default function ProfileRegisterPage() {
   /* Joint and extended households open straight into the member editor - the
      sibling counts above cannot describe who actually lives there. */
   const [familyNamesOpen, setFamilyNamesOpen] = useState(false);
+  /* Interest categories the member has waved past. Every category is optional,
+     so without this a gradual reveal would strand anyone with nothing to say
+     about music at the first row, unable to reach the ones they do care
+     about. */
+  const [skippedInterests, setSkippedInterests] = useState<ReadonlySet<string>>(new Set());
   /* Steps the member has tried to leave. Nothing is marked red before that:
      a form that opens covered in errors reads as broken rather than as
      guidance. Once a step is in here its marks update live, so filling a
@@ -957,6 +981,30 @@ export default function ProfileRegisterPage() {
      full stepper, because they are here to reach a specific step. */
   const firstRun = registeredAt === null;
   const visibleSteps = firstRun ? Math.min(STEPS.length, furthestStep + 1) : STEPS.length;
+
+  /**
+   * How many interest categories to show.
+   *
+   * A category is settled once it has an entry or has been skipped, and the
+   * next appears only then - six full-width rows at once is what made this the
+   * longest thing in the wizard, and each one is a question worth reading.
+   *
+   * Deliberately not gated on `firstRun` like the step markers are. It does not
+   * need to be: a returning member has entries in the categories they filled,
+   * which count as settled, so their own answers reveal the whole section on
+   * the first render.
+   */
+  const interestsShown = (() => {
+    for (let i = 0; i < INTEREST_ROWS.length; i += 1) {
+      const key = INTEREST_ROWS[i].key;
+      const answered = (form[key] as unknown[]).length > 0;
+      if (!answered && !skippedInterests.has(key)) return i + 1;
+    }
+    return INTEREST_ROWS.length;
+  })();
+
+  const skipInterest = (key: string) =>
+    setSkippedInterests((prev) => new Set(prev).add(key));
 
   /* Field keys are unique across steps, so these merge without colliding and a
      single lookup serves every step. */
@@ -1426,38 +1474,79 @@ export default function ProfileRegisterPage() {
                     What you are into
                   </p>
                   <p className="form-section-hint mb-4">
-                    All optional — but this is the part people actually read. Pick a few in
-                    each row; they show up as tags on your profile.
+                    All optional — but this is the part people actually read. One at a
+                    time; the next appears as you go.
                   </p>
 
-                  {/* Chips rather than dropdowns: this is browsing, not looking
-                      up a value you already had in mind, and six stacked
-                      MultiSelects made this the tallest step in the wizard. */}
+                  {/* Chips rather than dropdowns for the tag rows: this is
+                      browsing, not looking up a value you already had in mind.
+                      Music, films and reading ask for named picks instead -
+                      "Bollywood" says nothing that "Tum Hi Ho" does not say
+                      better. */}
                   <div className="flex flex-col gap-6">
-                    {INTEREST_CATEGORIES.map((category) => (
-                      <ChipMultiGroup
-                        key={category.key}
-                        label={category.label}
-                        icon={INTEREST_ICONS[category.key]}
-                        options={category.options}
-                        value={form[category.key]}
-                        onChange={(v) => setField(category.key, v)}
-                        maxSelected={8}
-                      />
-                    ))}
+                    {INTEREST_ROWS.slice(0, interestsShown).map((category, index) => {
+                      const answered = (form[category.key] as unknown[]).length > 0;
+                      const canSkip =
+                        !answered &&
+                        index === interestsShown - 1 &&
+                        interestsShown < INTEREST_ROWS.length;
+
+                      return (
+                        <div key={category.key} className="wiz-reveal">
+                          {category.options ? (
+                            <ChipMultiGroup
+                              label={category.label}
+                              icon={INTEREST_ICONS[category.key]}
+                              options={category.options as { value: string; label: string }[]}
+                              value={form[category.key] as string[]}
+                              onChange={(v) =>
+                                setForm((p) => ({ ...p, [category.key]: v }))
+                              }
+                              maxSelected={8}
+                            />
+                          ) : (
+                            <MediaPickField
+                              label={category.label}
+                              icon={INTEREST_ICONS[category.key]}
+                              hint={category.hint}
+                              placeholder={category.placeholder}
+                              value={form[category.key] as MediaPick[]}
+                              onChange={(v) =>
+                                setForm((p) => ({ ...p, [category.key]: v }))
+                              }
+                            />
+                          )}
+
+                          {canSkip && (
+                            <button
+                              type="button"
+                              className="chip chip-square mt-3"
+                              onClick={() => skipInterest(category.key)}
+                            >
+                              Not for me — next
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  <div className="mt-5">
-                    <LongText
-                      id="interestsOther"
-                      label="Anything else about you"
-                      icon={<PenLine />}
-                      hint="Optional. Something the lists above do not cover."
-                      value={form.interestsOther}
-                      onChange={(v) => setField("interestsOther", v)}
-                      maxLength={300}
-                    />
-                  </div>
+                  {/* Held back until the rows above are done, so the step does
+                      not end in a large empty box while there are still
+                      questions to answer. */}
+                  {interestsShown === INTEREST_ROWS.length && (
+                    <div className="wiz-reveal mt-5">
+                      <LongText
+                        id="interestsOther"
+                        label="Anything else about you"
+                        icon={<PenLine />}
+                        hint="Optional. Something the rows above do not cover."
+                        value={form.interestsOther}
+                        onChange={(v) => setField("interestsOther", v)}
+                        maxLength={300}
+                      />
+                    </div>
+                  )}
                 </div>
               </RevealSections>,
 

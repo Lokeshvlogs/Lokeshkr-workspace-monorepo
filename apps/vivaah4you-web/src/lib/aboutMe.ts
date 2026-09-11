@@ -1,5 +1,5 @@
 import { labelFor, locationLabel } from '@/lib/profileDisplay'
-import type { PublicProfile } from '@/types/profile'
+import type { MediaPick, PublicProfile } from '@/types/profile'
 
 /**
  * A first draft of a bio, built from what the wizard already collected.
@@ -48,15 +48,26 @@ const soften = (label: string): string =>
     .join(' ')
 
 /** "a, b and c" - the Oxford-free join that reads as a sentence. */
-function listOf(values: string[], key: string, limit: number): string {
-  const labels = values
-    .slice(0, limit)
-    .map((value) => soften(labelFor(key, value)))
-    .filter(Boolean)
+function join(labels: string[]): string {
+  const kept = labels.filter(Boolean)
+  if (kept.length === 0) return ''
+  if (kept.length === 1) return kept[0]
+  return `${kept.slice(0, -1).join(', ')} and ${kept[kept.length - 1]}`
+}
 
-  if (labels.length === 0) return ''
-  if (labels.length === 1) return labels[0]
-  return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
+/** Tag slugs, through their labels. */
+function listOf(values: string[], key: string, limit: number): string {
+  return join(values.slice(0, limit).map((value) => soften(labelFor(key, value))))
+}
+
+/**
+ * Named picks, by title.
+ *
+ * A title is already written the way a person would say it, so unlike a tag
+ * slug it is used verbatim - "Tum Hi Ho" must not come out as "tum hi ho".
+ */
+function titlesOf(picks: MediaPick[], limit: number): string {
+  return join((picks ?? []).slice(0, limit).map((pick) => pick?.title ?? ''))
 }
 
 /**
@@ -102,7 +113,7 @@ export function suggestAboutMe(profile: PublicProfile): string {
   const hobbies = listOf(profile.interestsHobbies ?? [], 'interestsHobbies', 3)
   const travel = listOf(profile.interestsTravel ?? [], 'interestsTravel', 2)
   const food = listOf(profile.interestsCuisines ?? [], 'interestsCuisines', 2)
-  const music = listOf(profile.interestsMusic ?? [], 'interestsMusic', 2)
+  const music = titlesOf(profile.interestsMusic, 2)
 
   // Nothing but an age is not a bio. Two real facts is the floor.
   const facts = [profession, place, education, hobbies, travel, food, music].filter(Boolean)

@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import ProfileDetails from '@/components/profile/ProfileDetails'
 import ProfileHeroPanel from '@/components/profile/ProfileHeroPanel'
 import ProfileBio from '@/components/profile/ProfileBio'
+import ProfileMediaPicks from '@/components/profile/ProfileMediaPicks'
 import FamilyGraph from '@/components/profile/FamilyGraph'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
@@ -163,6 +164,10 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
         <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
 
         <ProfileDetails profile={profile} columns={2} />
+
+        {/* After the field rows, not among them: a wall of artwork above the
+            basics would answer "what do they watch" before "who are they". */}
+        <ProfileMediaPicks profile={profile} />
 
         {/* Below the profile, not above it: the comparison is what you read
             once you have formed a view of the person. Used to be exclusive to

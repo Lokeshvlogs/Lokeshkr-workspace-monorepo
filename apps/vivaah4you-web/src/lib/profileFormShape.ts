@@ -14,6 +14,9 @@
  * as "not present" so the other source wins.
  */
 
+/** The three interest categories that hold picks rather than slugs. */
+const MEDIA_PICK_KEYS = new Set(['interestsMusic', 'interestsMovies', 'interestsBooks'])
+
 /** A form-shaped education row: every bound input is a string. */
 export interface EducationFormEntry {
   level: string
@@ -24,6 +27,14 @@ export interface EducationFormEntry {
   isOther: boolean
   reputationClaimed: boolean
   completionYear: string
+}
+
+export interface MediaPickFormEntry {
+  title: string
+  subtitle: string
+  url: string
+  provider: string
+  thumbnail: string
 }
 
 export interface AchievementFormEntry {
@@ -43,6 +54,20 @@ export const toEducationEntry = (raw: any): EducationFormEntry => ({
   // The API sends a number or null. A null bound to an input makes React warn
   // that a controlled component went uncontrolled.
   completionYear: raw?.completionYear == null ? '' : String(raw.completionYear),
+})
+
+/**
+ * A media pick, from the API or from a draft.
+ *
+ * Every field is a string, including the ones the server may send as null, so a
+ * controlled input never goes uncontrolled.
+ */
+export const toMediaPick = (raw: any): MediaPickFormEntry => ({
+  title: String(raw?.title ?? ''),
+  subtitle: String(raw?.subtitle ?? ''),
+  url: String(raw?.url ?? ''),
+  provider: String(raw?.provider ?? ''),
+  thumbnail: String(raw?.thumbnail ?? ''),
 })
 
 export const toAchievementEntry = (raw: any): AchievementFormEntry => ({
@@ -67,6 +92,14 @@ export function coerceToFormShape(
   }
   if (key === 'achievements') {
     return Array.isArray(value) ? value.map(toAchievementEntry) : undefined
+  }
+  /* Must precede the generic array branch below, whose `.map(String)` would
+     turn every pick into "[object Object]". A draft saved while these were tag
+     lists holds strings; each one becomes a title, which is the same leniency
+     the server's `clean_media_picks` applies. */
+  if (MEDIA_PICK_KEYS.has(key)) {
+    if (typeof value === 'string') return value ? [toMediaPick({ title: value })] : []
+    return Array.isArray(value) ? value.map(toMediaPick) : undefined
   }
 
   if (Array.isArray(shape)) {
