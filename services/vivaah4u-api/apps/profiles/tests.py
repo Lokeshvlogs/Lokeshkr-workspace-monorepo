@@ -41,6 +41,7 @@ from apps.profiles.models import (
 )
 from apps.profiles import interests, presence
 from apps.profiles.api import (
+    LAST_WIZARD_STEP,
     RECENTLY_JOINED_DAYS,
     eligible_matches,
     match_queryset,
@@ -48,6 +49,7 @@ from apps.profiles.api import (
     recent_match_queryset,
     visitor_rows,
     trending_queryset,
+    update_profile_step,
     TRENDING_WINDOW_DAYS,
 )
 from apps.profiles.verification import VerificationLevel
@@ -791,6 +793,125 @@ class MobilityPreferenceTests(TestCase):
         """`settleAbroad` is about you, so one answer is the right shape."""
         apply_payload(self.profile, {"settleAbroad": "open"})
         self.assertEqual(self.profile.settle_abroad, "open")
+
+
+class LifestylePreferenceTests(TestCase):
+    """The three preferences that replaced the After-marriage questions.
+
+    They matter more than the two they replaced for one reason: each is matched
+    against an answer the other person actually gives. Nothing on a profile ever
+    said whether they would relocate, so that preference could never be scored.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="meera", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+
+    def test_round_trip(self):
+        apply_payload(
+            self.profile,
+            {
+                "partnerReligiosities": ["religious", "spiritual"],
+                "partnerSmoking": ["non_smoker"],
+                "partnerDrinking": ["non_drinker", "socially"],
+            },
+        )
+        self.assertEqual(
+            self.profile.partner_religiosities,
+            ["religious", "spiritual"],
+        )
+        self.assertEqual(self.profile.partner_smoking, ["non_smoker"])
+        self.assertEqual(self.profile.partner_drinking, ["non_drinker", "socially"])
+
+    def test_defaults_are_empty_lists(self):
+        """Empty is "no preference" - the same reading as every other list."""
+        data = profile_to_api(self.profile, None, public=True)
+        self.assertEqual(data["partnerReligiosities"], [])
+        self.assertEqual(data["partnerSmoking"], [])
+        self.assertEqual(data["partnerDrinking"], [])
+
+    def test_normalising_applies(self):
+        """They go through the same list boundary as the older columns."""
+        apply_payload(self.profile, {"partnerSmoking": ["non_smoker", "non_smoker", "", None]})
+        self.assertEqual(self.profile.partner_smoking, ["non_smoker"])
+
+    def test_dropped_columns_still_round_trip(self):
+        """The wizard stopped asking; profiles that answered keep their answer.
+
+        The columns are dormant, not removed - dropping them would blank an
+        answer that is still rendered on those profiles.
+        """
+        apply_payload(self.profile, {"partnerSettleAbroad": ["yes"]})
+        data = profile_to_api(self.profile, None, public=True)
+        self.assertEqual(data["partnerSettleAbroad"], ["yes"])
+
+
+class RegisteredAtTests(TestCase):
+    """The stamp that says the wizard has been finished once.
+
+    It exists because nothing else could say it. `is_complete` is a property
+    recomputed from live field values, so it flips back the moment a core field
+    is cleared - a member who blanked one answer would be handed the first-run
+    wizard all over again.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="kiran", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+        self.request = SimpleNamespace(user=self.user)
+
+    def _save(self, step, **fields):
+        return update_profile_step(
+            self.request,
+            SimpleNamespace(dict=lambda **_: {"step": step, **fields}),
+        )
+
+    def test_unset_until_the_last_step(self):
+        self.assertIsNone(self.profile.registered_at)
+        self._save(0, firstName="Kiran")
+        self.profile.refresh_from_db()
+        self.assertIsNone(self.profile.registered_at)
+
+    def test_stamped_on_the_last_step(self):
+        result = self._save(LAST_WIZARD_STEP)
+        self.profile.refresh_from_db()
+        self.assertIsNotNone(self.profile.registered_at)
+        self.assertEqual(result["registered_at"], self.profile.registered_at.isoformat())
+
+    def test_never_moves_once_set(self):
+        """A later edit of the photo step must not restart the first run."""
+        self._save(LAST_WIZARD_STEP)
+        self.profile.refresh_from_db()
+        first = self.profile.registered_at
+
+        self._save(LAST_WIZARD_STEP)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.registered_at, first)
+
+    def test_survives_a_field_being_cleared(self):
+        """The case `is_complete` could not cover."""
+        self.profile.first_name = "Kiran"
+        self.profile.save()
+        self._save(LAST_WIZARD_STEP)
+        self.profile.refresh_from_db()
+        self.assertIsNotNone(self.profile.registered_at)
+
+        self.profile.first_name = ""
+        self.profile.save()
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.is_complete)
+        self.assertIsNotNone(self.profile.registered_at)
+
+    def test_owner_payload_carries_it_and_public_does_not(self):
+        """It drives the owner's wizard and says nothing a match needs."""
+        self._save(LAST_WIZARD_STEP)
+        self.profile.refresh_from_db()
+
+        owner = profile_to_api(self.profile, None, public=False)
+        self.assertIsNotNone(owner["registeredAt"])
+
+        public = profile_to_api(self.profile, None, public=True)
+        self.assertNotIn("registeredAt", public)
 
 
 class PresenceTests(TestCase):

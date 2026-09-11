@@ -8,6 +8,7 @@ import {
   fieldOfStudyOptions,
   professionOptions,
 } from '@/constants/selectOptions/career'
+import { ALL_EMPLOYED_AS } from '@/constants/selectOptions/employedAs'
 import { familyIncomeOptions } from '@/constants/selectOptions/people'
 import {
   dietOptions,
@@ -50,7 +51,10 @@ const LABEL_MAPS: Record<string, Record<string, string>> = {
   collegeUniversity: toLabelMap(collegeOptions),
   profession: toLabelMap(professionOptions),
   employedIn: toLabelMap(employedInOptions),
-  employedAs: toLabelMap(employedAsOptions),
+  // Every ladder's labels as well as the generic list: a value saved from a
+  // profession-specific ladder must still resolve, or the profile falls back to
+  // titleCasing the slug.
+  employedAs: { ...toLabelMap(employedAsOptions), ...toLabelMap(ALL_EMPLOYED_AS) },
   salaryAmount: toLabelMap(familyIncomeOptions),
   familyIncome: toLabelMap(familyIncomeOptions),
   currentCountry: toLabelMap(COUNTRY_OPTIONS),
@@ -68,6 +72,12 @@ const LABEL_MAPS: Record<string, Record<string, string>> = {
   partnerProfession: { any: 'No preference', ...toLabelMap(professionOptions) },
   partnerDiet: { any: 'No preference', ...toLabelMap(dietOptions) },
   settleAbroad: { yes: 'Yes', open: 'Open to it', no: 'No' },
+  // The lifestyle preferences share the candidate's own vocabularies, so they
+  // share the label maps too - `spiritual_not_religious` must not reach
+  // titleCase and come out as "Spiritual Not Religious".
+  partnerReligiosities: toLabelMap(RELIGIOSITY_OPTIONS),
+  partnerSmoking: toLabelMap(smokingOptions),
+  partnerDrinking: toLabelMap(drinkingOptions),
   partnerSettleAbroad: { yes: 'Yes', open: 'Open to discussion', no: 'No' },
   partnerRelocateAfterMarriage: { yes: 'Yes', open: 'Open to discussion', no: 'No' },
 }

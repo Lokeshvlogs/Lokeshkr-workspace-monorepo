@@ -2393,6 +2393,28 @@ button.chip-selected:hover {
   opacity: 0.28;
 }
 
+/* The reason to bother, sitting under the empty prompt. Quieter than the
+   prompt itself: it is the argument, not the instruction. */
+.bio-advantage {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-muted-text, #4a3b3b);
+}
+
+/* Shown only while the editor holds text the member has not touched yet, so
+   nobody can mistake a generated draft for something they wrote. */
+.bio-suggest-note {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.625rem;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 35%, transparent);
+  background-color: var(--color-primary-surface, #fff0f8);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-primary-strong, #cb0b6b);
+}
+
 .profile-bio-empty {
   @apply text-sm italic;
   color: var(--color-placeholder-text, #6b7280);
@@ -3889,4 +3911,28 @@ button.family-node:hover {
   button.family-node:hover {
     transform: none;
   }
+}
+
+/* A category heading inside a dropdown list.
+   Rendered as a sibling of the option rows, never as one of them - the
+   dropdowns use a row's array index as the keyboard cursor, the DOM lookup key
+   and the scroll target at once, so an entry inserted here would move all
+   three. Sticky because `.select-options` is the only scrolling box. */
+.select-group-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem 0.9375rem 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-primary-strong, #cb0b6b);
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+/* `.select-option + .select-option` draws the separator, and a header between
+   two rows suppresses it - which is what we want at a boundary. */
+.select-group-header + .select-option {
+  border-top: 0;
 }

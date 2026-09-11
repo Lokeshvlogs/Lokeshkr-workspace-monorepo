@@ -115,6 +115,9 @@ class ProfileUpdateSchema(Schema):
     # matched against. Empty means no preference.
     partnerRelocateAfterMarriage: Optional[List[str]] = None
     partnerSettleAbroad: Optional[List[str]] = None
+    partnerReligiosities: Optional[List[str]] = None
+    partnerSmoking: Optional[List[str]] = None
+    partnerDrinking: Optional[List[str]] = None
 
     # The complete desired education history - omitting a row deletes it, the
     # same contract `photos` uses. Entries are validated in mapping.py rather

@@ -170,20 +170,16 @@ export function checkPreferences(owner: PublicProfile, candidate: PublicProfile)
   oneOf('partnerProfession', 'Profession', owner.partnerProfessions ?? owner.partnerProfession, candidate.profession, 'profession')
   oneOf('partnerDiet', 'Diet', owner.partnerDiets ?? owner.partnerDiet, candidate.diet, 'diet')
 
-  // Mobility. Matched against the candidate's own `settleAbroad` answer, so
-  // every value the member selected counts as acceptable.
-  //
-  // `partnerRelocateAfterMarriage` is deliberately NOT checked here: there is no
-  // field on the other person saying whether they would relocate, so there is
-  // nothing to test it against. Scoring it would silently mark everyone
-  // "unknown" and dilute the total. It is captured and shown, not scored.
-  oneOf(
-    'partnerSettleAbroad',
-    'Settling abroad',
-    owner.partnerSettleAbroad,
-    candidate.settleAbroad,
-    'settleAbroad',
-  )
+  // Lifestyle and outlook, each matched against the candidate's own answer.
+  oneOf('partnerReligiosity', 'Religious outlook', owner.partnerReligiosities, candidate.religiosity, 'religiosity')
+  oneOf('partnerSmoking', 'Smoking', owner.partnerSmoking, candidate.smoking, 'smoking')
+  oneOf('partnerDrinking', 'Drinking', owner.partnerDrinking, candidate.drinking, 'drinking')
+
+  // `partnerSettleAbroad` and `partnerRelocateAfterMarriage` are deliberately
+  // NOT scored. The wizard stopped asking either (the After-marriage section
+  // was replaced by the three checks above), so for anyone registering now
+  // they would be a permanently 'unanswered' check. The stored values are
+  // still shown on the profile; they just no longer move the percentage.
 
   return checks
 }

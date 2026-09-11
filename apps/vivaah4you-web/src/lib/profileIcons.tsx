@@ -138,6 +138,9 @@ export const FIELD_ICONS: Record<string, FieldIcon> = {
   partnerEducations: GraduationCap,
   partnerProfessions: Briefcase,
   partnerDiets: Utensils,
+  partnerReligiosities: Sparkles,
+  partnerSmoking: Cigarette,
+  partnerDrinking: Wine,
 }
 
 /** The icon for a field, or null when it should keep its text label. */

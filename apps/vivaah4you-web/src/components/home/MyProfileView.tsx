@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
@@ -9,6 +9,7 @@ import ProfileBio from '@/components/profile/ProfileBio'
 import FamilyGraph from '@/components/profile/FamilyGraph'
 import FamilyEditor from '@/components/profile/FamilyEditor'
 import PhotoStrip from '@/components/profile/PhotoStrip'
+import { BIO_ADVANTAGE, suggestAboutMe } from '@/lib/aboutMe'
 import { fullName } from '@/lib/profileDisplay'
 import type { MyProfile } from '@/types/profile'
 
@@ -28,6 +29,18 @@ interface Props {
 export default function MyProfileView({ profile, onSave }: Props) {
   const [editingFamily, setEditingFamily] = useState(false)
   const name = fullName(profile) || 'Your profile'
+
+  /* The About-me box left the wizard's first step, so finishing the wizard
+     lands here with ?welcome=1 and the suggestion opens by itself. Read off
+     `window.location` rather than through useSearchParams: this component also
+     renders inside the dashboard, and the hook would force a Suspense boundary
+     around every page that mounts it. */
+  const [welcome, setWelcome] = useState(false)
+  useEffect(() => {
+    setWelcome(new URLSearchParams(window.location.search).get('welcome') === '1')
+  }, [])
+
+  const bioSuggestion = useMemo(() => suggestAboutMe(profile), [profile])
 
   return (
     <div className="flex flex-col gap-5">
@@ -59,7 +72,14 @@ export default function MyProfileView({ profile, onSave }: Props) {
         }
       />
 
-      <ProfileBio value={profile.aboutMe ?? ''} heading="About me" onSave={onSave} />
+      <ProfileBio
+        value={profile.aboutMe ?? ''}
+        heading="About me"
+        onSave={onSave}
+        suggestion={bioSuggestion}
+        advantage={BIO_ADVANTAGE}
+        autoSuggest={welcome}
+      />
 
       {editingFamily ? (
         <FamilyEditor onClose={() => setEditingFamily(false)} />

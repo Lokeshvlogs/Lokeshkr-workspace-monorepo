@@ -36,6 +36,9 @@ import {
   PARTNER_MOTHER_TONGUE_CHOICES,
   PARTNER_PROFESSION_CHOICES,
   PARTNER_RELIGION_CHOICES,
+  PARTNER_RELIGIOSITY_CHOICES,
+  PARTNER_SMOKING_CHOICES,
+  PARTNER_DRINKING_CHOICES,
 } from '@/constants/selectOptions/partner'
 import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from '@/lib/profileDisplay'
 import { INTEREST_CATEGORIES } from '@/constants/selectOptions/interests'
@@ -271,6 +274,9 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'partnerEducations', label: 'Education', section: 'Partner Preference', step: 5, editor: 'multiselect', searchable: true, options: PARTNER_EDUCATION_CHOICES },
   { key: 'partnerProfessions', label: 'Profession', section: 'Partner Preference', step: 5, editor: 'multiselect', searchable: true, options: PARTNER_PROFESSION_CHOICES },
   { key: 'partnerDiets', label: 'Diet', section: 'Partner Preference', step: 5, editor: 'multiselect', options: PARTNER_DIET_CHOICES },
+  { key: 'partnerReligiosities', label: 'Religious outlook', section: 'Partner Preference', step: 5, editor: 'multiselect', options: PARTNER_RELIGIOSITY_CHOICES },
+  { key: 'partnerSmoking', label: 'Smoking', section: 'Partner Preference', step: 5, editor: 'multiselect', options: PARTNER_SMOKING_CHOICES },
+  { key: 'partnerDrinking', label: 'Drinking', section: 'Partner Preference', step: 5, editor: 'multiselect', options: PARTNER_DRINKING_CHOICES },
   { key: 'partnerAbout', label: 'Looking for', section: 'Partner Preference', step: 5, editor: 'textarea' },
 ]
 

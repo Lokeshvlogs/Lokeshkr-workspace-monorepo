@@ -1,6 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+
+import { fieldIssue } from '@/lib/validation/schemas/profileWizardSchema'
 
 const MAX_LENGTH = 600
 
@@ -11,6 +13,24 @@ interface Props {
   heading: string
   /** Owner-only. Without `onSave` the bio is read-only. */
   onSave?: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  /**
+   * A draft built from the member's own answers, offered but never applied.
+   *
+   * Loading it straight into the bio would publish words the member has not
+   * read, on a profile that is theirs; it only ever reaches the editor, where
+   * saving is still an explicit act.
+   */
+  suggestion?: string
+  /** One line on why a bio is worth writing, shown beside the offer. */
+  advantage?: string
+  /**
+   * Open the editor pre-filled with the suggestion on arrival.
+   *
+   * Set once, on the hop from the last wizard step: the box that used to be in
+   * step 1 is being offered here instead, so it has to be visible rather than
+   * waiting behind a button nobody was told about.
+   */
+  autoSuggest?: boolean
 }
 
 /**
@@ -25,26 +45,61 @@ interface Props {
  * Set as a pull-quote: it is the one piece of a profile written in the member's
  * own voice, and running it as another grey field row buried that.
  */
-export default function ProfileBio({ value, heading, onSave }: Props) {
+export default function ProfileBio({
+  value,
+  heading,
+  onSave,
+  suggestion = '',
+  advantage = '',
+  autoSuggest = false,
+}: Props) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [draft, setDraft] = useState('')
+  /* True while the open editor holds generated text the member has not edited,
+     which is the only time the "suggested" note is honest. */
+  const [fromSuggestion, setFromSuggestion] = useState(false)
 
   const editable = Boolean(onSave)
+  const canSuggest = editable && !value && Boolean(suggestion)
+
+  /* Fires once. The profile reloads after every inline save, so without the
+     guard a member who cleared their bio would be handed the suggestion again
+     on the next render. */
+  const autoStarted = useRef(false)
+  useEffect(() => {
+    if (!autoSuggest || autoStarted.current || !canSuggest) return
+    autoStarted.current = true
+    setError('')
+    setDraft(suggestion)
+    setFromSuggestion(true)
+    setEditing(true)
+  }, [autoSuggest, canSuggest, suggestion])
 
   // A visitor looking at an empty bio gets nothing at all - an "not written
   // yet" placeholder on someone else's profile is noise about a person who
   // simply has not got to it.
   if (!value && !editable) return null
 
-  const beginEdit = () => {
+  const beginEdit = (seed = value) => {
     setError('')
-    setDraft(value)
+    setDraft(seed)
+    setFromSuggestion(seed !== value)
     setEditing(true)
   }
 
   const commit = async () => {
+    /* The wizard used to run this on its own About-me box; that box is gone,
+       so the rule has to travel with the field. Without it the one control
+       that still writes `aboutMe` is the one place a phone number or an email
+       address could be published. */
+    const issue = fieldIssue('aboutMe', draft)
+    if (issue) {
+      setError(issue)
+      return
+    }
+
     setSaving(true)
     setError('')
     // Step 0 is where the wizard keeps `aboutMe`; the same save endpoint backs
@@ -83,12 +138,22 @@ export default function ProfileBio({ value, heading, onSave }: Props) {
           </div>
         </div>
 
+        {fromSuggestion && (
+          <p className="bio-suggest-note">
+            Written from your own answers — change anything you like. Nothing is saved
+            until you press Save.
+          </p>
+        )}
+
         <textarea
           className="textarea-field"
           value={draft}
           maxLength={MAX_LENGTH}
           autoFocus
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            setFromSuggestion(false)
+          }}
         />
         <p className="textarea-count">
           {draft.length} / {MAX_LENGTH}
@@ -106,7 +171,7 @@ export default function ProfileBio({ value, heading, onSave }: Props) {
         {editable && (
           <button
             type="button"
-            onClick={beginEdit}
+            onClick={() => beginEdit()}
             className="profile-bio-edit"
             aria-label={`Edit ${heading}`}
           >
@@ -122,9 +187,26 @@ export default function ProfileBio({ value, heading, onSave }: Props) {
       {value ? (
         <blockquote className="profile-bio">{value}</blockquote>
       ) : (
-        <p className="profile-bio-empty">
-          Say a little about yourself — this is the part people actually read.
-        </p>
+        <>
+          <p className="profile-bio-empty">
+            Say a little about yourself — this is the part people actually read.
+          </p>
+          {advantage && <p className="bio-advantage">{advantage}</p>}
+          {canSuggest && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="chip chip-selected chip-square"
+                onClick={() => beginEdit(suggestion)}
+              >
+                Suggest one for me
+              </button>
+              <button type="button" className="chip chip-square" onClick={() => beginEdit()}>
+                Write my own
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   )

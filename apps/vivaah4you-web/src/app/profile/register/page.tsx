@@ -48,6 +48,7 @@ import {
   AvatarCropper,
   BirthDateTimePicker,
   ChipGroup,
+  ChipMultiGroup,
   DualRangeSlider,
   HorizontalFormSlider,
   MultiSelect,
@@ -78,9 +79,9 @@ import { COUNTRY_OPTIONS } from "@/constants/selectOptions/places";
 // EducationList, which owns one row at a time.
 import {
   professionOptions,
-  employedAsOptions,
   employedInOptions,
 } from "@/constants/selectOptions/career";
+import { employedAsFits, employedAsFor } from "@/constants/selectOptions/employedAs";
 import { familyIncomeOptions } from "@/constants/selectOptions/people";
 import {
   physiqueOptions,
@@ -110,6 +111,9 @@ import {
   PARTNER_MOTHER_TONGUE_CHOICES,
   PARTNER_PROFESSION_CHOICES,
   PARTNER_RELIGION_CHOICES,
+  PARTNER_RELIGIOSITY_CHOICES,
+  PARTNER_SMOKING_CHOICES,
+  PARTNER_DRINKING_CHOICES,
 } from "@/constants/selectOptions/partner";
 
 /** Form values are strings; the sliders want numbers, and "" means unset. */
@@ -195,13 +199,6 @@ const YES_NO_OPTIONS = [
  * wanted. "All" is the exclusive option: choosing it clears the rest, since
  * accepting every answer is the same as having no preference.
  */
-const MOBILITY_CHOICES = [
-  { value: "any", label: "All" },
-  { value: "yes", label: "Yes" },
-  { value: "no", label: "No" },
-  { value: "open", label: "Open to discussion" },
-];
-
 /**
  * A single answer about yourself, where "haven't decided" is honest.
  *
@@ -305,8 +302,14 @@ const INITIAL_FORM = {
   partnerEducations: [] as string[],
   partnerProfessions: [] as string[],
   partnerDiets: [] as string[],
-  partnerRelocateAfterMarriage: [] as string[],
-  partnerSettleAbroad: [] as string[],
+  /* What the After-marriage section was replaced by: lifestyle and outlook,
+     matched against the candidate's own answers rather than against a question
+     nobody else is asked. `partnerRelocateAfterMarriage` and
+     `partnerSettleAbroad` are gone from the wizard entirely - the columns stay
+     on the server so existing answers keep rendering on profiles. */
+  partnerReligiosities: [] as string[],
+  partnerSmoking: [] as string[],
+  partnerDrinking: [] as string[],
 
   // Step 6
   photo: "",
@@ -317,17 +320,61 @@ type FormState = typeof INITIAL_FORM;
 
 // Which keys belong to which wizard step - drives both saving and validation.
 const STEP_FIELDS: (keyof FormState)[][] = [
-  ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel", "aboutMe"],
+  /* `aboutMe` is deliberately absent: it is no longer asked here. It is offered
+     as a suggestion on /profile/me once the wizard is finished, so nothing in
+     step 0 saves it. */
+  ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel"],
   ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity", "citizenshipCountry"],
   ["educations", "achievements", "profession", "employedIn", "employedAs", "salaryAmount", "settleAbroad", "employerSlug", "employerName", "workCountry", "visaStatus"],
   ["familyLivingInCountry", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily", "fatherOccupation", "motherOccupation", "brothers", "brothersMarried", "sisters", "sistersMarried", "familyAbout"],
   ["diet", "smoking", "drinking", "hasChildren", "dailyRoutine", "interestsMusic", "interestsMovies", "interestsBooks", "interestsCuisines", "interestsTravel", "interestsHobbies", "interestsOther"],
-  ["partnerAgeMin", "partnerAgeMax", "partnerHeightMin", "partnerHeightMax", "partnerAbout", "partnerMaritalStatuses", "partnerReligions", "partnerCommunities", "partnerMotherTongues", "partnerCountries", "partnerEducations", "partnerProfessions", "partnerDiets", "partnerRelocateAfterMarriage", "partnerSettleAbroad"],
+  ["partnerAgeMin", "partnerAgeMax", "partnerHeightMin", "partnerHeightMax", "partnerAbout", "partnerMaritalStatuses", "partnerReligions", "partnerCommunities", "partnerMotherTongues", "partnerCountries", "partnerEducations", "partnerProfessions", "partnerDiets", "partnerReligiosities", "partnerSmoking", "partnerDrinking"],
   ["photo", "photos"],
 ];
 
 const SAVE_CONFIRM_MS = 1100;
 const PHOTO_STEP = 6;
+
+/**
+ * The required answers behind each top-level section of a step, in render order.
+ *
+ * Only used for the first-run reveal: a section whose keys are all answered
+ * lets the next one appear. An empty list means the section asks nothing
+ * mandatory, so it never holds the rest of the step back.
+ *
+ * The order must track the JSX below - each inner array is one child of that
+ * step's container.
+ */
+const SECTION_NEEDS: string[][][] = [
+  // 0 - Basic details
+  [["firstName", "surname"], ["dob"], ["gender", "heightFeet"], [], ["maritalStatus"], []],
+  // 1 - Social background
+  [
+    ["religion", "community"],
+    ["mothertongue"],
+    ["religiosity", "religiosityDetail"],
+    ["currentCountry", "currentCity"],
+    ["placeOfBirthCountry", "placeOfBirthCity"],
+    ["citizenshipCountry"],
+  ],
+  // 2 - Education & career
+  [["educations"], [], ["profession", "employedIn", "employedAs", "salaryAmount", "workCountry", "visaStatus", "settleAbroad"]],
+  // 3 - Family
+  [["familyLivingInCountry", "familyLivingInCity", "familyIncome"], ["fatherOccupation", "motherOccupation"], [], [], []],
+  // 4 - Lifestyle & habits
+  [["diet", "smoking", "drinking"], []],
+  // 5 - Partner preference
+  [
+    [],
+    [],
+    ["partnerMaritalStatuses", "partnerReligions", "partnerCommunities", "partnerMotherTongues", "partnerCountries", "partnerDiets"],
+    ["partnerEducations", "partnerProfessions"],
+    [],
+    [],
+  ],
+  // 6 - Photos
+  [["photo"], []],
+];
 
 /** SelectDropdown with the wizard's shared look, so every picker matches. */
 function PickerField({
@@ -417,6 +464,55 @@ function LongText({
   );
 }
 
+/**
+ * A step's sections, revealed one at a time on a first run.
+ *
+ * Seven steps of dense form shown all at once is what makes a registration
+ * wizard feel like paperwork. Somebody who has already registered gets the
+ * whole step at once instead - they came back to change one answer and should
+ * not have to walk through the step to reach it.
+ *
+ * Children are taken in render order and matched positionally against `needs`,
+ * so this stays a wrapper: no step had to be restructured into a data table to
+ * gain the behaviour.
+ */
+function RevealSections({
+  needs,
+  unresolved,
+  enabled,
+  className,
+  children,
+}: {
+  needs: string[][];
+  unresolved: Record<string, string>;
+  enabled: boolean;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (!enabled) return <div className={className}>{children}</div>;
+
+  const sections = React.Children.toArray(children);
+
+  // The first section still missing something is the last one shown.
+  let shown = sections.length;
+  for (let i = 0; i < sections.length; i += 1) {
+    if ((needs[i] ?? []).some((key) => unresolved[key] !== undefined)) {
+      shown = i + 1;
+      break;
+    }
+  }
+
+  return (
+    <div className={className}>
+      {sections.slice(0, shown).map((section, index) => (
+        <div key={index} className="wiz-reveal">
+          {section}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ProfileRegisterPage() {
   const router = useRouter();
   const auth = useAuth();
@@ -447,6 +543,16 @@ export default function ProfileRegisterPage() {
     setTouchedFields((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [completeness, setCompleteness] = useState<number>(0);
+  /* Null until the wizard has been finished once, which is the whole of the
+     first-run test. `is_complete` cannot stand in for it: that is a property
+     recomputed from live field values and flips back the moment a core field
+     is cleared, so a member who blanked one answer would be dripped the wizard
+     all over again. */
+  const [registeredAt, setRegisteredAt] = useState<string | null>(null);
+  /* The furthest step reached, which is how far the first-run stepper reveals.
+     Tracked rather than read off `step`, so going back to fix step 1 does not
+     take away the markers already earned. */
+  const [furthestStep, setFurthestStep] = useState(0);
 
   const hydrated = useRef(false);
   const draftOwner = useRef<string>("");
@@ -494,6 +600,25 @@ export default function ProfileRegisterPage() {
     [form.religiosity],
   );
 
+  /* Seniority is scoped to the profession - "Resident" belongs to a doctor and
+     "Tech Lead" to an engineer - so the ladder changes with it. */
+  const employedAsChoices = useMemo(() => employedAsFor(form.profession), [form.profession]);
+
+  /**
+   * Set the profession, dropping a seniority the new ladder does not contain.
+   *
+   * The same reset the wizard already does for country -> city: without it a
+   * doctor who becomes a software engineer keeps "Resident", which is no longer
+   * an option and so renders as nothing selected while still being saved.
+   */
+  const setProfession = useCallback((value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      profession: value,
+      employedAs: employedAsFits(value, prev.employedAs) ? prev.employedAs : "",
+    }));
+  }, []);
+
   /* ---------- Hydration ---------- */
   useEffect(() => {
     let cancelled = false;
@@ -501,12 +626,14 @@ export default function ProfileRegisterPage() {
     async function hydrate() {
       let restored: Partial<FormState> = {};
       let owner = "";
+      let registered: string | null = null;
 
       try {
         const response = await fetch("/api/profile/me");
         if (response.ok) {
           const data = await response.json();
           owner = draftOwnerKey(data);
+          registered = data.registeredAt ?? null;
           setCompleteness(Number(data.profile_completeness ?? 0));
           (Object.keys(INITIAL_FORM) as (keyof FormState)[]).forEach((key) => {
             const value = data[key];
@@ -571,6 +698,7 @@ export default function ProfileRegisterPage() {
       const fromUrl = requested !== null && requested <= PHOTO_STEP ? requested : null;
 
       setForm((prev) => ({ ...prev, ...restored }));
+      setRegisteredAt(registered);
       setStep(fromUrl ?? draftStep ?? 0);
       hydrated.current = true;
 
@@ -585,6 +713,11 @@ export default function ProfileRegisterPage() {
     hydrate();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (step === undefined) return;
+    setFurthestStep((prev) => (step > prev ? step : prev));
+  }, [step]);
 
   // The save status belongs to the step it happened on.
   useEffect(() => {
@@ -674,11 +807,16 @@ export default function ProfileRegisterPage() {
       setTriedSteps((prev) => new Set(prev).add(PHOTO_STEP));
       return;
     }
+    // Read before saving: this same request is what stamps `registered_at`
+    // server-side, so afterwards there is no way to tell a first finish from
+    // a returning member re-saving the last step.
+    const firstFinish = registeredAt === null;
     const saved = await saveStep(PHOTO_STEP);
     if (!saved) return;
     await new Promise((resolve) => setTimeout(resolve, SAVE_CONFIRM_MS));
     clearProfileDraft();
-    router.push("/profile/me");
+    // The About-me box left step 1; the profile offers to write one instead.
+    router.push(firstFinish ? "/profile/me?welcome=1" : "/profile/me");
   };
 
   /* ---------- Step gating ---------- */
@@ -711,7 +849,6 @@ export default function ProfileRegisterPage() {
       // picker's own 0 is indistinguishable from an untouched one.
       need(form.heightFeet !== "", "heightFeet");
       need(form.maritalStatus !== "", "maritalStatus", "Pick one");
-      check("aboutMe");
       return gaps;
     }
 
@@ -814,6 +951,13 @@ export default function ProfileRegisterPage() {
 
   const active = STEPS[step];
 
+  /* A first-time member is shown one step marker at a time, the next appearing
+     as it is unlocked. Seven markers up front reads as a form to be endured;
+     one that grows reads as progress. Anyone who has registered once sees the
+     full stepper, because they are here to reach a specific step. */
+  const firstRun = registeredAt === null;
+  const visibleSteps = firstRun ? Math.min(STEPS.length, furthestStep + 1) : STEPS.length;
+
   /* Field keys are unique across steps, so these merge without colliding and a
      single lookup serves every step. */
   const triedGaps: Record<string, string> = {};
@@ -856,7 +1000,7 @@ export default function ProfileRegisterPage() {
           </div>
 
           <div className="wiz-steps">
-            {STEPS.map((s, idx) => (
+            {STEPS.slice(0, visibleSteps).map((s, idx) => (
               <React.Fragment key={s.title}>
                 <button
                   type="button"
@@ -883,7 +1027,7 @@ export default function ProfileRegisterPage() {
                     STEP_ICONS[idx]
                   )}
                 </button>
-                {idx < STEPS.length - 1 && (
+                {idx < visibleSteps - 1 && (
                   <div className={`wiz-step-line ${idx < step ? "wiz-step-line-done" : ""}`} />
                 )}
               </React.Fragment>
@@ -916,7 +1060,13 @@ export default function ProfileRegisterPage() {
             setStep={setStep}
             steps={[
               /* ---------- 0: Basic details ---------- */
-              <div key="basic" className="flex flex-col gap-5 px-1">
+              <RevealSections
+                key="basic"
+                className="flex flex-col gap-5 px-1"
+                needs={SECTION_NEEDS[0]}
+                unresolved={gapsOn(0)}
+                enabled={firstRun}
+              >
                 <div className="form-grid-2">
                   <TextField id="firstName" label="First Name" icon={<User />} errorValue={err("firstName")} onBlur={touch("firstName")} value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
                   <TextField id="surname" label="Surname" icon={<User />} errorValue={err("surname")} onBlur={touch("surname")} value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
@@ -947,21 +1097,16 @@ export default function ProfileRegisterPage() {
                 <ChipGroup label="Body Physique" icon={<PersonStanding />} options={physiqueOptions} value={form.bodyPhysique} onChange={(v) => setField("bodyPhysique", v)} />
                 <ChipGroup label="Marital Status" icon={<Heart />} options={MARITAL_OPTIONS} value={form.maritalStatus} onChange={(v) => setField("maritalStatus", v)} error={err("maritalStatus")} onBlur={touch("maritalStatus")} />
                 <ChipGroup label="Are you Manglik?" icon={<Star />} options={MANGLIK_OPTIONS} value={form.manglikLevel} onChange={(v) => setField("manglikLevel", v)} />
-
-                <LongText
-                  id="aboutMe"
-                  errorValue={err("aboutMe")}
-                  onBlur={touch("aboutMe")}
-                  label="About yourself"
-                  icon={<PenLine />}
-                  hint="Optional. A few lines in your own words — what you enjoy, what matters to you."
-                  value={form.aboutMe}
-                  onChange={(v) => setField("aboutMe", v)}
-                />
-              </div>,
+              </RevealSections>,
 
               /* ---------- 1: Social background ---------- */
-              <div key="social" className="flex flex-col gap-5 px-1">
+              <RevealSections
+                key="social"
+                className="flex flex-col gap-5 px-1"
+                needs={SECTION_NEEDS[1]}
+                unresolved={gapsOn(1)}
+                enabled={firstRun}
+              >
                 <div className="form-grid-2">
                   <PickerField label="Religion" icon={<Landmark />} errorValue={err("religion")} onBlur={touch("religion")} options={RELIGION_OPTIONS} value={form.religion} onChange={(v) => setForm((p) => ({ ...p, religion: v, community: "" }))} />
                   <PickerField label="Caste / Community" icon={<Users2 />} errorValue={err("community")} onBlur={touch("community")} options={communityOptions} value={form.community} onChange={(v) => setField("community", v)} searchable />
@@ -1032,10 +1177,16 @@ export default function ProfileRegisterPage() {
                     <PickerField label="Country of citizenship" icon={<BadgeCheck />} errorValue={err("citizenshipCountry")} onBlur={touch("citizenshipCountry")} options={COUNTRY_OPTIONS} value={form.citizenshipCountry} onChange={(v) => setField("citizenshipCountry", v)} searchable />
                   </div>
                 </div>
-              </div>,
+              </RevealSections>,
 
               /* ---------- 2: Education & career ---------- */
-              <div key="career" className="flex flex-col gap-5 px-1">
+              <RevealSections
+                key="career"
+                className="flex flex-col gap-5 px-1"
+                needs={SECTION_NEEDS[2]}
+                unresolved={gapsOn(2)}
+                enabled={firstRun}
+              >
                 <div className="form-section">
                   <p className="form-section-title">
                     <GraduationCap size={17} className="form-section-icon" aria-hidden="true" />
@@ -1072,9 +1223,9 @@ export default function ProfileRegisterPage() {
                     Profession
                   </p>
                   <div className="mt-4 flex flex-col gap-5">
-                    <PickerField label="Profession" icon={<Briefcase />} errorValue={err("profession")} onBlur={touch("profession")} options={professionOptions} value={form.profession} onChange={(v) => setField("profession", v)} searchable />
+                    <PickerField label="Profession" icon={<Briefcase />} errorValue={err("profession")} onBlur={touch("profession")} options={professionOptions} value={form.profession} onChange={setProfession} searchable />
                     <PickerField label="Employed In" icon={<Building2 />} errorValue={err("employedIn")} onBlur={touch("employedIn")} options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
-                    <PickerField label="Employed As" icon={<UserCog />} errorValue={err("employedAs")} onBlur={touch("employedAs")} options={employedAsOptions} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
+                    <PickerField label="Employed As" icon={<UserCog />} errorValue={err("employedAs")} onBlur={touch("employedAs")} options={employedAsChoices} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
                     <PickerField label="Annual income" icon={<Wallet />} errorValue={err("salaryAmount")} onBlur={touch("salaryAmount")} options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
 
                     <EmployerPicker
@@ -1126,10 +1277,16 @@ export default function ProfileRegisterPage() {
                     />
                   </div>
                 </div>
-              </div>,
+              </RevealSections>,
 
               /* ---------- 3: Family background ---------- */
-              <div key="family" className="flex flex-col gap-5 px-1">
+              <RevealSections
+                key="family"
+                className="flex flex-col gap-5 px-1"
+                needs={SECTION_NEEDS[3]}
+                unresolved={gapsOn(3)}
+                enabled={firstRun}
+              >
                 <div className="form-section">
                   <p className="form-section-title">
                     <MapPin size={17} className="form-section-icon" aria-hidden="true" />
@@ -1183,7 +1340,10 @@ export default function ProfileRegisterPage() {
                   </div>
                 </div>
 
-                <div className="form-section">
+                {/* Nuclear households are fully described by the counts above,
+                    and offering the editor there invites naming people who were
+                    not claimed to be in the house. */}
+                <div className="form-section" hidden={Number(form.familyType) === 0}>
                   <p className="form-section-title">
                     <Users2 size={17} className="form-section-icon" aria-hidden="true" />
                     Names and photos
@@ -1216,10 +1376,16 @@ export default function ProfileRegisterPage() {
                   value={form.familyAbout}
                   onChange={(v) => setField("familyAbout", v)}
                 />
-              </div>,
+              </RevealSections>,
 
               /* ---------- 4: Lifestyle & habits ---------- */
-              <div key="lifestyle" className="flex flex-col gap-5 px-1">
+              <RevealSections
+                key="lifestyle"
+                className="flex flex-col gap-5 px-1"
+                needs={SECTION_NEEDS[4]}
+                unresolved={gapsOn(4)}
+                enabled={firstRun}
+              >
                 <div className="form-section">
                   <p className="form-section-title">
                     <Sun size={17} className="form-section-icon" aria-hidden="true" />
@@ -1264,16 +1430,18 @@ export default function ProfileRegisterPage() {
                     each row; they show up as tags on your profile.
                   </p>
 
-                  <div className="flex flex-col gap-5">
+                  {/* Chips rather than dropdowns: this is browsing, not looking
+                      up a value you already had in mind, and six stacked
+                      MultiSelects made this the tallest step in the wizard. */}
+                  <div className="flex flex-col gap-6">
                     {INTEREST_CATEGORIES.map((category) => (
-                      <MultiSelect
+                      <ChipMultiGroup
                         key={category.key}
                         label={category.label}
                         icon={INTEREST_ICONS[category.key]}
                         options={category.options}
                         value={form[category.key]}
                         onChange={(v) => setField(category.key, v)}
-                        searchable
                         maxSelected={8}
                       />
                     ))}
@@ -1291,10 +1459,16 @@ export default function ProfileRegisterPage() {
                     />
                   </div>
                 </div>
-              </div>,
+              </RevealSections>,
 
               /* ---------- 5: Partner preference ---------- */
-              <div key="partner" className="flex flex-col gap-5 px-1">
+              <RevealSections
+                key="partner"
+                className="flex flex-col gap-5 px-1"
+                needs={SECTION_NEEDS[5]}
+                unresolved={gapsOn(5)}
+                enabled={firstRun}
+              >
                 <p className="text-sm text-color-placeholder-text">
                   Pick at least one answer in each list. Age and height are the exceptions —
                   leave those alone for no preference.
@@ -1395,35 +1569,40 @@ export default function ProfileRegisterPage() {
                   </div>
                 </div>
 
+                {/* Each of these is matched against the other person's own
+                    answer, which is what the two After-marriage questions never
+                    had - nothing on a profile said whether they would relocate,
+                    so that preference could never be scored. */}
                 <div className="form-section">
                   <p className="form-section-title">
-                    <Home size={17} className="form-section-icon" aria-hidden="true" />
-                    After marriage
+                    <Compass size={17} className="form-section-icon" aria-hidden="true" />
+                    Outlook &amp; lifestyle
                   </p>
                   <p className="form-section-hint mb-3">
-                    Expectations about moving are worth settling early — they are a common
-                    reason otherwise good matches do not work out.
-                  </p>
-                  <p className="form-section-hint mb-3">
-                    Pick every answer you would accept — each one you choose widens who
-                    reaches you.
+                    Optional, and often the things that decide it. Pick every answer you
+                    would accept — each one you choose widens who reaches you.
                   </p>
                   <div className="mt-3 flex flex-col gap-5">
-                    <MultiSelect
-                      label="Should your partner be willing to relocate to your location?"
-                      icon={<MapPin />}
-                      options={MOBILITY_CHOICES}
-                      value={form.partnerRelocateAfterMarriage}
-                      onChange={(v) => setField("partnerRelocateAfterMarriage", v)}
-                      exclusiveValue="any"
+                    <ChipMultiGroup
+                      label="How religious would you like them to be?"
+                      icon={<Compass />}
+                      options={PARTNER_RELIGIOSITY_CHOICES}
+                      value={form.partnerReligiosities}
+                      onChange={(v) => setField("partnerReligiosities", v)}
                     />
-                    <MultiSelect
-                      label="Would you like a partner interested in settling abroad?"
-                      icon={<Plane />}
-                      options={MOBILITY_CHOICES}
-                      value={form.partnerSettleAbroad}
-                      onChange={(v) => setField("partnerSettleAbroad", v)}
-                      exclusiveValue="any"
+                    <ChipMultiGroup
+                      label="Smoking"
+                      icon={<Cigarette />}
+                      options={PARTNER_SMOKING_CHOICES}
+                      value={form.partnerSmoking}
+                      onChange={(v) => setField("partnerSmoking", v)}
+                    />
+                    <ChipMultiGroup
+                      label="Drinking"
+                      icon={<Wine />}
+                      options={PARTNER_DRINKING_CHOICES}
+                      value={form.partnerDrinking}
+                      onChange={(v) => setField("partnerDrinking", v)}
                     />
                   </div>
                 </div>
@@ -1438,10 +1617,16 @@ export default function ProfileRegisterPage() {
                   value={form.partnerAbout}
                   onChange={(v) => setField("partnerAbout", v)}
                 />
-              </div>,
+              </RevealSections>,
 
               /* ---------- 6: Photos ---------- */
-              <div key="photo" className="flex flex-col gap-6 px-1">
+              <RevealSections
+                key="photo"
+                className="flex flex-col gap-6 px-1"
+                needs={SECTION_NEEDS[6]}
+                unresolved={gapsOn(6)}
+                enabled={firstRun}
+              >
                 <div className="form-section flex flex-col items-center">
                   <p className="form-section-title">
                     <Camera size={17} className="form-section-icon" aria-hidden="true" />
@@ -1469,7 +1654,7 @@ export default function ProfileRegisterPage() {
                   </p>
                   <PhotoGallery value={form.photos} onChange={(photos) => setField("photos", photos)} />
                 </div>
-              </div>,
+              </RevealSections>,
             ]}
           />
         </div>

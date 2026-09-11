@@ -258,7 +258,14 @@ export default function SelectDropdown({ id, label, icon, placeholder, value, na
    * has already kept - a selected row that does not match the query stays
    * hidden, which is what a reader expects.
    */
+  /* Any option carrying a group turns the list into a sectioned one. */
+  const grouped = useMemo(() => uniqueOptions.some((o: any) => o.group), [uniqueOptions]);
+
   const orderedOptions = useMemo(() => {
+    /* Pinning the chosen row to the top is right for a flat list and wrong for
+       a grouped one: it orphans that row from its heading and makes the run
+       resume under a second copy of it. */
+    if (grouped) return uniqueOptions;
     if (!selectedFirst || pinnedValue === undefined || pinnedValue === null || pinnedValue === '') {
       return uniqueOptions;
     }
@@ -266,14 +273,18 @@ export default function SelectDropdown({ id, label, icon, placeholder, value, na
     if (index <= 0) return uniqueOptions;
     const picked = uniqueOptions[index];
     return [picked, ...uniqueOptions.slice(0, index), ...uniqueOptions.slice(index + 1)];
-  }, [uniqueOptions, pinnedValue, selectedFirst]);
+  }, [uniqueOptions, pinnedValue, selectedFirst, grouped]);
 
   // With a server-driven search, `options` IS the result for the current term;
   // re-filtering locally would discard rows matched on an alias or a city that
   // never appears in the label.
   const visibleOptions = searchable && search && !onSearchChange
-    ? orderedOptions.filter(o =>
-        `${o.label ?? ''} ${o.extra_label ?? ''}`.toLowerCase().includes(search.toLowerCase()))
+    ? orderedOptions.filter((o: any) =>
+        // The group is searched too, so "medical" finds Doctor - which it did
+        // not before, because no profession's label contains that word.
+        `${o.label ?? ''} ${o.extra_label ?? ''} ${o.group ?? ''}`
+          .toLowerCase()
+          .includes(search.toLowerCase()))
     : orderedOptions;
 
   /** Whether a row is the pinned one sitting out of its natural position. */
@@ -486,7 +497,21 @@ export default function SelectDropdown({ id, label, icon, placeholder, value, na
           )}
           {visibleOptions.map((option, index) => {
             const isSelected = value === option.value;
+            /* Emitted as a sibling before the row, never as an entry in
+               `visibleOptions` - that array's indices are simultaneously the
+               keyboard cursor, the DOM lookup key and the scroll target, and
+               inserting into it would move all three. */
+            const group = (option as any).group;
+            const header =
+              group && group !== (visibleOptions[index - 1] as any)?.group ? (
+                <div className="select-group-header" role="presentation">
+                  {group}
+                </div>
+              ) : null;
+
             return (
+              <React.Fragment key={`g-${option.value}`}>
+              {header}
               <div
                 key={`${option.value}`}
                 data-option-index={index}
@@ -503,6 +528,7 @@ export default function SelectDropdown({ id, label, icon, placeholder, value, na
                 </span>
                 <Check size={16} strokeWidth={2.75} className="select-option-check" aria-hidden="true" />
               </div>
+              </React.Fragment>
             )
           })}
           </div>

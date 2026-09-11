@@ -122,6 +122,19 @@ export interface PublicProfile {
   partnerSettleAbroad: string[]
 
   /**
+   * Lifestyle and outlook you would accept in a partner. Same list semantics
+   * as the mobility answers above: OR within a field, empty is no preference.
+   *
+   * These replaced the two After-marriage questions in the wizard. Those two
+   * columns stay in `PublicProfile` because profiles saved before the change
+   * still carry values and the profile view still shows them - nothing writes
+   * them any more.
+   */
+  partnerReligiosities: string[]
+  partnerSmoking: string[]
+  partnerDrinking: string[]
+
+  /**
    * Education history, most-preferred order first. `educationLevel`,
    * `fieldOfStudy` and `collegeUniversity` above are DERIVED from the highest
    * of these by the server - read them, never write them.

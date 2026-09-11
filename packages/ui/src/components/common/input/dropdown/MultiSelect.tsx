@@ -177,8 +177,11 @@ export default function MultiSelect({
   }, [options]);
 
   const visibleOptions = searchable && search
-    ? uniqueOptions.filter(o =>
-        `${o.label ?? ''} ${o.extra_label ?? ''}`.toLowerCase().includes(search.toLowerCase()))
+    ? uniqueOptions.filter((o: any) =>
+        // The group is searched too, so a category name finds what is under it.
+        `${o.label ?? ''} ${o.extra_label ?? ''} ${o.group ?? ''}`
+          .toLowerCase()
+          .includes(search.toLowerCase()))
     : uniqueOptions;
 
   const atLimit = maxSelected !== undefined && value.length >= maxSelected;
@@ -276,6 +279,15 @@ export default function MultiSelect({
 
         {visibleOptions.map((option, index) => {
           const optionValue = String(option.value);
+          /* A sibling, not an entry: `index` is the keyboard cursor here too,
+             and the arrow-key wrap arithmetic reads `visibleOptions.length`. */
+          const group = (option as any).group;
+          const header =
+            group && group !== (visibleOptions[index - 1] as any)?.group ? (
+              <div className="select-group-header" role="presentation">
+                {group}
+              </div>
+            ) : null;
           const isSelected = selected.has(optionValue);
           const isExclusive = exclusiveValue !== undefined && optionValue === exclusiveValue;
           // The exclusive row reads as chosen when nothing else is.
@@ -283,8 +295,9 @@ export default function MultiSelect({
           const blocked = atLimit && !isSelected && !isExclusive;
 
           return (
+            <React.Fragment key={`g-${optionValue}`}>
+            {header}
             <div
-              key={optionValue}
               role="option"
               aria-selected={shown}
               aria-disabled={blocked || undefined}
@@ -297,6 +310,7 @@ export default function MultiSelect({
               {option.extra_label && <span className="select-option-extra">{option.extra_label}</span>}
               {shown && <Check className="select-option-check" size={16} />}
             </div>
+            </React.Fragment>
           );
         })}
       </div>

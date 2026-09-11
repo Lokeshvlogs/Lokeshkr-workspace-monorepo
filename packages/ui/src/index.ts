@@ -7,6 +7,7 @@ export { default as DateRangeSlider } from './components/common/input/dateselect
 export { default as AvatarCropper } from './components/common/media/AvatarCropper';
 export { default as VerifiedBadge, VERIFICATION } from './components/common/media/VerifiedBadge';
 export { default as ChipGroup } from './components/common/input/choice/ChipGroup';
+export { default as ChipMultiGroup } from './components/common/input/choice/ChipMultiGroup';
 export type { ChipOption } from './components/common/input/choice/ChipGroup';
 export { default as RangeSlider } from './components/common/input/slider/RangeSlider';
 export { default as DualRangeSlider } from './components/common/input/slider/DualRangeSlider';

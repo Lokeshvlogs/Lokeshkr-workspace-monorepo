@@ -63,6 +63,14 @@ class Profile(models.Model):
     # later edit that drops the level does not erase when it was earned.
     verified_at = models.DateTimeField(null=True, blank=True)
 
+    # When the member first finished the registration wizard. Never cleared.
+    #
+    # The wizard reveals itself gradually on a first run - one step marker and
+    # one section at a time - and stops doing so once this is set. It cannot be
+    # derived from `is_complete`, which is a property recomputed from live field
+    # values and flips back the moment a core field is cleared.
+    registered_at = models.DateTimeField(null=True, blank=True)
+
     # Independent evidence, kept as separate booleans rather than folded into
     # one level, so that changing how evidence maps to a level is a code change
     # in verification.py and never a migration.
@@ -323,8 +331,18 @@ class Profile(models.Model):
     # usually equally happy with "open to discussion", and forcing one choice
     # made them exclude matches they would have wanted. Every selected value is
     # accepted by the matcher; an empty list means no preference at all.
+    #
+    # No longer collected: the wizard's "After marriage" section was replaced by
+    # questions about a partner's outlook and habits. The columns stay so the
+    # answers are not destroyed, but nothing reads or scores them.
     partner_relocate_after_marriage = models.JSONField(default=list, blank=True)
     partner_settle_abroad = models.JSONField(default=list, blank=True)
+
+    # What a member wants of a partner's outlook and daily habits. Same list
+    # shape and same "empty means no preference" rule as the block above.
+    partner_religiosities = models.JSONField(default=list, blank=True)
+    partner_smoking = models.JSONField(default=list, blank=True)
+    partner_drinking = models.JSONField(default=list, blank=True)
 
     # Display Picture (DP)
     display_picture = models.ImageField(upload_to="profile_pics/", null=True, blank=True)

@@ -21,6 +21,9 @@ router = Router(tags=["profiles"])
 STATS_WINDOW_DAYS = 30
 # How many recent visitors the dashboard shows.
 VISITOR_LIMIT = 8
+# basics, social, career, family, lifestyle, partner preference, photos.
+WIZARD_STEPS = 7
+LAST_WIZARD_STEP = WIZARD_STEPS - 1
 # How many matches one page carries.
 MATCH_PAGE_SIZE = 12
 MATCH_TABS = ("all", "new", "recent")
@@ -348,7 +351,7 @@ def update_profile_step(request, data: ProfileUpdateSchema):
 
     # The wizard now runs 0..6 (basics, social, career, family, lifestyle,
     # partner preference, photos).
-    if step not in range(0, 7):
+    if step not in range(0, WIZARD_STEPS):
         raise HttpError(400, "Invalid step value")
 
     profile = get_object_or_404(Profile, user=request.user)
@@ -365,6 +368,13 @@ def update_profile_step(request, data: ProfileUpdateSchema):
             # what produced the current class of write bugs.
             raise HttpError(400, str(exc)) from exc
         validate_sibling_counts(profile)
+
+        # Saving the last step is what finishing the wizard means. Stamped once
+        # and never cleared: it turns off the first-run reveal, and a later edit
+        # that drops a field must not put somebody back through it.
+        if step == LAST_WIZARD_STEP and profile.registered_at is None:
+            profile.registered_at = timezone.now()
+
         # Profile.save() recomputes completeness and mints profile_id when possible.
         profile.save()
 
@@ -374,6 +384,7 @@ def update_profile_step(request, data: ProfileUpdateSchema):
         "profile_id": profile.profile_id or "",
         "profile_completeness": profile.profile_completeness,
         "is_complete": profile.is_complete,
+        "registered_at": profile.registered_at.isoformat() if profile.registered_at else None,
     }
 
 

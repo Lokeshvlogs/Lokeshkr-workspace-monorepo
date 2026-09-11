@@ -602,6 +602,52 @@ body,
   background: linear-gradient(90deg, var(--color-primary-light), var(--color-primary));
 }
 
+/* A step marker arriving for the first time on a first run.
+   Opacity only, deliberately: `.wiz-step-active` carries its own transform, and
+   an animation that also set one would have to be overridden there - which
+   changes `animation-name` and so restarts the animation every time the active
+   step moves, popping every marker in the row. Fading alone needs no override,
+   so this fires once, when the marker mounts. */
+.wiz-step,
+.wiz-step-line {
+  animation: wiz-marker-in 320ms ease-out both;
+}
+
+@keyframes wiz-marker-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A form section arriving as the one above it is answered. Kept short and
+   small - this fires while somebody is filling the step in, so it has to read
+   as the page making room rather than as an interruption. */
+.wiz-reveal {
+  animation: wiz-reveal-in 300ms ease-out both;
+}
+
+@keyframes wiz-reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiz-step,
+  .wiz-step-line,
+  .wiz-reveal {
+    animation: none;
+  }
+}
+
 .wiz-step-heading {
   margin-top: 1.25rem;
 }

@@ -1,7 +1,8 @@
 import type { SelectOption } from '@lokesh-workspace/ui'
 
 import { educationOptions, professionOptions } from '@/constants/selectOptions/career'
-import { dietOptions } from '@/constants/selectOptions/person'
+import { RELIGIOSITY_OPTIONS } from '@/constants/selectOptions/beliefs'
+import { dietOptions, drinkingOptions, smokingOptions } from '@/constants/selectOptions/person'
 import { COUNTRY_OPTIONS } from '@/constants/selectOptions/places'
 import { motherTongueOptions } from '@/constants/selectOptions/social'
 import { RELIGION_OPTIONS } from '@/lib/profileDisplay'
@@ -58,6 +59,18 @@ export const PARTNER_COUNTRY_CHOICES: SelectOption[] = COUNTRY_OPTIONS
 export const PARTNER_EDUCATION_CHOICES: SelectOption[] = educationOptions
 export const PARTNER_PROFESSION_CHOICES: SelectOption[] = professionOptions
 export const PARTNER_DIET_CHOICES: SelectOption[] = dietOptions
+
+/**
+ * Lifestyle and outlook, which replaced the two After-marriage questions.
+ *
+ * The candidate's own `religiosity`, `smoking` and `drinking` answers are what
+ * these are matched against, so the vocabularies must be the very same lists
+ * the Lifestyle step offers - hence the direct re-export rather than a
+ * parallel copy that could drift.
+ */
+export const PARTNER_RELIGIOSITY_CHOICES: SelectOption[] = RELIGIOSITY_OPTIONS
+export const PARTNER_SMOKING_CHOICES: SelectOption[] = smokingOptions
+export const PARTNER_DRINKING_CHOICES: SelectOption[] = drinkingOptions
 
 /** Age and height bounds, shared by the wizard sliders and the search filters. */
 export const PARTNER_AGE_MIN = 18

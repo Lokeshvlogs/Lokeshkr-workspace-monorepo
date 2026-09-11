@@ -109,6 +109,10 @@ CAMEL_TO_MODEL = {
     "settleAbroad": "settle_abroad",
     "partnerRelocateAfterMarriage": "partner_relocate_after_marriage",
     "partnerSettleAbroad": "partner_settle_abroad",
+    # What a member wants of a partner's outlook and daily habits.
+    "partnerReligiosities": "partner_religiosities",
+    "partnerSmoking": "partner_smoking",
+    "partnerDrinking": "partner_drinking",
 }
 
 MODEL_TO_CAMEL = {v: k for k, v in CAMEL_TO_MODEL.items()}
@@ -164,6 +168,9 @@ JSON_LIST_FIELDS = {
     "partner_diets",
     "partner_relocate_after_marriage",
     "partner_settle_abroad",
+    "partner_religiosities",
+    "partner_smoking",
+    "partner_drinking",
 }
 
 # Fields an explicit null may legitimately clear. Everywhere else `None` still
@@ -657,6 +664,9 @@ def profile_to_api(profile, request=None, public: bool = False, viewer=None) -> 
         "settleAbroad": profile.settle_abroad,
         "partnerRelocateAfterMarriage": profile.partner_relocate_after_marriage or [],
         "partnerSettleAbroad": profile.partner_settle_abroad or [],
+        "partnerReligiosities": profile.partner_religiosities or [],
+        "partnerSmoking": profile.partner_smoking or [],
+        "partnerDrinking": profile.partner_drinking or [],
         "achievements": profile.achievements or [],
         # The institution's reputation tier is deliberately absent: it is the
         # product's own judgement, and a member who could read it would know
@@ -720,6 +730,9 @@ def profile_to_api(profile, request=None, public: bool = False, viewer=None) -> 
                 "lookingFor": profile.looking_for,
                 "dob": profile.dob_time.isoformat() if profile.dob_time else None,
                 "created_at": profile.created_at.isoformat(),
+                # Owner-only: it drives the wizard's first-run reveal and says
+                # nothing a match needs to know.
+                "registeredAt": profile.registered_at.isoformat() if profile.registered_at else None,
                 "updated_at": profile.updated_at.isoformat(),
             }
         )
