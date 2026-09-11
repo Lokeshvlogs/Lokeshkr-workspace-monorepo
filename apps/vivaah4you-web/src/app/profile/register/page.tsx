@@ -62,6 +62,7 @@ import { fieldIssue } from "@/lib/validation/schemas/profileWizardSchema";
 import EducationList, { isEducationComplete, type EducationEntry } from "@/components/profile/EducationList";
 import AchievementList, { type AchievementEntry } from "@/components/profile/AchievementList";
 import EmployerPicker from "@/components/profile/EmployerPicker";
+import FamilyEditor from "@/components/profile/FamilyEditor";
 import VisaStatusPicker from "@/components/profile/VisaStatusPicker";
 import { useAuth } from "@/components/authProvider";
 import {
@@ -264,7 +265,9 @@ const INITIAL_FORM = {
   familyLivingInCity: "",
   familyIncome: "",
   familyType: 0,
-  livesWithFamily: false,
+  // Matches the model's own default. It was `false` here, so the first save
+  // of this step silently flipped it for anyone who never touched the chip.
+  livesWithFamily: true,
   fatherOccupation: "",
   motherOccupation: "",
   brothers: "0",
@@ -427,6 +430,9 @@ export default function ProfileRegisterPage() {
      have none, and the step must not gate on a dropdown that cannot be
      answered - see `gapsOn` for step 2. */
   const [visaOptionCount, setVisaOptionCount] = useState(0);
+  /* Joint and extended households open straight into the member editor - the
+     sibling counts above cannot describe who actually lives there. */
+  const [familyNamesOpen, setFamilyNamesOpen] = useState(false);
   /* Steps the member has tried to leave. Nothing is marked red before that:
      a form that opens covered in errors reads as broken rather than as
      guidance. Once a step is in here its marks update live, so filling a
@@ -1137,7 +1143,12 @@ export default function ProfileRegisterPage() {
                     <PickerField label="Family income (per annum)" icon={<Wallet />} errorValue={err("familyIncome")} onBlur={touch("familyIncome")} options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
                   </div>
                   <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <ChipGroup label="Family Type" icon={<Users />} options={FAMILY_TYPE_OPTIONS} value={form.familyType} onChange={(v) => setField("familyType", v)} />
+                    <ChipGroup label="Family Type" icon={<Users />} options={FAMILY_TYPE_OPTIONS} value={form.familyType} onChange={(v) => {
+                      setField("familyType", v);
+                      // Choosing joint or extended is the moment the counts
+                      // stop being enough, so the editor opens with it.
+                      if (Number(v) > 0) setFamilyNamesOpen(true);
+                    }} />
                     <ChipGroup label="Lives with family" icon={<Home />} options={YES_NO_OPTIONS} value={form.livesWithFamily ? "yes" : "no"} onChange={(v) => setField("livesWithFamily", v === "yes")} />
                   </div>
                 </div>
@@ -1170,6 +1181,29 @@ export default function ProfileRegisterPage() {
                     <PickerField label="Sisters" options={SIBLING_COUNT_OPTIONS} selectedFirst={false} value={form.sisters} onChange={(v) => setSiblingTotal("sisters", "sistersMarried", v)} />
                     <PickerField label="Married" options={marriedOptionsUpTo(form.sisters)} selectedFirst={false} value={form.sistersMarried} onChange={(v) => setField("sistersMarried", v)} />
                   </div>
+                </div>
+
+                <div className="form-section">
+                  <p className="form-section-title">
+                    <Users2 size={17} className="form-section-icon" aria-hidden="true" />
+                    Names and photos
+                  </p>
+                  <p className="form-section-hint mb-3">
+                    Optional, and the part families actually look at. Anyone you skip still
+                    appears on your profile from the counts above.
+                  </p>
+
+                  {familyNamesOpen ? (
+                    <FamilyEditor embedded extended={Number(form.familyType) > 0} />
+                  ) : (
+                    <button
+                      type="button"
+                      className="chip chip-square"
+                      onClick={() => setFamilyNamesOpen(true)}
+                    >
+                      Add names and photos
+                    </button>
+                  )}
                 </div>
 
                 <LongText

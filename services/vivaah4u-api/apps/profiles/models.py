@@ -802,7 +802,10 @@ class FamilyMember(models.Model):
         Relation.OTHER: 0,
     }
 
-    MAX_PER_PROFILE = 12
+    # The wizard allows 6 brothers + 6 sisters + 2 parents, and a joint family
+    # adds grandparents on top - a cap of 12 refused people the form had just
+    # invited the member to name.
+    MAX_PER_PROFILE = 20
 
     profile = models.ForeignKey(
         Profile, on_delete=models.CASCADE, related_name="family_members"

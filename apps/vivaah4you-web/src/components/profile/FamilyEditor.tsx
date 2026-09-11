@@ -7,10 +7,28 @@ import Avatar from '@/components/profile/Avatar'
 import { RELATIONS, RELATION_LABEL, type FamilyMember, type Relation } from '@/lib/family'
 import { detailMessage } from '@/lib/errors'
 
-const RELATION_OPTIONS = RELATIONS.map((value) => ({ value, label: RELATION_LABEL[value] }))
+/* A nuclear family has no grandparents to add, and offering them there is an
+   invitation to describe a household that was not claimed. */
+const NUCLEAR_RELATIONS = RELATIONS.filter(
+  (r) => r !== 'grandfather' && r !== 'grandmother' && r !== 'other',
+)
+
+const optionsFor = (extended: boolean) =>
+  (extended ? RELATIONS : NUCLEAR_RELATIONS).map((value) => ({
+    value,
+    label: RELATION_LABEL[value],
+  }))
 
 interface Props {
-  onClose: () => void
+  onClose?: () => void
+  /**
+   * Joint and extended families get grandparents and "other" offered, and the
+   * heading says so - those are exactly the people the sibling counts above
+   * cannot describe.
+   */
+  extended?: boolean
+  /** Hides the "Done" button where the editor is part of a larger form. */
+  embedded?: boolean
 }
 
 /**
@@ -19,7 +37,7 @@ interface Props {
  * A photo can only be attached after the row exists, because the upload needs
  * an id to attach to - so adding is two steps and the second one is optional.
  */
-export default function FamilyEditor({ onClose }: Props) {
+export default function FamilyEditor({ onClose, extended = false, embedded = false }: Props) {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -28,6 +46,10 @@ export default function FamilyEditor({ onClose }: Props) {
   const [relation, setRelation] = useState<Relation>('father')
   const [name, setName] = useState('')
   const [occupation, setOccupation] = useState('')
+  const [about, setAbout] = useState('')
+  const [isMarried, setIsMarried] = useState(false)
+  /** The row being edited, or null when the form is adding a new person. */
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   const uploadFor = useRef<number | null>(null)
   const fileInput = useRef<HTMLInputElement | null>(null)
@@ -48,7 +70,7 @@ export default function FamilyEditor({ onClose }: Props) {
     const response = await fetch('/api/family/me', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ relation, name, occupation, position: members.length }),
+      body: JSON.stringify({ relation, name, occupation, about, isMarried, position: members.length }),
     }).catch(() => null)
 
     setSaving(false)
@@ -59,8 +81,49 @@ export default function FamilyEditor({ onClose }: Props) {
       return
     }
 
+    resetForm()
+    await load()
+  }
+
+  const resetForm = () => {
+    setEditingId(null)
     setName('')
     setOccupation('')
+    setAbout('')
+    setIsMarried(false)
+  }
+
+  /** Loads a row into the form. There was no way to correct one before. */
+  const beginEdit = (member: FamilyMember) => {
+    setEditingId(member.id)
+    setRelation(member.relation)
+    setName(member.name)
+    setOccupation(member.occupation)
+    setAbout(member.about)
+    setIsMarried(member.isMarried)
+  }
+
+  const save = async () => {
+    if (editingId === null) return add()
+
+    setSaving(true)
+    setError('')
+
+    const response = await fetch(`/api/family/me/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ relation, name, occupation, about, isMarried, position: 0 }),
+    }).catch(() => null)
+
+    setSaving(false)
+
+    if (!response?.ok) {
+      const data = await response?.json().catch(() => null)
+      setError(detailMessage(data, 'Could not save. Please try again.'))
+      return
+    }
+
+    resetForm()
     await load()
   }
 
@@ -97,10 +160,14 @@ export default function FamilyEditor({ onClose }: Props) {
   return (
     <section className="form-section">
       <div className="family-head">
-        <p className="form-section-title">Your family</p>
-        <button type="button" className="profile-bio-edit" onClick={onClose}>
-          Done
-        </button>
+        <p className="form-section-title">
+          {extended ? 'Everyone in your household' : 'Your family'}
+        </p>
+        {!embedded && onClose && (
+          <button type="button" className="profile-bio-edit" onClick={onClose}>
+            Done
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -132,6 +199,13 @@ export default function FamilyEditor({ onClose }: Props) {
                   <button
                     type="button"
                     className="chip chip-square"
+                    onClick={() => beginEdit(member)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="chip chip-square"
                     onClick={() => pickPhoto(member.id)}
                   >
                     {member.photo ? 'Change photo' : 'Add photo'}
@@ -152,7 +226,7 @@ export default function FamilyEditor({ onClose }: Props) {
           <div className="family-add">
             <ChipGroup
               label="Who is this?"
-              options={RELATION_OPTIONS}
+              options={optionsFor(extended)}
               value={relation}
               onChange={(v) => setRelation(v as Relation)}
             />
@@ -172,14 +246,34 @@ export default function FamilyEditor({ onClose }: Props) {
               />
             </div>
 
-            <button
-              type="button"
-              className="btn bg-color-primary mt-3 text-white"
-              onClick={add}
-              disabled={saving}
-            >
-              {saving ? 'Adding…' : 'Add to family'}
-            </button>
+            <div className="mt-3">
+              <ChipGroup
+                label="Married?"
+                options={[
+                  { value: 'no', label: 'No' },
+                  { value: 'yes', label: 'Yes' },
+                ]}
+                value={isMarried ? 'yes' : 'no'}
+                onChange={(v) => setIsMarried(v === 'yes')}
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn bg-color-primary text-white"
+                onClick={save}
+                disabled={saving}
+              >
+                {saving ? 'Saving…' : editingId === null ? 'Add to family' : 'Save changes'}
+              </button>
+
+              {editingId !== null && (
+                <button type="button" className="chip chip-square" onClick={resetForm}>
+                  Cancel
+                </button>
+              )}
+            </div>
 
             {error && <p className="error-text mt-2">{error}</p>}
           </div>

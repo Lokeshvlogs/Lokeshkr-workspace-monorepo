@@ -58,6 +58,10 @@ export function displayValue(def: ProfileFieldDef, profile: PublicProfile): stri
       return profile.livesWithFamily ? 'Yes' : 'No'
     case 'hasChildren':
       return profile.hasChildren ? 'Yes' : 'No'
+    case 'age': {
+      const value = Number(profile.age ?? 0)
+      return value ? `${value} yrs` : ''
+    }
     case 'partnerAgeMin':
     case 'partnerAgeMax': {
       const value = (profile as any)[def.key]
@@ -90,9 +94,16 @@ interface Props {
   profile: PublicProfile
   /** Persists the patch; resolves false when the save failed. */
   onSave: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  /**
+   * Render the value and the pencil alone, with no row chrome.
+   *
+   * For the hero tiles, which already print the icon and label above the
+   * value - the full row would say both a second time.
+   */
+  bare?: boolean
 }
 
-export default function EditableField({ def, profile, onSave }: Props) {
+export default function EditableField({ def, profile, onSave, bare = false }: Props) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -156,6 +167,23 @@ export default function EditableField({ def, profile, onSave }: Props) {
     } else {
       setError('Could not save. Please try again.')
     }
+  }
+
+  if (!editing && bare) {
+    return (
+      <dd className={`hero-fact-value ${shown ? '' : 'field-value-empty'}`}>
+        {shown || 'Not added'}
+        <button
+          type="button"
+          onClick={beginEdit}
+          aria-label={`Edit ${def.label}`}
+          title={`Edit ${def.label}`}
+          className="field-edit-btn"
+        >
+          <PencilIcon />
+        </button>
+      </dd>
+    )
   }
 
   if (!editing) {

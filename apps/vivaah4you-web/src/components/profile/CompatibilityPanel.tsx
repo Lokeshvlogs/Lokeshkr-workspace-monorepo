@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 
 import type { Compatibility, PrefVerdict } from '@/lib/compatibility'
+import type { PublicProfile } from '@/types/profile'
 import Avatar from '@/components/profile/Avatar'
 import FamilyGraph from '@/components/profile/FamilyGraph'
 
@@ -85,6 +86,9 @@ interface Props {
   myPhoto?: string | null
   /** Their profile id, so their family can be read alongside yours. */
   theirProfileId?: string
+  /** Both profiles, so each family graph can imply its unnamed members. */
+  myProfile?: PublicProfile | null
+  theirProfile?: PublicProfile | null
 }
 
 /**
@@ -104,6 +108,8 @@ export default function CompatibilityPanel({
   myName = 'You',
   myPhoto,
   theirProfileId,
+  myProfile,
+  theirProfile,
 }: Props) {
   const { reverse, reverseMet, reverseConsidered, reverseScore, mutual } = compatibility
   const whose = possessive(theirGender, theirName)
@@ -200,6 +206,7 @@ export default function CompatibilityPanel({
           <div className="family-compare">
             <FamilyGraph
               compact
+              profile={myProfile}
               heading="Yours"
               selfLabel="You"
               selfName={myName}
@@ -207,6 +214,7 @@ export default function CompatibilityPanel({
             />
             <FamilyGraph
               compact
+              profile={theirProfile}
               profileId={theirProfileId}
               heading={`${theirName}'s`}
               selfLabel={theirName}

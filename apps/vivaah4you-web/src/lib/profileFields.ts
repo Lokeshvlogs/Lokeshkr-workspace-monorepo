@@ -146,6 +146,10 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   // ---- Basic Details (step 0) ----
   { key: 'firstName', label: 'First name', section: 'Basic Details', step: 0, editor: 'text' },
   { key: 'surname', label: 'Surname', section: 'Basic Details', step: 0, editor: 'text' },
+  // Derived from `dob` on the server, so it is shown and never edited. Without
+  // a def here the hero silently dropped it - `HERO_FACT_KEYS` looked it up in
+  // this list and got undefined, so age has never appeared on a profile.
+  { key: 'age', label: 'Age', section: 'Basic Details', step: 0, editor: 'readonly' },
   { key: 'dob', label: 'Date of birth', section: 'Basic Details', step: 0, editor: 'date' },
   { key: 'gender', label: 'Gender', section: 'Basic Details', step: 0, editor: 'chips', options: GENDER_OPTIONS },
   { key: 'height', label: 'Height', section: 'Basic Details', step: 0, editor: 'height' },

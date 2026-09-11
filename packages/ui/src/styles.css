@@ -730,7 +730,35 @@ button.chip-selected:hover {
 
 /* --- Form layout helpers --- */
 .form-section {
-  @apply rounded-xl border border-color-border bg-white p-5;
+  @apply relative overflow-hidden rounded-2xl border border-color-border bg-white p-5;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+}
+
+/* The signature edge the wizard card already uses, at lower opacity: enough to
+   tell one card from the next without turning the page into stripes. */
+.form-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1.25rem;
+  right: 1.25rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-primary-light) 22%,
+    var(--color-primary) 50%,
+    var(--color-secondary) 78%,
+    transparent
+  );
+  opacity: 0.55;
+}
+
+/* The wizard nests these inside a glass card that already carries an edge, and
+   a second hairline there reads as a seam. */
+.wiz-card .form-section::before {
+  display: none;
 }
 
 .form-section-title {
@@ -1934,18 +1962,54 @@ button.chip-selected:hover {
   color: var(--color-success, #22c55e);
 }
 
-/* The headline facts, beside the picture. Two columns on anything wider than a
-   phone, because these are short values and one long column beside a 144px
-   portrait left the panel lopsided. */
+/* The headline facts, beside the picture.
+   Tiles rather than rows: as rows they sat on a fixed label lane holding a
+   16px icon, so every value was stranded ~100px from the thing naming it. An
+   auto-fitting grid also drops the old override, which was unmediaqueried and
+   kept the hero three-column below 640px while the rest of the page stacked. */
 .hero-facts {
-  @apply mt-3 grid grid-cols-1 gap-x-8 gap-y-0.5 sm:grid-cols-2;
+  @apply mt-4 grid gap-2;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
 }
 
-/* Inside the hero each row has roughly half the width of one in a section
-   card, so the section's label lane is far too greedy here and pushed the
-   values out of line with each other. */
-.hero-facts .field-row {
-  grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr) auto;
+.hero-fact {
+  @apply relative flex min-w-0 flex-col gap-0.5 rounded-xl px-3 py-2 transition;
+  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  background-color: color-mix(in srgb, var(--color-primary-surface) 70%, transparent);
+}
+
+.hero-fact:hover {
+  border-color: var(--color-primary-light, #ff66b3);
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+/* Explicitly lighter than the value. `--color-placeholder-text` is #2c2b2b -
+   darker than `--color-primary-text` - so using it for labels rendered them
+   heavier than the answers they name. */
+.hero-fact-label {
+  @apply flex min-w-0 items-center gap-1.5 truncate text-[0.6875rem] font-semibold uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--color-primary-text) 62%, transparent);
+}
+
+.hero-fact-icon {
+  @apply h-3.5 w-3.5 shrink-0;
+  color: var(--color-primary, #ff1f8f);
+}
+
+.hero-fact-value {
+  @apply flex min-w-0 items-center gap-1.5 text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+  overflow-wrap: anywhere;
+}
+
+/* The pencil rides with the value inside a tile. */
+.hero-fact-value .field-edit-btn {
+  @apply h-5 w-5;
+}
+
+.hero-fact:hover .field-edit-btn {
+  @apply opacity-100;
 }
 
 .profile-hero-avatar-initial {
@@ -2318,7 +2382,7 @@ button.chip-selected:hover {
 /* An opening quotation mark rather than a left border - it reads as speech
    instead of as a callout box. */
 .profile-bio::before {
-  content: 'C';
+  content: "\201C";
   position: absolute;
   left: 0;
   top: -0.35em;
@@ -2424,10 +2488,14 @@ button.chip-selected:hover {
    Capped and centred rather than filling the card - at full width the two
    columns ended up at opposite edges of a very wide panel with a desert
    between them. */
+/* Equal side columns are what actually centres the middle one. This was
+   `1fr | 5rem | 4.5rem`, which put the score ring about three-quarters of the
+   way across while the two photos it was supposed to sit between stayed at the
+   edges. */
 .compat-grid {
   @apply mx-auto grid w-full items-center gap-4;
   max-width: 32rem;
-  grid-template-columns: minmax(0, 1fr) minmax(3.5rem, 5rem) 4.5rem;
+  grid-template-columns: minmax(0, 1fr) 7.5rem minmax(0, 1fr);
 }
 
 .compat-faces {
@@ -3586,28 +3654,31 @@ button.match-tab-active:hover,
 }
 
 .family-row {
-  @apply relative flex flex-col items-center gap-2 py-2;
+  @apply relative flex flex-col items-stretch gap-1;
 }
 
+/* Left-aligned, out of the centre channel the stem runs down. Centred, it sat
+   directly under the connector and the line was drawn straight through it. */
 .family-row-label {
   @apply text-[0.625rem] font-bold uppercase;
   letter-spacing: 0.09em;
-  color: var(--color-placeholder-text, #4a3b3b);
+  color: color-mix(in srgb, var(--color-primary-text) 60%, transparent);
 }
 
-/* The stem down from the generation above, into the row's bar. */
+/* The stem down from the generation above. In normal flow, as its own block
+   between the label and the nodes, so it meets the bar exactly and crosses
+   nothing on the way. */
 .family-link {
-  position: absolute;
-  top: -0.25rem;
-  left: 50%;
-  width: 2px;
-  height: 1.5rem;
-  border-radius: 1px;
-  background: linear-gradient(
+  @apply block w-full;
+  height: 1.25rem;
+  background-image: linear-gradient(
     to bottom,
     transparent,
     var(--color-primary-extra-light, #ffadd6)
   );
+  background-size: 2px 100%;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* No wrapping: a tree that reflows stops being a tree, because the bar and the

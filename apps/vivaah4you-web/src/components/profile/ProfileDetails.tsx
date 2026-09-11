@@ -5,6 +5,7 @@ import React from 'react'
 import EditableField, { displayValue } from '@/components/profile/EditableField'
 import FieldRow from '@/components/profile/FieldRow'
 import { fieldsBySection, type ProfileFieldDef } from '@/lib/profileFields'
+import { SECTION_ICONS } from '@/lib/profileIcons'
 import type { PublicProfile } from '@/types/profile'
 
 interface Props {
@@ -62,13 +63,25 @@ export default function ProfileDetails({
   }
 
   return (
-    <div className={`grid grid-cols-1 gap-5 ${columns === 2 ? 'md:grid-cols-2' : ''}`}>
-      {sections.map((section) => (
-        <section key={section.title} className="form-section">
-          <h3 className="form-section-title">{section.title}</h3>
-          <dl className="mt-2">{section.fields.map(renderRow)}</dl>
-        </section>
-      ))}
+    /* `items-start`: the grid stretched every card to the tallest in its row,
+       so a three-field Location card was padded out to match Partner
+       Preference beside it. */
+    <div
+      className={`grid grid-cols-1 items-start gap-5 ${columns === 2 ? 'md:grid-cols-2' : ''}`}
+    >
+      {sections.map((section) => {
+        const Icon = SECTION_ICONS[section.title]
+
+        return (
+          <section key={section.title} className="form-section">
+            <h3 className="form-section-title">
+              {Icon && <Icon className="form-section-icon" strokeWidth={1.8} aria-hidden="true" />}
+              {section.title}
+            </h3>
+            <dl className="mt-2">{section.fields.map(renderRow)}</dl>
+          </section>
+        )
+      })}
     </div>
   )
 }

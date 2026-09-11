@@ -65,6 +65,7 @@ export default function MyProfileView({ profile, onSave }: Props) {
         <FamilyEditor onClose={() => setEditingFamily(false)} />
       ) : (
         <FamilyGraph
+          profile={profile}
           selfLabel="You and your siblings"
           selfName={profile.firstName || 'You'}
           selfPhoto={profile.photo}

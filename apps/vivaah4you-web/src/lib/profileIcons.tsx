@@ -126,17 +126,39 @@ export const FIELD_ICONS: Record<string, FieldIcon> = {
   partnerAgeMax: Cake,
   partnerHeightMin: Ruler,
   partnerHeightMax: Ruler,
-  partnerMaritalStatus: HeartHandshake,
-  partnerReligion: Landmark,
-  partnerCommunity: Users,
-  partnerMotherTongue: Languages,
-  partnerCountry: Globe2,
-  partnerEducation: GraduationCap,
-  partnerProfession: Briefcase,
-  partnerDiet: Utensils,
+  /* Plural, matching the multi-select field keys in profileFields.ts. These
+     were registered in the singular, so `iconFor` missed on all eight and the
+     whole Partner Preference section rendered as text-label rows beside its
+     icon-led neighbours. */
+  partnerMaritalStatuses: HeartHandshake,
+  partnerReligions: Landmark,
+  partnerCommunities: Users,
+  partnerMotherTongues: Languages,
+  partnerCountries: Globe2,
+  partnerEducations: GraduationCap,
+  partnerProfessions: Briefcase,
+  partnerDiets: Utensils,
 }
 
 /** The icon for a field, or null when it should keep its text label. */
 export function iconFor(key: string): FieldIcon | null {
   return FIELD_ICONS[key] ?? null
+}
+
+/**
+ * One glyph per section heading.
+ *
+ * `.form-section-title` has always been a flex row with a gap, and
+ * `.form-section-icon` has always existed - the wizard uses both. The profile's
+ * own sections simply never passed an icon, so they read as plain text
+ * headings beside the wizard's illustrated ones.
+ */
+export const SECTION_ICONS: Record<string, FieldIcon | undefined> = {
+  'Religion & Community': Landmark,
+  Location: MapPin,
+  'Education & Career': GraduationCap,
+  Family: Users2,
+  Lifestyle: Utensils,
+  Interests: Sparkles,
+  'Partner Preference': HeartHandshake,
 }

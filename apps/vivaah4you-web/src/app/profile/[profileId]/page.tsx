@@ -152,6 +152,7 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
             put the same tree on the page twice. */}
         {!me && (
           <FamilyGraph
+            profile={profile}
             profileId={profile.profile_id}
             selfLabel={`${firstName} and their siblings`}
             selfName={firstName}
@@ -175,6 +176,8 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
             myName={fullName(me) || 'You'}
             myPhoto={me.photo}
             theirProfileId={profile.profile_id}
+            myProfile={me}
+            theirProfile={profile}
           />
         )}
 

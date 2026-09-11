@@ -4,7 +4,7 @@ import React, { type ReactNode } from 'react'
 
 import Avatar from '@/components/profile/Avatar'
 import EditableField, { displayValue } from '@/components/profile/EditableField'
-import FieldRow from '@/components/profile/FieldRow'
+import { iconFor } from '@/lib/profileIcons'
 import NameWithBadge from '@/components/profile/NameWithBadge'
 import { PROFILE_FIELDS } from '@/lib/profileFields'
 import { presenceFor } from '@/lib/presence'
@@ -85,6 +85,10 @@ export default function ProfileHeroPanel({ profile, onSave, actions, subtitle }:
           </p>
         )}
 
+        {/* Tiles, not rows. As rows these sat on a fixed label lane holding a
+            16px icon, so every value was stranded a hundred pixels from the
+            thing naming it. A tile puts the label against its own value and
+            lets the grid do the aligning. */}
         <dl className="hero-facts">
           {facts.map((def) => {
             const shown = displayValue(def, profile)
@@ -92,10 +96,23 @@ export default function ProfileHeroPanel({ profile, onSave, actions, subtitle }:
             // the owner, where the blank is the prompt to fill it in.
             if (!shown && !onSave) return null
 
-            return onSave ? (
-              <EditableField key={def.key} def={def} profile={profile} onSave={onSave} />
-            ) : (
-              <FieldRow key={def.key} fieldKey={def.key} label={def.label} value={shown} />
+            const Icon = iconFor(def.key)
+
+            return (
+              <div key={def.key} className="hero-fact">
+                <dt className="hero-fact-label">
+                  {Icon && <Icon className="hero-fact-icon" strokeWidth={1.7} aria-hidden="true" />}
+                  {def.label}
+                </dt>
+
+                {onSave ? (
+                  // The editor owns its own row markup, so it replaces the
+                  // value rather than sitting beside it.
+                  <EditableField def={def} profile={profile} onSave={onSave} bare />
+                ) : (
+                  <dd className="hero-fact-value">{shown}</dd>
+                )}
+              </div>
             )
           })}
         </dl>

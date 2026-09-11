@@ -3,9 +3,16 @@
 import React, { useEffect, useState } from 'react'
 
 import Avatar from '@/components/profile/Avatar'
-import { toRows, type FamilyMember } from '@/lib/family'
+import { deriveMembers, mergeMembers, toRows, type FamilyMember } from '@/lib/family'
+import { labelFor } from '@/lib/profileDisplay'
+import type { PublicProfile } from '@/types/profile'
 
 interface Props {
+  /**
+   * The profile whose family this is. Its sibling counts and parent
+   * occupations imply the nodes that nobody has named yet.
+   */
+  profile?: PublicProfile | null
   /** Omit for your own family; pass a profile id to read somebody else's. */
   profileId?: string
   /** Names the middle row - "Priya's generation", or "You and your siblings". */
@@ -33,6 +40,7 @@ interface Props {
  * server so the picture and the model cannot disagree about who is older.
  */
 export default function FamilyGraph({
+  profile,
   profileId,
   selfLabel = 'Their generation',
   selfName = 'Them',
@@ -41,7 +49,7 @@ export default function FamilyGraph({
   compact = false,
   heading = 'Family',
 }: Props) {
-  const [members, setMembers] = useState<FamilyMember[]>([])
+  const [named, setNamed] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
   const [openId, setOpenId] = useState<number | null>(null)
 
@@ -56,10 +64,10 @@ export default function FamilyGraph({
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) setMembers(Array.isArray(data?.results) ? data.results : [])
+        if (!cancelled) setNamed(Array.isArray(data?.results) ? data.results : [])
       })
       .catch(() => {
-        if (!cancelled) setMembers([])
+        if (!cancelled) setNamed([])
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -69,6 +77,11 @@ export default function FamilyGraph({
       cancelled = true
     }
   }, [profileId])
+
+  /* The wizard's counts fill every slot nobody has named. Without this the
+     graph was empty on every profile, because nothing but the profile editor
+     has ever created a row. */
+  const members = mergeMembers(deriveMembers(profile ?? null, labelFor), named)
 
   const shell = compact ? 'family family-compact' : 'form-section family'
 
@@ -161,7 +174,9 @@ export default function FamilyGraph({
                       </span>
 
                       <span className="family-name">{label}</span>
-                      <span className="family-relation">{member.relationLabel}</span>
+                      <span className="family-relation">
+                        {member.derived && member.name === '' ? 'Not named yet' : member.relationLabel}
+                      </span>
 
                       {open && (member.occupation || member.about) && (
                         <span className="family-detail">
