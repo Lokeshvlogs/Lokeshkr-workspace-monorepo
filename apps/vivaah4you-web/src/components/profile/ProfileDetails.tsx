@@ -6,14 +6,14 @@ import EditableField, { displayValue } from '@/components/profile/EditableField'
 import FieldRow from '@/components/profile/FieldRow'
 import { fieldsBySection, type ProfileFieldDef } from '@/lib/profileFields'
 import { SECTION_ICONS } from '@/lib/profileIcons'
-import type { PublicProfile } from '@/types/profile'
+import type { PublicProfile, SaveField } from '@/types/profile'
 
 interface Props {
   profile: PublicProfile
   /** Enables the inline pencil editors. Owner-only. */
   editable?: boolean
   /** Required when editable. Resolves false if the save failed. */
-  onSave?: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  onSave?: SaveField
   /**
    * Section columns. Two suits a full-width page; the dashboard's centre
    * column is too narrow for two once each row carries an icon.

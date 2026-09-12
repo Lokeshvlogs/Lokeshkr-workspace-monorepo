@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import { fieldIssue } from '@/lib/validation/schemas/profileWizardSchema'
+import type { SaveField } from '@/types/profile'
 
 const MAX_LENGTH = 600
 
@@ -12,7 +13,7 @@ interface Props {
   /** Heading above the quote - "About me", or "About Priya" on a match. */
   heading: string
   /** Owner-only. Without `onSave` the bio is read-only. */
-  onSave?: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  onSave?: SaveField
   /**
    * A draft built from the member's own answers, offered but never applied.
    *
@@ -104,11 +105,11 @@ export default function ProfileBio({
     setError('')
     // Step 0 is where the wizard keeps `aboutMe`; the same save endpoint backs
     // both, so an edit here and an edit in the wizard are the same write.
-    const saved = await onSave?.(0, { aboutMe: draft.trim() })
+    const result = await onSave?.(0, { aboutMe: draft.trim() })
     setSaving(false)
 
-    if (saved) setEditing(false)
-    else setError('Could not save. Please try again.')
+    if (result?.ok) setEditing(false)
+    else setError(result?.detail || 'Could not save. Please try again.')
   }
 
   if (editing) {

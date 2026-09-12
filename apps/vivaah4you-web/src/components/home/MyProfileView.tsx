@@ -12,12 +12,12 @@ import FamilyEditor from '@/components/profile/FamilyEditor'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import { BIO_ADVANTAGE, suggestAboutMe } from '@/lib/aboutMe'
 import { fullName } from '@/lib/profileDisplay'
-import type { MyProfile } from '@/types/profile'
+import type { MyProfile, SaveField } from '@/types/profile'
 
 interface Props {
   profile: MyProfile
   /** Persists one inline edit. Resolves false when the save failed. */
-  onSave: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  onSave: SaveField
 }
 
 /**
@@ -48,6 +48,11 @@ export default function MyProfileView({ profile, onSave }: Props) {
       <ProfileHeroPanel
         profile={profile}
         onSave={onSave}
+        identityLocks={profile.identityLocks}
+        /* Nothing is a *change* until the wizard has been finished once - the
+           first value for each field is free - so a member still registering
+           has nothing to be warned about. */
+        silentIdentity={profile.registeredAt === null}
         subtitle={
           <>
             {profile.profile_id && <p className="profile-hero-id">{profile.profile_id}</p>}

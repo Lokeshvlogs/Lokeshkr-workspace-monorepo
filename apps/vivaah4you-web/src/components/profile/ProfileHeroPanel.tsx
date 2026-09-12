@@ -9,7 +9,21 @@ import NameWithBadge from '@/components/profile/NameWithBadge'
 import { PROFILE_FIELDS } from '@/lib/profileFields'
 import { presenceFor } from '@/lib/presence'
 import { fullName } from '@/lib/profileDisplay'
-import type { PublicProfile } from '@/types/profile'
+import IdentityNotice from '@/components/profile/IdentityNotice'
+import HeroNameEditor from '@/components/profile/HeroNameEditor'
+import type { IdentityGroup, IdentityLocks, PublicProfile, SaveField } from '@/types/profile'
+
+/**
+ * Which identity allowance each hero tile spends.
+ *
+ * `dob` is absent on purpose: one control writes both halves of the birth
+ * timestamp, and they have separate allowances, so it is handled by hand below
+ * rather than through this map.
+ */
+const TILE_GROUP: Record<string, IdentityGroup> = {
+  gender: 'gender',
+  height: 'height',
+}
 
 /**
  * The facts that used to make up the "Basic Details" section below the hero.
@@ -33,15 +47,64 @@ const HERO_FACT_KEYS = [
 interface Props {
   profile: PublicProfile
   /** Owner-only: makes the facts inline-editable. */
-  onSave?: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  onSave?: SaveField
   /** Buttons for the right-hand side - "Edit in wizard", "Express interest". */
   actions?: ReactNode
   /** Shown under the name. The profile id for the owner, a summary for a match. */
   subtitle?: ReactNode
+  /**
+   * What may still be changed about name, birth date, gender and height.
+   *
+   * Owner-only and absent for a visitor, who cannot edit anything here anyway.
+   * Passed down rather than read off `profile`, which is typed as the public
+   * shape and does not carry it.
+   */
+  identityLocks?: IdentityLocks
+  /** Suppresses every warning - set while registering for the first time. */
+  silentIdentity?: boolean
 }
 
-export default function ProfileHeroPanel({ profile, onSave, actions, subtitle }: Props) {
+export default function ProfileHeroPanel({
+  profile,
+  onSave,
+  actions,
+  subtitle,
+  identityLocks = {},
+  silentIdentity = false,
+}: Props) {
   const name = fullName(profile) || 'Vivah4U member'
+
+  /**
+   * The allowance a tile spends, or undefined where it spends none.
+   *
+   * The birth-date tile is the awkward one: it writes a date and a time that
+   * have separate allowances, so it counts as locked only when neither half
+   * can move - a fixed date must not take away the ability to correct a time,
+   * which is the half people actually come back for.
+   */
+  const lockFor = (key: string) => {
+    if (key !== 'dob') return identityLocks[TILE_GROUP[key]]
+    const date = identityLocks.dob_date
+    const time = identityLocks.dob_time
+    if (!date && !time) return undefined
+    return date?.locked && time?.locked ? date : (time ?? date)
+  }
+
+  /* Rendered inside the open editor by EditableField, so it appears exactly
+     when the member starts editing and not a moment before. */
+  const noticeFor = (key: string) => {
+    if (key === 'dob') {
+      return (
+        <>
+          <IdentityNotice lock={identityLocks.dob_date} what="date of birth" editing silent={silentIdentity} />
+          <IdentityNotice lock={identityLocks.dob_time} what="time of birth" editing silent={silentIdentity} />
+        </>
+      )
+    }
+    const group = TILE_GROUP[key]
+    if (!group) return null
+    return <IdentityNotice lock={identityLocks[group]} what={key} editing silent={silentIdentity} />
+  }
   const presence = presenceFor(profile.presence)
 
   // `dob` is owner-only and never reaches a public payload, so on a match it
@@ -68,13 +131,24 @@ export default function ProfileHeroPanel({ profile, onSave, actions, subtitle }:
       </div>
 
       <div className="profile-hero-body">
-        <h2>
+        <h2 className="profile-hero-heading">
           <NameWithBadge
             name={name}
             level={profile.verification_level}
             size="lg"
             className="profile-hero-name"
           />
+          {/* The name is the heading, so it is edited here rather than being
+              added to the tiles below - which is what `HERO_FACT_KEYS` has
+              always deliberately excluded it from. */}
+          {onSave && (
+            <HeroNameEditor
+              profile={profile}
+              onSave={onSave}
+              lock={identityLocks.name}
+              silent={silentIdentity}
+            />
+          )}
         </h2>
 
         {subtitle}
@@ -108,7 +182,14 @@ export default function ProfileHeroPanel({ profile, onSave, actions, subtitle }:
                 {onSave ? (
                   // The editor owns its own row markup, so it replaces the
                   // value rather than sitting beside it.
-                  <EditableField def={def} profile={profile} onSave={onSave} bare />
+                  <EditableField
+                    def={def}
+                    profile={profile}
+                    onSave={onSave}
+                    bare
+                    locked={lockFor(def.key)?.locked}
+                    notice={noticeFor(def.key)}
+                  />
                 ) : (
                   <dd className="hero-fact-value">{shown}</dd>
                 )}

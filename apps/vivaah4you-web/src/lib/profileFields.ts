@@ -40,7 +40,7 @@ import {
   PARTNER_SMOKING_CHOICES,
   PARTNER_DRINKING_CHOICES,
 } from '@/constants/selectOptions/partner'
-import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from '@/lib/profileDisplay'
+import { citiesForState, statesForCountry, citiesForCountry, communitiesFor, RELIGION_OPTIONS } from '@/lib/profileDisplay'
 import { TAG_CATEGORIES } from '@/constants/selectOptions/interests'
 import type { PublicProfile } from '@/types/profile'
 
@@ -208,10 +208,15 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   },
 
   // ---- Location (step 1) ----
-  { key: 'currentCountry', label: 'Country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['currentCity'] },
-  { key: 'currentCity', label: 'Lives in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.currentCountry) },
-  { key: 'placeOfBirthCountry', label: 'Birth country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['placeOfBirthCity'] },
-  { key: 'placeOfBirthCity', label: 'Born in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.placeOfBirthCountry) },
+  /* Country resets both the state and the city below it, and state resets the
+     city: a Kerala city left standing under Sweden is worse than an empty
+     field, because it looks answered. */
+  { key: 'currentCountry', label: 'Country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['currentState', 'currentCity'] },
+  { key: 'currentState', label: 'State', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => statesForCountry(p.currentCountry), resets: ['currentCity'] },
+  { key: 'currentCity', label: 'Lives in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.currentCountry, p.currentState) },
+  { key: 'placeOfBirthCountry', label: 'Birth country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['placeOfBirthState', 'placeOfBirthCity'] },
+  { key: 'placeOfBirthState', label: 'Birth state', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => statesForCountry(p.placeOfBirthCountry), resets: ['placeOfBirthCity'] },
+  { key: 'placeOfBirthCity', label: 'Born in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.placeOfBirthCountry, p.placeOfBirthState) },
   { key: 'citizenshipCountry', label: 'Citizen of', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS },
 
   // ---- Education & Career (step 2) ----
@@ -234,8 +239,9 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'salaryAmount', label: 'Annual income', section: 'Education & Career', step: 2, editor: 'select', options: familyIncomeOptions },
 
   // ---- Family (step 1) ----
-  { key: 'familyLivingInCountry', label: 'Family country', section: 'Family', step: 3, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['familyLivingInCity'] },
-  { key: 'familyLivingInCity', label: 'Family lives in', section: 'Family', step: 3, editor: 'select', searchable: true, optionsFor: (p) => citiesForCountry(p.familyLivingInCountry) },
+  { key: 'familyLivingInCountry', label: 'Family country', section: 'Family', step: 3, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['familyLivingInState', 'familyLivingInCity'] },
+  { key: 'familyLivingInState', label: 'Family state', section: 'Family', step: 3, editor: 'select', searchable: true, optionsFor: (p) => statesForCountry(p.familyLivingInCountry), resets: ['familyLivingInCity'] },
+  { key: 'familyLivingInCity', label: 'Family lives in', section: 'Family', step: 3, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.familyLivingInCountry, p.familyLivingInState) },
   { key: 'familyType', label: 'Family type', section: 'Family', step: 3, editor: 'chips', options: FAMILY_TYPE_OPTIONS },
   { key: 'familyIncome', label: 'Family income', section: 'Family', step: 3, editor: 'select', options: familyIncomeOptions },
   { key: 'livesWithFamily', label: 'Lives with family', section: 'Family', step: 3, editor: 'bool' },

@@ -11,7 +11,7 @@ from ninja.errors import HttpError
 from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import RefreshToken
 
-from apps.profiles import managed_by as managed_by_rules
+from apps.profiles import identity, managed_by as managed_by_rules
 from apps.profiles.models import Profile
 
 from .models import OtpCode
@@ -130,6 +130,17 @@ def register(request, data: RegisterSchema):
             data.profile_for
         )
         profile.gender = derive_gender(data.profile_for, data.looking_for)
+        if profile.gender in ("M", "F"):
+            # A derived gender IS an answer - inferred from whether they are
+            # looking for a bride or a groom, or from whose profile this is - so
+            # the member's next change to it is their only one. Without this the
+            # wizard's first save would read as the free first answer and they
+            # would get two.
+            #
+            # Guarded on M/F rather than stamped unconditionally: "O" is the
+            # fallback for a `profile_for` that implies nothing, and nobody
+            # should spend their one change saying what they are.
+            identity.mark_answered(profile, "gender")
         # Saving with gender + age present is what mints `profile_id`.
         profile.save()
 

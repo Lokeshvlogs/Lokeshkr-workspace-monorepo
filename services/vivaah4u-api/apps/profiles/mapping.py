@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
-from . import education, managed_by as managed_by_rules, presence
+from . import education, identity, managed_by as managed_by_rules, presence
 from .constants import (
     MAX_PICK_SUBTITLE,
     MAX_PICK_TITLE,
@@ -43,11 +43,14 @@ CAMEL_TO_MODEL = {
     "community": "community",
     "mothertongue": "mother_tongue",
     "currentCountry": "current_country",
+    "currentState": "current_state",
     "currentCity": "current_city",
     "placeOfBirthCountry": "place_of_birth_country",
+    "placeOfBirthState": "place_of_birth_state",
     "placeOfBirthCity": "place_of_birth_city",
     "citizenshipCountry": "citizenship_country",
     "familyLivingInCountry": "family_living_in_country",
+    "familyLivingInState": "family_living_in_state",
     "familyLivingInCity": "family_living_in_city",
     "familyIncome": "family_income",
     "familyType": "family_type",
@@ -571,8 +574,17 @@ def clean_media_picks(value, field: str) -> list:
 
 
 def apply_payload(profile, payload: dict) -> list:
-    """Write camelCase wizard values onto the profile. Returns fields touched."""
+    """Write camelCase wizard values onto the profile. Returns fields touched.
+
+    Raises `identity.IdentityLocked` (a ValueError) when the payload would
+    change a name, birth date, gender or height that has run out of changes.
+    Every client reaches the profile through here, so this is the one place the
+    rule has to hold.
+    """
     touched = []
+    # Taken before anything is written: the guard compares coerced values, and
+    # the coercion happens in the loop below.
+    identity_before = identity.snapshot(profile)
 
     for camel_key, value in payload.items():
         if camel_key == "photos":
@@ -657,6 +669,15 @@ def apply_payload(profile, payload: dict) -> list:
         setattr(profile, field, value)
         touched.append(field)
 
+    # Raises on a change that is no longer allowed, having first put the
+    # guarded columns back the way they were. Listed in `touched` so a caller
+    # saving with update_fields persists the ledger alongside the change it
+    # is counting.
+    ledger_before = profile.identity_edits
+    identity.guard(profile, identity_before)
+    if profile.identity_edits != ledger_before:
+        touched.append("identity_edits")
+
     return touched
 
 
@@ -705,11 +726,14 @@ def profile_to_api(profile, request=None, public: bool = False, viewer=None) -> 
         "community": profile.community,
         "mothertongue": profile.mother_tongue,
         "currentCountry": profile.current_country,
+        "currentState": profile.current_state,
         "currentCity": profile.current_city,
         "placeOfBirthCountry": profile.place_of_birth_country,
+        "placeOfBirthState": profile.place_of_birth_state,
         "placeOfBirthCity": profile.place_of_birth_city,
         "citizenshipCountry": profile.citizenship_country,
         "familyLivingInCountry": profile.family_living_in_country,
+        "familyLivingInState": profile.family_living_in_state,
         "familyLivingInCity": profile.family_living_in_city,
         "familyIncome": profile.family_income,
         "familyType": profile.family_type,
@@ -845,6 +869,10 @@ def profile_to_api(profile, request=None, public: bool = False, viewer=None) -> 
                 # Owner-only: it drives the wizard's first-run reveal and says
                 # nothing a match needs to know.
                 "registeredAt": profile.registered_at.isoformat() if profile.registered_at else None,
+                # Owner-only: what the wizard needs to grey a field out and say
+                # why, instead of letting somebody retype their name and lose
+                # it to a 400 on Continue.
+                "identityLocks": identity.lock_state(profile),
                 "updated_at": profile.updated_at.isoformat(),
             }
         )

@@ -19,6 +19,7 @@ import {
   Home,
   Landmark,
   Languages,
+  Map,
   MapPin,
   Music,
   Palette,
@@ -77,6 +78,12 @@ export const FIELD_ICONS: Record<string, FieldIcon> = {
 
   // Location
   currentCountry: Globe2,
+  /* The state rows share Map with each other and differ from their city rows:
+     a field row shows its icon instead of its label, so two rows in the same
+     section carrying the same glyph would be indistinguishable. */
+  currentState: Map,
+  placeOfBirthState: Map,
+  familyLivingInState: Map,
   currentCity: MapPin,
   placeOfBirthCountry: Globe2,
   placeOfBirthCity: Baby,

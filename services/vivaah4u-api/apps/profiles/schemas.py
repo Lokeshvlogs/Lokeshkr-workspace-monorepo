@@ -33,11 +33,14 @@ class ProfileUpdateSchema(Schema):
     community: Optional[str] = None
     mothertongue: Optional[str] = None
     currentCountry: Optional[str] = None
+    currentState: Optional[str] = None
     currentCity: Optional[str] = None
     placeOfBirthCountry: Optional[str] = None
+    placeOfBirthState: Optional[str] = None
     placeOfBirthCity: Optional[str] = None
     citizenshipCountry: Optional[str] = None
     familyLivingInCountry: Optional[str] = None
+    familyLivingInState: Optional[str] = None
     familyLivingInCity: Optional[str] = None
     familyIncome: Optional[str] = None
     familyType: Optional[Number] = None

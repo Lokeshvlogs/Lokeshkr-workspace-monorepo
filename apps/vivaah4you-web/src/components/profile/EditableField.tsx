@@ -22,7 +22,15 @@ import {
   formatHeight,
   labelFor,
 } from '@/lib/profileDisplay'
-import type { PublicProfile } from '@/types/profile'
+import type { PublicProfile, SaveField } from '@/types/profile'
+
+/** Marks a value that is fixed for good, where the pencil used to be. */
+const LockIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </svg>
+)
 
 const PencilIcon = () => (
   <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -93,7 +101,7 @@ interface Props {
   def: ProfileFieldDef
   profile: PublicProfile
   /** Persists the patch; resolves false when the save failed. */
-  onSave: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  onSave: SaveField
   /**
    * Render the value and the pencil alone, with no row chrome.
    *
@@ -101,9 +109,33 @@ interface Props {
    * value - the full row would say both a second time.
    */
   bare?: boolean
+  /**
+   * Shown inside the open editor, above the control.
+   *
+   * Inside rather than beside: on this page editing is an explicit click, so
+   * opening the editor *is* the member starting to edit - which is the one
+   * moment a warning about spending a change is worth reading, and the one
+   * moment they can still back out.
+   */
+  notice?: React.ReactNode
+  /**
+   * The value may no longer be changed.
+   *
+   * Removes the pencil rather than disabling the controls behind it: there is
+   * nothing to open, and an editor that opens only to refuse the save would
+   * waste the member's time twice.
+   */
+  locked?: boolean
 }
 
-export default function EditableField({ def, profile, onSave, bare = false }: Props) {
+export default function EditableField({
+  def,
+  profile,
+  onSave,
+  bare = false,
+  notice,
+  locked = false,
+}: Props) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -159,13 +191,15 @@ export default function EditableField({ def, profile, onSave, bare = false }: Pr
       if (draft[def.key] !== (profile as any)[def.key]) patch[key] = ''
     })
 
-    const ok = await onSave(def.step, patch)
+    const result = await onSave(def.step, patch)
     setSaving(false)
-    if (ok) {
+    if (result.ok) {
       setEditing(false)
       setDraft({})
     } else {
-      setError('Could not save. Please try again.')
+      // The server's words when it gave any - a field that has run out of
+      // changes cannot be saved by trying again.
+      setError(result.detail || 'Could not save. Please try again.')
     }
   }
 
@@ -184,6 +218,21 @@ export default function EditableField({ def, profile, onSave, bare = false }: Pr
         </button>
       </dd>
     )
+  }
+
+  if (!editing && bare && locked) {
+    return (
+      <dd className={`hero-fact-value ${shown ? '' : 'field-value-empty'}`}>
+        {shown || 'Not added'}
+        <span className="field-locked-mark" title={`Your ${def.label.toLowerCase()} is fixed`}>
+          <LockIcon />
+        </span>
+      </dd>
+    )
+  }
+
+  if (!editing && locked) {
+    return <FieldRow fieldKey={def.key} label={def.label} value={shown} emptyText="Not added" />
   }
 
   if (!editing) {
@@ -225,6 +274,8 @@ export default function EditableField({ def, profile, onSave, bare = false }: Pr
           </button>
         </div>
       </div>
+
+      {notice}
 
       {def.editor === 'text' && (
         <TextField

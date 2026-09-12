@@ -22,6 +22,12 @@ interface ChipGroupProps<T extends string | number> {
   name?: string;
   /** Shows a tick inside the selected chip. */
   showCheck?: boolean;
+  /**
+   * Locks the group. The chosen chip stays visible and legible - this is for
+   * an answer that may no longer be changed, not one that is unavailable, and
+   * hiding it would leave the member unable to see what they are stuck with.
+   */
+  disabled?: boolean;
 }
 
 const Check = () => (
@@ -46,10 +52,11 @@ export default function ChipGroup<T extends string | number>({
   onBlur,
   name,
   showCheck = true,
+  disabled = false,
 }: ChipGroupProps<T>) {
   return (
     <fieldset
-      className={`chip-group ${error ? "chip-group-error" : ""} ${className}`}
+      className={`chip-group ${error ? "chip-group-error" : ""} ${disabled ? "chip-group-locked" : ""} ${className}`}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onBlur?.();
       }}
@@ -79,6 +86,7 @@ export default function ChipGroup<T extends string | number>({
               role="radio"
               aria-checked={selected}
               name={name}
+              disabled={disabled}
               onClick={() => onChange(option.value)}
               className={`chip ${selected ? "chip-selected" : ""} ${chipClassName}`}
             >

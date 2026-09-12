@@ -18,6 +18,17 @@ interface Props {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  /**
+   * Year the calendar opens on when nothing is chosen yet.
+   *
+   * Registration already asked for an age, so the birth year is known to
+   * within one - and without this the calendar opens on the youngest year it
+   * allows, leaving somebody in their thirties to page through a decade of
+   * dropdowns to reach their own decade. It only moves the view: no date is
+   * selected and nothing is submitted until a day is clicked, which matters
+   * because a guessed birthday would be a wrong fact on a real profile.
+   */
+  defaultViewYear?: number;
 }
 
 const MONTHS = [
@@ -79,6 +90,7 @@ export default function BirthDateTimePicker({
   disabled = false,
   errorValue,
   onBlur,
+  defaultViewYear,
 }: Props) {
   const parsed = useMemo(() => parseValue(value), [value]);
   const [open, setOpen] = useState(false);
@@ -92,7 +104,13 @@ export default function BirthDateTimePicker({
   );
   const earliestYear = today.getFullYear() - maxAge;
 
-  const [viewYear, setViewYear] = useState(parsed.date?.getFullYear() ?? latest.getFullYear());
+  /* A chosen date wins; then the caller's guess, clamped to the years the
+     picker actually offers; then the youngest year allowed. */
+  const openingYear =
+    defaultViewYear && defaultViewYear <= latest.getFullYear() && defaultViewYear >= earliestYear
+      ? defaultViewYear
+      : latest.getFullYear();
+  const [viewYear, setViewYear] = useState(parsed.date?.getFullYear() ?? openingYear);
   const [viewMonth, setViewMonth] = useState(parsed.date?.getMonth() ?? 0);
 
   const btnRef = useRef<HTMLButtonElement | null>(null);
@@ -103,9 +121,15 @@ export default function BirthDateTimePicker({
     if (parsed.date) {
       setViewYear(parsed.date.getFullYear());
       setViewMonth(parsed.date.getMonth());
+    } else {
+      /* The guess usually arrives after the first render - the profile it is
+         derived from is fetched - so seeding it in useState alone would leave
+         the calendar on the wrong decade. Only applied while nothing is
+         chosen, so it can never move a date the member picked. */
+      setViewYear(openingYear);
     }
     setWithTime(Boolean(parsed.time));
-  }, [value]);
+  }, [value, openingYear]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {

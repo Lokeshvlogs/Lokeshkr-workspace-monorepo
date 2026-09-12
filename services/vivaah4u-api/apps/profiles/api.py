@@ -9,7 +9,7 @@ from ninja import File, Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from . import cards, interests, presence
+from . import cards, identity, interests, presence
 from .auth import active_auth, optional_auth
 from .mapping import apply_payload, profile_to_api
 from .models import Profile, ProfileView
@@ -385,6 +385,10 @@ def update_profile_step(request, data: ProfileUpdateSchema):
         "profile_completeness": profile.profile_completeness,
         "is_complete": profile.is_complete,
         "registered_at": profile.registered_at.isoformat() if profile.registered_at else None,
+        # Returned from the save that may just have consumed a change, so the
+        # wizard can go inert without a reload - it reads these once on mount
+        # and would otherwise keep claiming an allowance that is now spent.
+        "identity_locks": identity.lock_state(profile),
     }
 
 

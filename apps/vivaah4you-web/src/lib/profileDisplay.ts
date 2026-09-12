@@ -196,6 +196,42 @@ export function communitiesFor(religion: string): SelectOption[] {
 const CITY_CACHE = new Map<string, SelectOption[]>()
 
 /** "City, State, Country" options for one country, or every city when unset. */
+/**
+ * The states a country is divided into.
+ *
+ * `placesByCountry` has always been keyed country -> state -> cities, so the
+ * data was there; only the city label carried the state out to the client, and
+ * a label cannot be filtered on. A country with no states listed returns [],
+ * and the caller should then skip the field rather than show an empty one.
+ */
+export function statesForCountry(country: string): SelectOption[] {
+  return (placesByCountry[country] ?? []).map((state) => ({
+    value: state.label,
+    label: state.label,
+  }))
+}
+
+/**
+ * The cities in one state, or every city in the country when no state is given.
+ *
+ * The option value stays the full "Mumbai, Maharashtra, India" label that
+ * `citiesForCountry` has always produced. That string is what is already stored
+ * on every profile and what the search haystack matches on, so narrowing the
+ * list must not change the values in it.
+ */
+export function citiesForState(country: string, state: string): SelectOption[] {
+  if (!state) return citiesForCountry(country)
+
+  const countryLabel = COUNTRY_OPTIONS.find((c) => c.value === country)?.label ?? ''
+  const match = (placesByCountry[country] ?? []).find((entry) => entry.label === state)
+  if (!match) return citiesForCountry(country)
+
+  return match.cities.map((city) => {
+    const label = `${city.label}, ${match.label}${countryLabel ? `, ${countryLabel}` : ''}`
+    return { value: label, label }
+  })
+}
+
 export function citiesForCountry(country: string): SelectOption[] {
   // Rebuilding was cheap per country but ruinous with none - it flattened and
   // deduped every city on earth - and this is called inline from JSX, so it ran

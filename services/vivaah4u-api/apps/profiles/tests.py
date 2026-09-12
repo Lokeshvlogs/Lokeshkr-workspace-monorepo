@@ -44,7 +44,8 @@ from apps.profiles.models import (
     ProfileView,
     interest_pair_key,
 )
-from apps.profiles import interests, presence
+from apps.auth_api.api import derive_gender
+from apps.profiles import identity, interests, presence
 from apps.profiles.api import (
     LAST_WIZARD_STEP,
     RECENTLY_JOINED_DAYS,
@@ -98,6 +99,9 @@ FULLY_ANSWERED = {
 EXTRA_ANSWERED = {
     "daily_routine": "early_riser",
     "settle_abroad": "open",
+    "current_state": "Kerala",
+    "place_of_birth_state": "Kerala",
+    "family_living_in_state": "Kerala",
     "interests_music": ["ghazal"],
     "interests_movies": ["comedy"],
     "interests_books": ["poetry"],
@@ -801,6 +805,386 @@ class MobilityPreferenceTests(TestCase):
         """`settleAbroad` is about you, so one answer is the right shape."""
         apply_payload(self.profile, {"settleAbroad": "open"})
         self.assertEqual(self.profile.settle_abroad, "open")
+
+
+class IdentityLockTests(TestCase):
+    """Name, birth date, gender and height stop moving after a day.
+
+    Gender and age are baked into `profile_id` the moment both are known, and
+    that id is never reissued - so these are the facts a family checks a profile
+    against, and one that can be swapped freely is one that can be repurposed
+    after it has been seen.
+
+    Each group has its own allowance; see `identity.IDENTITY_LIMITS` for why
+    they differ.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="asha-id", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+
+    def _answer(self):
+        """Fill the guarded fields in for the first time, which is always free."""
+        apply_payload(self.profile, {
+            "firstName": "Asha",
+            "surname": "Menon",
+            "dob": "1996-04-12T09:30",
+            "gender": "female",
+            "heightFeet": 5,
+            "heightInches": 4,
+        })
+
+    def test_first_answer_is_free(self):
+        self._answer()
+        for group in identity.IDENTITY_GROUPS:
+            self.assertEqual(self.profile.identity_edits[group]["count"], 0, group)
+
+        locks = identity.lock_state(self.profile)
+        self.assertFalse(locks["name"]["locked"])
+        self.assertEqual(locks["name"]["changesLeft"], 2)
+        self.assertEqual(locks["gender"]["changesLeft"], 1)
+        self.assertEqual(locks["height"]["changesLeft"], 3)
+
+    def test_resending_an_unchanged_value_costs_nothing(self):
+        """The wizard PATCHes whole steps; re-saving must not burn a change."""
+        self._answer()
+        self._answer()
+        self._answer()
+        for group in identity.IDENTITY_GROUPS:
+            self.assertEqual(self.profile.identity_edits[group]["count"], 0, group)
+
+    def test_both_names_in_one_save_is_one_change(self):
+        """Correcting a first name and a surname together is one act."""
+        self._answer()
+        apply_payload(self.profile, {"firstName": "Aasha", "surname": "Nair"})
+        self.assertEqual(self.profile.identity_edits["name"]["count"], 1)
+
+    # ---- Each group's own limit ----
+
+    def test_name_allows_two_changes(self):
+        self._answer()
+        apply_payload(self.profile, {"firstName": "Aasha"})
+        apply_payload(self.profile, {"firstName": "Ashaa"})
+        with self.assertRaises(identity.IdentityLocked):
+            apply_payload(self.profile, {"firstName": "Asha"})
+
+    def test_gender_allows_only_one_change(self):
+        """Half of `profile_id`, and a profile that changes gender is a
+        different profile."""
+        self._answer()
+        apply_payload(self.profile, {"gender": "male"})
+        self.assertTrue(identity.lock_state(self.profile)["gender"]["locked"])
+
+        with self.assertRaises(identity.IdentityLocked) as caught:
+            apply_payload(self.profile, {"gender": "female"})
+        self.assertIn("once", str(caught.exception))
+
+    def test_height_allows_three_changes(self):
+        self._answer()
+        for inches in (5, 6, 7):
+            apply_payload(self.profile, {"heightFeet": 5, "heightInches": inches})
+        self.assertEqual(self.profile.identity_edits["height"]["count"], 3)
+
+        with self.assertRaises(identity.IdentityLocked):
+            apply_payload(self.profile, {"heightFeet": 5, "heightInches": 8})
+
+    def test_time_of_birth_allows_three_changes(self):
+        self._answer()
+        for clock in ("10:30", "11:30", "12:30"):
+            apply_payload(self.profile, {"dob": f"1996-04-12T{clock}"})
+        self.assertEqual(self.profile.identity_edits["dob_time"]["count"], 3)
+
+        with self.assertRaises(identity.IdentityLocked):
+            apply_payload(self.profile, {"dob": "1996-04-12T13:30"})
+
+    def test_date_of_birth_allows_two_changes(self):
+        self._answer()
+        apply_payload(self.profile, {"dob": "1996-04-13T09:30"})
+        apply_payload(self.profile, {"dob": "1996-04-14T09:30"})
+
+        with self.assertRaises(identity.IdentityLocked) as caught:
+            apply_payload(self.profile, {"dob": "1996-04-15T09:30"})
+        self.assertIn("date of birth", str(caught.exception))
+
+    # ---- The two halves of one column are two allowances ----
+
+    def test_changing_the_date_does_not_spend_the_time(self):
+        self._answer()
+        apply_payload(self.profile, {"dob": "1996-05-12T09:30"})
+        self.assertEqual(self.profile.identity_edits["dob_date"]["count"], 1)
+        self.assertEqual(self.profile.identity_edits["dob_time"]["count"], 0)
+
+    def test_changing_the_time_does_not_spend_the_date(self):
+        self._answer()
+        apply_payload(self.profile, {"dob": "1996-04-12T21:45"})
+        self.assertEqual(self.profile.identity_edits["dob_time"]["count"], 1)
+        self.assertEqual(self.profile.identity_edits["dob_date"]["count"], 0)
+
+    def test_a_date_locked_out_still_leaves_the_time_editable(self):
+        self._answer()
+        apply_payload(self.profile, {"dob": "1996-04-13T09:30"})
+        apply_payload(self.profile, {"dob": "1996-04-14T09:30"})
+        self.assertTrue(identity.lock_state(self.profile)["dob_date"]["locked"])
+
+        apply_payload(self.profile, {"dob": "1996-04-14T18:00"})
+        self.assertEqual(self.profile.dob_time.hour, 18)
+
+    # ---- Refusal behaviour ----
+
+    def test_a_refused_change_is_not_applied(self):
+        """The instance must not be left holding a change that was rejected."""
+        self._answer()
+        apply_payload(self.profile, {"gender": "male"})
+
+        with self.assertRaises(identity.IdentityLocked):
+            apply_payload(self.profile, {"gender": "female"})
+
+        self.assertEqual(self.profile.gender, "M")
+
+    def test_a_refusal_rolls_back_the_allowed_changes_in_the_same_payload(self):
+        """One save, one outcome. A half-applied step is worse than a refusal."""
+        self._answer()
+        apply_payload(self.profile, {"gender": "male"})
+
+        with self.assertRaises(identity.IdentityLocked):
+            apply_payload(self.profile, {"gender": "female", "firstName": "Meera"})
+
+        self.assertEqual(self.profile.first_name, "Asha")
+
+    # ---- The window ----
+
+    def test_window_closes_after_24_hours(self):
+        """Permanent once the day is up, even with a change still unused."""
+        self._answer()
+        apply_payload(self.profile, {"heightInches": 5})
+
+        opened = timezone.now() - timedelta(hours=25)
+        self.profile.identity_edits = {
+            **self.profile.identity_edits,
+            "height": {"answered": True, "count": 1, "opened_at": opened.isoformat()},
+        }
+
+        with self.assertRaises(identity.IdentityLocked):
+            apply_payload(self.profile, {"heightInches": 6})
+
+        self.assertTrue(identity.lock_state(self.profile)["height"]["locked"])
+
+    def test_a_later_change_does_not_extend_the_window(self):
+        self._answer()
+        apply_payload(self.profile, {"heightInches": 5})
+        opened = self.profile.identity_edits["height"]["opened_at"]
+
+        apply_payload(self.profile, {"heightInches": 6})
+        self.assertEqual(self.profile.identity_edits["height"]["opened_at"], opened)
+
+    # ---- Unanswered fields, and defaults that are not answers ----
+
+    def test_a_default_is_not_an_answer(self):
+        """`gender` defaults to "M", which nobody chose.
+
+        Without this, a woman picking "female" for the first time spent her one
+        and only change on saying what she was.
+        """
+        apply_payload(self.profile, {"gender": "female"})
+        self.assertEqual(self.profile.identity_edits["gender"]["count"], 0)
+        self.assertFalse(identity.lock_state(self.profile)["gender"]["locked"])
+
+    def test_an_unanswered_field_is_never_locked(self):
+        """Somebody who registers today and fills the wizard next week."""
+        self.profile.identity_edits = {}
+        self.assertFalse(identity.lock_state(self.profile)["name"]["locked"])
+        apply_payload(self.profile, {"firstName": "Asha"})
+        self.assertEqual(self.profile.first_name, "Asha")
+
+    # ---- Exposure ----
+
+    def test_lock_state_reaches_the_owner_and_not_the_public(self):
+        owner = profile_to_api(self.profile, None, public=False)
+        self.assertIn("identityLocks", owner)
+        self.assertEqual(owner["identityLocks"]["gender"]["limit"], 1)
+
+        public = profile_to_api(self.profile, None, public=True)
+        self.assertNotIn("identityLocks", public)
+
+    def test_save_step_returns_the_fresh_allowance(self):
+        """So the wizard can go inert without a reload."""
+        request = SimpleNamespace(user=self.user)
+        result = update_profile_step(
+            request,
+            SimpleNamespace(dict=lambda **_: {"step": 0, "gender": "female"}),
+        )
+        self.assertIn("identity_locks", result)
+        self.assertEqual(result["identity_locks"]["gender"]["changesLeft"], 1)
+
+
+
+class DerivedGenderTests(TestCase):
+    """Gender is decided once, at registration, from what was already asked.
+
+    Somebody registering for themselves has said whether they seek a bride or a
+    groom, which settles their own gender; a parent has said the profile is for a
+    son or a daughter. Asking again would invite the two answers to disagree -
+    and gender is the one field that cannot be corrected twice, because
+    `build_profile_id` bakes it into a permanent public id.
+    """
+
+    def test_looking_for_a_groom_makes_the_member_female(self):
+        self.assertEqual(derive_gender("self", "groom"), "F")
+
+    def test_looking_for_a_bride_makes_the_member_male(self):
+        self.assertEqual(derive_gender("self", "bride"), "M")
+
+    def test_profile_for_decides_when_it_is_not_their_own(self):
+        self.assertEqual(derive_gender("son", None), "M")
+        self.assertEqual(derive_gender("brother", None), "M")
+        self.assertEqual(derive_gender("daughter", None), "F")
+        self.assertEqual(derive_gender("sister", None), "F")
+
+    def test_looking_for_is_ignored_when_the_profile_is_for_someone_else(self):
+        """A mother looking for a bride is registering a son, not herself."""
+        self.assertEqual(derive_gender("son", "bride"), "M")
+        self.assertEqual(derive_gender("daughter", "groom"), "F")
+
+    def test_unanswerable_falls_back_to_other(self):
+        """Unreachable through the API - registration rejects self with no
+        `looking_for`, and `profile_for` is a Literal of five values - but the
+        fallback must not guess a gender."""
+        self.assertEqual(derive_gender("self", None), "O")
+        self.assertEqual(derive_gender("cousin", None), "O")
+
+
+class GenderLedgerTests(TestCase):
+    """A derived gender counts as the answer, so one change remains."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="deva", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+
+    def test_mark_answered_records_without_spending(self):
+        identity.mark_answered(self.profile, "gender")
+        self.assertEqual(
+            self.profile.identity_edits["gender"],
+            {"answered": True, "count": 0, "opened_at": ""},
+        )
+        self.assertFalse(identity.lock_state(self.profile)["gender"]["locked"])
+
+    def test_mark_answered_never_resets_a_count(self):
+        identity.mark_answered(self.profile, "gender")
+        self.profile.identity_edits = {
+            "gender": {"answered": True, "count": 1, "opened_at": "2026-01-01T00:00:00+00:00"}
+        }
+        identity.mark_answered(self.profile, "gender")
+        self.assertEqual(self.profile.identity_edits["gender"]["count"], 1)
+
+    def test_unknown_group_is_a_programming_error(self):
+        with self.assertRaises(KeyError):
+            identity.mark_answered(self.profile, "favourite_colour")
+
+    def test_one_change_from_a_prefilled_gender_locks_it(self):
+        """The whole point: a pre-filled value must not buy a free change.
+
+        Without the stamp the wizard's first save reads as the free first answer
+        and the member gets two changes where the rule allows one.
+        """
+        self.profile.gender = "F"
+        identity.mark_answered(self.profile, "gender")
+
+        apply_payload(self.profile, {"gender": "male"})
+        self.assertEqual(self.profile.identity_edits["gender"]["count"], 1)
+        self.assertTrue(identity.lock_state(self.profile)["gender"]["locked"])
+
+        with self.assertRaises(identity.IdentityLocked):
+            apply_payload(self.profile, {"gender": "female"})
+
+    def test_without_the_stamp_the_first_change_is_still_free(self):
+        """The contrast, so the stamp is demonstrably what does the work."""
+        self.profile.gender = "F"
+        apply_payload(self.profile, {"gender": "male"})
+        self.assertEqual(self.profile.identity_edits["gender"]["count"], 0)
+        self.assertFalse(identity.lock_state(self.profile)["gender"]["locked"])
+
+    def test_registration_stamps_the_ledger(self):
+        """The wiring, not just the helper.
+
+        Goes through the real endpoint because the stamp has to happen in the
+        same transaction as the derivation - a later save would mint
+        `profile_id` from a gender the ledger knew nothing about.
+        """
+        from apps.auth_api.api import register
+        from apps.auth_api.schema import RegisterSchema
+
+        register(
+            SimpleNamespace(),
+            RegisterSchema(
+                email="sunita@example.com",
+                first_name="Sunita",
+                surname="Rao",
+                profile_for="self",
+                age=27,
+                looking_for="groom",
+                country_code="+91",
+                phone="9876500011",
+                password="secret123",
+            ),
+        )
+
+        profile = Profile.objects.get(email="sunita@example.com")
+        self.assertEqual(profile.gender, "F")
+        self.assertEqual(
+            profile.identity_edits["gender"],
+            {"answered": True, "count": 0, "opened_at": ""},
+        )
+        # One change, and then fixed.
+        locks = identity.lock_state(profile)
+        self.assertEqual(locks["gender"]["changesLeft"], 1)
+        self.assertFalse(locks["gender"]["locked"])
+
+        # Nothing else was stamped: those the member types themselves.
+        for group in ("name", "dob_date", "dob_time", "height"):
+            self.assertNotIn(group, profile.identity_edits, group)
+
+    def test_resaving_the_prefilled_value_costs_nothing(self):
+        """The wizard PATCHes all of step 0, including gender, on every
+        Continue."""
+        self.profile.gender = "F"
+        identity.mark_answered(self.profile, "gender")
+
+        apply_payload(self.profile, {"gender": "female"})
+        apply_payload(self.profile, {"gender": "female"})
+        self.assertEqual(self.profile.identity_edits["gender"]["count"], 0)
+        self.assertFalse(identity.lock_state(self.profile)["gender"]["locked"])
+
+
+class LocationStateTests(TestCase):
+    """The state/province between country and city."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="ravi-state", password="x")
+        self.profile = Profile.objects.get(user=self.user)
+
+    def test_round_trip(self):
+        apply_payload(self.profile, {
+            "currentCountry": "IN",
+            "currentState": "Kerala",
+            "currentCity": "Kochi, Kerala, India",
+            "placeOfBirthState": "Tamil Nadu",
+            "familyLivingInState": "Kerala",
+        })
+        data = profile_to_api(self.profile, None, public=True)
+        self.assertEqual(data["currentState"], "Kerala")
+        self.assertEqual(data["placeOfBirthState"], "Tamil Nadu")
+        self.assertEqual(data["familyLivingInState"], "Kerala")
+
+    def test_states_do_not_move_eligibility(self):
+        """Extras never touch the core set - the guarantee that lets it grow."""
+        for field, value in FULLY_ANSWERED.items():
+            setattr(self.profile, field, value)
+        self.profile.dob_time = timezone.now()
+        self.profile.display_picture = "profile_pics/x.jpg"
+        core_before = self.profile.core_completeness()
+
+        apply_payload(self.profile, {"currentState": "Kerala"})
+        self.assertEqual(self.profile.core_completeness(), core_before)
 
 
 class MediaPickTests(TestCase):

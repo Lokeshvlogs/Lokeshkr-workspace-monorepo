@@ -6,12 +6,12 @@ import { BookOpen, ExternalLink, Film, Music, Sparkles } from 'lucide-react'
 import MediaPickField from '@/components/profile/MediaPickField'
 import { ProviderGlyph, providerLabel } from '@/components/profile/providerGlyph'
 import { PICK_CATEGORIES } from '@/constants/selectOptions/interests'
-import type { MediaPick, PublicProfile } from '@/types/profile'
+import type { MediaPick, PublicProfile, SaveField } from '@/types/profile'
 
 interface Props {
   profile: PublicProfile
   /** Owner-only. Without `onSave` the section is read-only. */
-  onSave?: (step: number, patch: Record<string, unknown>) => Promise<boolean>
+  onSave?: SaveField
 }
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -67,11 +67,11 @@ export default function ProfileMediaPicks({ profile, onSave }: Props) {
     // Blank rows are dropped here as well as on the server: the member should
     // see the same list back that they are about to be shown.
     const cleaned = draft.filter((pick) => pick.title.trim())
-    const saved = await onSave?.(INTERESTS_STEP, { [key]: cleaned })
+    const result = await onSave?.(INTERESTS_STEP, { [key]: cleaned })
     setSaving(false)
 
-    if (saved) setEditing(null)
-    else setError('Could not save. Please try again.')
+    if (result?.ok) setEditing(null)
+    else setError(result?.detail || 'Could not save. Please try again.')
   }
 
   return (

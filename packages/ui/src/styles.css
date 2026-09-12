@@ -513,6 +513,91 @@
    still wanted. Matches `.form-section-hint` in weight so a hint reads the same
    wherever it appears, but it is its own class: this one sits inside a
    fieldset, between the legend and the chips. */
+/* A group whose answer is now fixed. The chosen chip keeps its colour - the
+   member has to be able to read what they are stuck with - while the rest fade
+   back and stop inviting a click. */
+.chip-group-locked .chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chip-group-locked .chip-selected:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+/* What may still be changed about a name, birth date, gender or height.
+   Amber while there is still a choice to make, grey once there is not: a
+   warning that stays loud after the thing it warned about has happened trains
+   people to ignore the next one. */
+/* The heading row, so the name's edit affordance can sit beside it rather
+   than wrapping onto its own line. */
+.profile-hero-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Hidden until the heading is hovered or the button is focused: the name is
+   the loudest thing on the page and does not need a pencil competing with it,
+   but the affordance must still be reachable from the keyboard. */
+.hero-name-edit {
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.profile-hero-heading:hover .hero-name-edit,
+.hero-name-edit:focus-visible {
+  opacity: 1;
+}
+
+.hero-name-lock,
+.field-locked-mark {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.375rem;
+  color: var(--color-placeholder-text, #8b8b8b);
+}
+
+.field-locked-mark svg {
+  width: 0.8125rem;
+  height: 0.8125rem;
+}
+
+/* The name editor takes the whole heading row when open - two fields and a
+   pair of buttons cannot sit inline beside a large heading. */
+.hero-name-editor {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-top: 0.5rem;
+}
+
+.identity-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin-bottom: 0.625rem;
+  padding: 0.5rem 0.6875rem;
+  border-radius: 0.625rem;
+  border: 1px solid #f5d9a8;
+  background-color: #fdf6e7;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #7a5514;
+}
+
+.identity-note svg {
+  flex: 0 0 auto;
+  margin-top: 0.1875rem;
+}
+
+.identity-note-locked {
+  border-color: var(--color-border, #ecd9e6);
+  background-color: #f6f6f7;
+  color: var(--color-muted-text, #4a3b3b);
+}
+
 .chip-group-hint {
   margin-bottom: 0.5rem;
   font-size: 0.75rem;

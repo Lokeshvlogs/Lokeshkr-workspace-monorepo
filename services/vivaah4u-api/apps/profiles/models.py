@@ -144,6 +144,15 @@ class Profile(models.Model):
     dob_change_count = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(1)])  # To track DOB changes with timestamps
     gender = models.CharField(max_length=1, choices=SEX_CHOICES, default="M")
     gender_change_count = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(2)])  # To track gender changes with timestamps
+    # How many times each identity group has been changed, and when its 24-hour
+    # window opened: {"name": {"count": 1, "opened_at": "..."}, ...}.
+    #
+    # A JSON ledger rather than a column per group because the rule is one rule
+    # applied four times - see apps/profiles/identity.py, which owns it.
+    # `gender_change_count` above was an earlier attempt at the same idea and
+    # was never enforced: nothing calls full_clean, so its MaxValueValidator has
+    # never run.
+    identity_edits = models.JSONField(default=dict, blank=True)
     height_feet = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(8)], help_text="Height in feet")
     height_inches = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(11)], help_text="Additional height in inches")
     body_physique = models.CharField(max_length=30, blank=True, help_text="slim / normal / athletic / chubby / heavy")
@@ -172,14 +181,21 @@ class Profile(models.Model):
     mother_tongue = models.CharField(max_length=100, blank=True)
     # Location
     current_country = models.CharField(max_length=60, blank=True)
+    # State/province, between country and city. The city columns already carry
+    # a "Mumbai, Maharashtra, India" label, so the state was never lost - but it
+    # could not be read back out of that string, filtered on, or asked for on
+    # its own. Families ask which state before they ask which city.
+    current_state = models.CharField(max_length=120, blank=True)
     current_city = models.CharField(max_length=150, blank=True)
     place_of_birth_country = models.CharField(max_length=60, blank=True)
+    place_of_birth_state = models.CharField(max_length=120, blank=True)
     place_of_birth_city = models.CharField(max_length=150, blank=True)
     # Separate from both of the above: plenty of members were born in one
     # country, live in a second and hold the passport of a third.
     citizenship_country = models.CharField(max_length=60, blank=True)
     # Family Details
     family_living_in_country = models.CharField(max_length=60, blank=True)
+    family_living_in_state = models.CharField(max_length=120, blank=True)
     family_living_in_city = models.CharField(max_length=150, blank=True)
     family_type = models.IntegerField(default=0, choices=FAMILY_TYPE_CHOICES, blank=True)
     lives_with_family = models.BooleanField(default=True)
@@ -415,6 +431,13 @@ class Profile(models.Model):
     EXTRA_TEXT_FIELDS: list[str] = [
         "daily_routine",
         "settle_abroad",
+        # Outside the core set for the same reason as citizenship_country: the
+        # columns are blank on every profile that predates them, and promoting
+        # them to core would drop those members below the eligibility bar for a
+        # question nobody asked them.
+        "current_state",
+        "place_of_birth_state",
+        "family_living_in_state",
         # Required by the wizard, but deliberately outside the core set: the
         # column is blank on every profile that predates it, and promoting it
         # to core would drop those members below the eligibility bar for a

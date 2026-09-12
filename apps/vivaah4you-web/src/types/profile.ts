@@ -54,11 +54,15 @@ export interface PublicProfile {
   community: string
   mothertongue: string
   currentCountry: string
+  /** State or province. "" where the country has none listed. */
+  currentState: string
   currentCity: string
   placeOfBirthCountry: string
+  placeOfBirthState: string
   placeOfBirthCity: string
   citizenshipCountry: string
   familyLivingInCountry: string
+  familyLivingInState: string
   familyLivingInCity: string
   familyIncome: string
   familyType: number
@@ -212,6 +216,47 @@ export enum VerificationLevel {
   IdVerified = 3,
 }
 
+/**
+ * One identity group's remaining allowance, as the server reports it.
+ *
+ * The groups are `name`, `dob_date`, `dob_time`, `gender` and `height`, each
+ * with its own `limit` - see `apps/profiles/identity.py`, which owns the rule.
+ * `limit` travels with the state so the client never keeps a second copy of the
+ * table that could drift from it.
+ */
+export interface IdentityLock {
+  locked: boolean
+  changesLeft: number
+  limit: number
+  windowOpenedAt: string | null
+  windowClosed: boolean
+}
+
+export type IdentityGroup = 'name' | 'dob_date' | 'dob_time' | 'gender' | 'height'
+
+/**
+ * What an inline save returns.
+ *
+ * `boolean` before this, which threw away the only thing worth saying when a
+ * save is refused. An identity field that has run out of changes cannot be
+ * saved by trying again, so "Could not save. Please try again." was actively
+ * wrong - it invites a retry loop on something that will never succeed.
+ */
+export interface SaveResult {
+  ok: boolean
+  /** The server's own words, when it gave any. */
+  detail?: string
+}
+
+/** Persists one inline edit. Shared by every editor on the profile page. */
+export type SaveField = (
+  step: number,
+  patch: Record<string, unknown>,
+) => Promise<SaveResult>
+
+/** Partial: a group absent from the ledger has spent nothing. */
+export type IdentityLocks = Partial<Record<IdentityGroup, IdentityLock>>
+
 /** Adds the owner-only fields returned by /api/profile/me. */
 export interface MyProfile extends PublicProfile {
   email: string
@@ -223,4 +268,12 @@ export interface MyProfile extends PublicProfile {
   created_at: string
   updated_at: string
   is_complete: boolean
+  /**
+   * When the wizard was first finished. Null until then, which is the whole of
+   * the first-run test - `is_complete` is recomputed from live values and flips
+   * back the moment a core field is cleared.
+   */
+  registeredAt: string | null
+  /** What may still be changed about name, birth date, gender and height. */
+  identityLocks: IdentityLocks
 }

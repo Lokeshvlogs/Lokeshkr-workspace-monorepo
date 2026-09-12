@@ -49,16 +49,22 @@ export default function MyProfilePage() {
         body: JSON.stringify({ step, ...patch }),
       }).catch(() => null)
 
-      if (!response) return false
+      if (!response) return { ok: false }
       if (response.status === 401) {
         auth.loginRequiredRedirect()
-        return false
+        return { ok: false }
       }
-      if (!response.ok) return false
+      if (!response.ok) {
+        // The route forwards Django's `detail`; reading it is what lets a
+        // refused identity change explain itself instead of asking for a retry
+        // that cannot work.
+        const data = await response.json().catch(() => null)
+        return { ok: false, detail: data?.detail }
+      }
 
       const data = await load()
       if (data) auth.setProfileComplete(Boolean(data.is_complete))
-      return true
+      return { ok: true }
     },
     [auth, load],
   )

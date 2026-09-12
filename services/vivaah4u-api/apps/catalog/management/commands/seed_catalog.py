@@ -1,6 +1,7 @@
 """Load institutions and employers into the catalog.
 
     manage.py seed_catalog                      # curated YAML (default)
+    manage.py seed_catalog --source=hipo        # downloads the dataset
     manage.py seed_catalog --source=hipo --path=world_universities.json
     manage.py seed_catalog --dry-run
 
@@ -14,11 +15,18 @@ protecting, and without this guard one careless re-seed would flatten it.
 The big open datasets are fetched at seed time rather than committed. Shipping
 10k rows through `loaddata` in a migration would make every fresh `migrate`
 depend on data that changes independently of the schema.
+
+Without the bulk source the catalog holds only the curated YAML - 44 rows across
+8 countries - so a member who studied in Sweden, France or Japan opened the
+College/University field and found it empty. `--source=hipo` with no `--path`
+now downloads the dataset itself, so that is one command rather than a manual
+download somebody has to know about.
 """
 
 import json
 import re
 import unicodedata
+import urllib.request
 from pathlib import Path
 
 import yaml
@@ -28,6 +36,17 @@ from django.db import transaction
 from apps.catalog.models import Employer, Institution, ReputationTier
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+
+#: ~10k universities across 200 countries, CC0, no key. The canonical home of
+#: the `alpha_two_code` + `domains` shape `seed_hipo` reads.
+HIPO_URL = (
+    "https://raw.githubusercontent.com/Hipo/university-domains-list"
+    "/master/world_universities_and_domains.json"
+)
+
+#: A seed is a deliberate, occasional command run by an operator, so it can
+#: afford to wait far longer than a request path would.
+HIPO_TIMEOUT_SECONDS = 120
 
 
 def slugify(name: str, country: str) -> str:
@@ -52,7 +71,10 @@ class Command(BaseCommand):
             help="curated = the YAML in apps/catalog/data; hipo = a downloaded "
                  "world_universities_and_domains JSON file.",
         )
-        parser.add_argument("--path", help="File to read when --source=hipo.")
+        parser.add_argument(
+            "--path",
+            help="File to read when --source=hipo. Omit to download the dataset.",
+        )
         parser.add_argument(
             "--dry-run",
             action="store_true",
@@ -146,16 +168,31 @@ class Command(BaseCommand):
         will need. It carries no ranking, so every row lands UNRANKED and the
         curated file supplies the tiers.
         """
-        if not path:
-            self.stderr.write(self.style.ERROR("--path is required for --source=hipo"))
-            return 0, 0, 0
+        if path:
+            source = Path(path)
+            if not source.exists():
+                self.stderr.write(self.style.ERROR(f"No such file: {source}"))
+                return 0, 0, 0
+            rows = json.loads(source.read_text(encoding="utf-8"))
+        else:
+            self.stdout.write(f"Downloading {HIPO_URL} ...")
+            try:
+                with urllib.request.urlopen(HIPO_URL, timeout=HIPO_TIMEOUT_SECONDS) as response:
+                    rows = json.loads(response.read().decode("utf-8"))
+            except Exception as exc:
+                # Named rather than swallowed: an operator who ran this to fix
+                # an empty dropdown needs to know it did not happen.
+                self.stderr.write(
+                    self.style.ERROR(
+                        f"Could not download the dataset ({exc}). Pass --path to seed "
+                        f"from a local copy instead."
+                    )
+                )
+                return 0, 0, 0
 
-        source = Path(path)
-        if not source.exists():
-            self.stderr.write(self.style.ERROR(f"No such file: {source}"))
+        if not isinstance(rows, list):
+            self.stderr.write(self.style.ERROR("Expected a JSON list of institutions."))
             return 0, 0, 0
-
-        rows = json.loads(source.read_text(encoding="utf-8"))
         created = updated = skipped = 0
         batch = []
 

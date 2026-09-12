@@ -23,6 +23,7 @@ import {
   ImagePlus,
   Landmark,
   Languages,
+  Map,
   MapPin,
   Music,
   Palette,
@@ -56,7 +57,8 @@ import {
   TextField,
 } from "@lokesh-workspace/ui";
 
-import type { MediaPick } from "@/types/profile";
+import type { IdentityLocks, MediaPick } from "@/types/profile";
+import IdentityNotice from "@/components/profile/IdentityNotice";
 import PhotoGallery from "@/components/profile/PhotoGallery";
 import CompletenessRing from "@/components/profile/CompletenessRing";
 import { coerceToFormShape } from "@/lib/profileFormShape";
@@ -73,7 +75,13 @@ import {
   readProfileDraft,
   saveProfileDraft,
 } from "@/lib/profileDraft";
-import { citiesForCountry, communitiesFor, RELIGION_OPTIONS } from "@/lib/profileDisplay";
+import {
+  citiesForCountry,
+  citiesForState,
+  communitiesFor,
+  statesForCountry,
+  RELIGION_OPTIONS,
+} from "@/lib/profileDisplay";
 import { motherTongueOptions } from "@/constants/selectOptions/social";
 import { COUNTRY_OPTIONS } from "@/constants/selectOptions/places";
 // Education level, field of study and the institution list now live inside
@@ -117,6 +125,27 @@ import {
   PARTNER_SMOKING_CHOICES,
   PARTNER_DRINKING_CHOICES,
 } from "@/constants/selectOptions/partner";
+
+/** Whether a country has states listed, and so whether to ask for one. */
+const hasStates = (country: string): boolean => statesForCountry(country).length > 0;
+
+/**
+ * A birth date that is actually finished.
+ *
+ * "YYYY-MM-DD", optionally with "THH:mm". Time of birth stays optional on
+ * purpose - a great many people genuinely do not know theirs, and the picker
+ * says so - so a date alone counts as complete, and the picker never leaves a
+ * time half-set because switching it on fills in a default.
+ */
+const isCompleteDob = (value: string): boolean =>
+  /* The time part is matched loosely on purpose. The picker emits
+     "1996-04-12T09:30", but the server sends back a full ISO timestamp
+     ("1996-04-12T09:30:00+00:00") and the form holds that verbatim until a new
+     date is picked - so a strict "HH:mm only" test would tell every returning
+     member to pick their date of birth again and refuse to let them past. What
+     matters here is the whole *date*, which is the part that gates the sections
+     below. */
+  /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(value);
 
 /** Form values are strings; the sliders want numbers, and "" means unset. */
 const toNum = (value: string): number | null =>
@@ -266,9 +295,11 @@ const INITIAL_FORM = {
   religiosity: "",
   religiosityDetail: "",
   currentCountry: "",
+  currentState: "",
   currentCity: "",
   placeOfBirthCountry: "",
   citizenshipCountry: "",
+  placeOfBirthState: "",
   placeOfBirthCity: "",
 
   // Step 2. educationLevel / fieldOfStudy / collegeUniversity are no longer
@@ -288,6 +319,7 @@ const INITIAL_FORM = {
 
   // Step 3
   familyLivingInCountry: "",
+  familyLivingInState: "",
   familyLivingInCity: "",
   familyIncome: "",
   familyType: 0,
@@ -354,9 +386,9 @@ const STEP_FIELDS: (keyof FormState)[][] = [
      as a suggestion on /profile/me once the wizard is finished, so nothing in
      step 0 saves it. */
   ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel"],
-  ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentCity", "placeOfBirthCountry", "placeOfBirthCity", "citizenshipCountry"],
+  ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentState", "currentCity", "placeOfBirthCountry", "placeOfBirthState", "placeOfBirthCity", "citizenshipCountry"],
   ["educations", "achievements", "profession", "employedIn", "employedAs", "salaryAmount", "settleAbroad", "employerSlug", "employerName", "workCountry", "visaStatus"],
-  ["familyLivingInCountry", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily", "fatherOccupation", "motherOccupation", "brothers", "brothersMarried", "sisters", "sistersMarried", "familyAbout"],
+  ["familyLivingInCountry", "familyLivingInState", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily", "fatherOccupation", "motherOccupation", "brothers", "brothersMarried", "sisters", "sistersMarried", "familyAbout"],
   ["diet", "smoking", "drinking", "hasChildren", "dailyRoutine", "interestsMusic", "interestsMovies", "interestsBooks", "interestsCuisines", "interestsTravel", "interestsHobbies", "interestsOther"],
   ["partnerAgeMin", "partnerAgeMax", "partnerHeightMin", "partnerHeightMax", "partnerAbout", "partnerMaritalStatuses", "partnerReligions", "partnerCommunities", "partnerMotherTongues", "partnerCountries", "partnerEducations", "partnerProfessions", "partnerDiets", "partnerReligiosities", "partnerSmoking", "partnerDrinking"],
   ["photo", "photos"],
@@ -383,14 +415,14 @@ const SECTION_NEEDS: string[][][] = [
     ["religion", "community"],
     ["mothertongue"],
     ["religiosity", "religiosityDetail"],
-    ["currentCountry", "currentCity"],
-    ["placeOfBirthCountry", "placeOfBirthCity"],
+    ["currentCountry", "currentState", "currentCity"],
+    ["placeOfBirthCountry", "placeOfBirthState", "placeOfBirthCity"],
     ["citizenshipCountry"],
   ],
   // 2 - Education & career
   [["educations"], [], ["profession", "employedIn", "employedAs", "salaryAmount", "workCountry", "visaStatus", "settleAbroad"]],
   // 3 - Family
-  [["familyLivingInCountry", "familyLivingInCity", "familyIncome"], ["fatherOccupation", "motherOccupation"], [], [], []],
+  [["familyLivingInCountry", "familyLivingInState", "familyLivingInCity", "familyIncome"], ["fatherOccupation", "motherOccupation"], [], [], []],
   // 4 - Lifestyle & habits
   [["diet", "smoking", "drinking"], []],
   // 5 - Partner preference
@@ -418,6 +450,7 @@ function PickerField({
   searchable = false,
   className = "",
   selectedFirst,
+  disabled,
 }: {
   label: string;
   icon?: React.ReactNode;
@@ -430,6 +463,7 @@ function PickerField({
   className?: string;
   /** Pass false where the list is a numeric ladder - see SelectDropdown. */
   selectedFirst?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <SelectDropdown
@@ -444,6 +478,7 @@ function PickerField({
       searchable={searchable}
       className={className}
       selectedFirst={selectedFirst}
+      disabled={disabled}
     />
   );
 }
@@ -589,6 +624,21 @@ export default function ProfileRegisterPage() {
      is cleared, so a member who blanked one answer would be dripped the wizard
      all over again. */
   const [registeredAt, setRegisteredAt] = useState<string | null>(null);
+  /* What may still be changed about name, birth date, gender and height. Read
+     from the server rather than counted here: the rule is enforced in
+     `apply_payload`, and a client-side copy would only ever be a guess that
+     could disagree with the 400 it is trying to prevent. */
+  const [identityLocks, setIdentityLocks] = useState<IdentityLocks>({});
+  /* The identity values as the server last knew them.
+     Step 0's controls are always open - there is no "start editing" click to
+     hang a warning off - so a pending change is detected by comparing against
+     this. That is the exact moment an allowance is about to be spent, and it
+     needs no new props on four different kinds of control. */
+  const [savedIdentity, setSavedIdentity] = useState<Record<string, string>>({});
+  /* The age given at registration. Registration never asked for a birth date,
+     so this is the only thing known about it - enough to open the calendar on
+     the right decade, and nowhere near enough to fill a date in. */
+  const [registeredAge, setRegisteredAge] = useState<number | null>(null);
   /* The furthest step reached, which is how far the first-run stepper reveals.
      Tracked rather than read off `step`, so going back to fix step 1 does not
      take away the markers already earned. */
@@ -667,6 +717,9 @@ export default function ProfileRegisterPage() {
       let restored: Partial<FormState> = {};
       let owner = "";
       let registered: string | null = null;
+      let locks: IdentityLocks = {};
+      let identitySnapshot: Record<string, string> = {};
+      let age: number | null = null;
 
       try {
         const response = await fetch("/api/profile/me");
@@ -674,6 +727,16 @@ export default function ProfileRegisterPage() {
           const data = await response.json();
           owner = draftOwnerKey(data);
           registered = data.registeredAt ?? null;
+          locks = (data.identityLocks ?? {}) as IdentityLocks;
+          identitySnapshot = {
+            firstName: String(data.firstName ?? ""),
+            surname: String(data.surname ?? ""),
+            dob: String(data.dob ?? ""),
+            gender: String(data.gender ?? ""),
+            heightFeet: String(data.heightFeet ?? ""),
+            heightInches: String(data.heightInches ?? ""),
+          };
+          age = Number(data.age) > 0 ? Number(data.age) : null;
           setCompleteness(Number(data.profile_completeness ?? 0));
           (Object.keys(INITIAL_FORM) as (keyof FormState)[]).forEach((key) => {
             const value = data[key];
@@ -739,6 +802,9 @@ export default function ProfileRegisterPage() {
 
       setForm((prev) => ({ ...prev, ...restored }));
       setRegisteredAt(registered);
+      setIdentityLocks(locks);
+      setSavedIdentity(identitySnapshot);
+      setRegisteredAge(age);
       setStep(fromUrl ?? draftStep ?? 0);
       hydrated.current = true;
 
@@ -838,6 +904,10 @@ export default function ProfileRegisterPage() {
 
         setCompleteness(Number(result.profile_completeness ?? 0));
         if (typeof result.is_complete === "boolean") auth.setProfileComplete(result.is_complete);
+        /* The save that just spent a change returns the allowance that is left,
+           so a field goes inert immediately rather than still claiming a change
+           it no longer has until the page is reloaded. */
+        if (result.identity_locks) setIdentityLocks(result.identity_locks as IdentityLocks);
         setSaveState("saved");
 
         setSavedNotice(`${STEPS[currentStep]?.title ?? "Step"} saved`);
@@ -908,7 +978,11 @@ export default function ProfileRegisterPage() {
     if (s === 0) {
       check("firstName");
       check("surname");
-      need(form.dob !== "", "dob", "Your date of birth is required");
+      /* A whole date, not just a year and a month. The picker only emits one
+         when a day is clicked, but a draft restored from localStorage can be
+         arbitrarily old and hold a half-written string - and until this is
+         answered the sections below it stay closed. */
+      need(isCompleteDob(form.dob), "dob", "Pick the full date of birth");
       need(form.gender !== "", "gender", "Pick one");
       // Inches stays optional: a plain "5 ft" is a real answer, and the
       // picker's own 0 is indistinguishable from an untouched one.
@@ -926,8 +1000,17 @@ export default function ProfileRegisterPage() {
       // the control is on screen.
       need(religiosityDetails.length === 0 || form.religiosityDetail !== "", "religiosityDetail");
       need(form.currentCountry !== "", "currentCountry");
+      /* Required exactly where there is a list to choose from. Plenty of the
+         200 countries offered have no states listed, and gating on a dropdown
+         that cannot be answered is a dead end rather than a prompt - the same
+         rule `visaStatus` already follows. */
+      need(!hasStates(form.currentCountry) || form.currentState !== "", "currentState");
       need(form.currentCity !== "", "currentCity");
       need(form.placeOfBirthCountry !== "", "placeOfBirthCountry");
+      need(
+        !hasStates(form.placeOfBirthCountry) || form.placeOfBirthState !== "",
+        "placeOfBirthState",
+      );
       need(form.placeOfBirthCity !== "", "placeOfBirthCity");
       need(form.citizenshipCountry !== "", "citizenshipCountry");
       return gaps;
@@ -957,6 +1040,10 @@ export default function ProfileRegisterPage() {
       // step renders and there is nothing to wait on. Only the family note is
       // genuinely optional.
       need(form.familyLivingInCountry !== "", "familyLivingInCountry");
+      need(
+        !hasStates(form.familyLivingInCountry) || form.familyLivingInState !== "",
+        "familyLivingInState",
+      );
       need(form.familyLivingInCity !== "", "familyLivingInCity");
       need(form.familyIncome !== "", "familyIncome");
       need(form.fatherOccupation !== "", "fatherOccupation");
@@ -1020,7 +1107,34 @@ export default function ProfileRegisterPage() {
      as it is unlocked. Seven markers up front reads as a form to be endured;
      one that grows reads as progress. Anyone who has registered once sees the
      full stepper, because they are here to reach a specific step. */
+  /* Registration asked for an age, never a birth date, so this is a year and
+     nothing more: it moves the calendar's opening view and never becomes a
+     value. Filling in a guessed birthday would put a wrong fact on a real
+     profile - and one that is locked after 24 hours. */
+  const guessedBirthYear = registeredAge
+    ? new Date().getFullYear() - registeredAge
+    : null;
+
   const firstRun = registeredAt === null;
+
+  /**
+   * Whether the member has changed a guarded field away from what was saved.
+   *
+   * This is the wizard's stand-in for "started editing": the controls are
+   * always open, so there is no click to hang the warning off, and a warning
+   * shown before anything has changed is the furniture that made people stop
+   * reading it.
+   */
+  const changedFrom = (...keys: (keyof FormState)[]): boolean =>
+    keys.some((key) => String(form[key] ?? "") !== (savedIdentity[key as string] ?? ""));
+
+  /* One control writes both halves of the birth timestamp, and each half has
+     its own allowance. Disabled only when neither can move: a locked date must
+     not take away the ability to correct the time, which is the half people
+     actually come back for. */
+  const dobFullyLocked = Boolean(
+    identityLocks.dob_date?.locked && identityLocks.dob_time?.locked,
+  );
   const visibleSteps = firstRun ? Math.min(STEPS.length, furthestStep + 1) : STEPS.length;
 
   const dismissInterest = (key: string) =>
@@ -1156,9 +1270,17 @@ export default function ProfileRegisterPage() {
                 unresolved={gapsOn(0)}
                 enabled={firstRun}
               >
-                <div className="form-grid-2">
-                  <TextField id="firstName" label="First Name" icon={<User />} errorValue={err("firstName")} onBlur={touch("firstName")} value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
-                  <TextField id="surname" label="Surname" icon={<User />} errorValue={err("surname")} onBlur={touch("surname")} value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
+                <div>
+                  <IdentityNotice
+                    lock={identityLocks.name}
+                    what="name"
+                    editing={changedFrom("firstName", "surname")}
+                    silent={firstRun}
+                  />
+                  <div className="form-grid-2">
+                    <TextField id="firstName" label="First Name" icon={<User />} disabled={identityLocks.name?.locked} errorValue={err("firstName")} onBlur={touch("firstName")} value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} />
+                    <TextField id="surname" label="Surname" icon={<User />} disabled={identityLocks.name?.locked} errorValue={err("surname")} onBlur={touch("surname")} value={form.surname} onChange={(e) => setField("surname", e.target.value)} />
+                  </div>
                 </div>
 
                 <div>
@@ -1166,19 +1288,73 @@ export default function ProfileRegisterPage() {
                     <span className="field-label-icon" aria-hidden="true"><CalendarClock /></span>
                     Date &amp; time of birth
                   </span>
-                  <BirthDateTimePicker value={form.dob} onChange={(v) => setField("dob", v)} errorValue={err("dob")} onBlur={touch("dob")} />
+                  {/* Both halves get their own line: they have different
+                      allowances, so "you have one change left" would be a lie
+                      about whichever half it was not describing. */}
+                  <IdentityNotice
+                    lock={identityLocks.dob_date}
+                    what="date of birth"
+                    editing={changedFrom("dob")}
+                    silent={firstRun}
+                  />
+                  <IdentityNotice
+                    lock={identityLocks.dob_time}
+                    what="time of birth"
+                    editing={changedFrom("dob")}
+                    silent={firstRun}
+                  />
+                  {guessedBirthYear && !form.dob && (
+                    <p className="form-section-hint mb-2">
+                      You registered as {registeredAge}, so the calendar opens on{" "}
+                      {guessedBirthYear}. Pick your actual date — nothing is filled in for
+                      you.
+                    </p>
+                  )}
+                  <BirthDateTimePicker
+                    value={form.dob}
+                    onChange={(v) => setField("dob", v)}
+                    errorValue={err("dob")}
+                    onBlur={touch("dob")}
+                    disabled={dobFullyLocked}
+                    defaultViewYear={guessedBirthYear ?? undefined}
+                  />
                 </div>
 
-                <div className="form-grid-2">
-                  <ChipGroup label="Gender" icon={<Users />} options={GENDER_OPTIONS} value={form.gender} onChange={(v) => setField("gender", v)} error={err("gender")} onBlur={touch("gender")} />
-                  <div>
-                    <span className="field-label field-label-row">
-                      <span className="field-label-icon" aria-hidden="true"><Ruler /></span>
-                      Height
-                    </span>
-                    <div className="flex gap-3">
-                      <PickerField label="Feet" errorValue={err("heightFeet")} onBlur={touch("heightFeet")} options={feetOptions} selectedFirst={false} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" />
-                      <PickerField label="Inches" options={inchOptions} selectedFirst={false} value={form.heightInches} onChange={(v) => setField("heightInches", v)} className="w-28" />
+                <div>
+                  <div className="form-grid-2">
+                    <div>
+                      {/* Each notice sits with its own control now. The height
+                          warning used to print above the gender chips, which
+                          read as a warning about the wrong field. */}
+                      {/* `always`, uniquely: gender is the one field filled
+                          in *for* the member - derived at registration from
+                          whether they are looking for a bride or a groom - so
+                          there is no moment where they start editing it, and
+                          the first Continue is what commits it.
+
+                          Inside the section rather than above the Continue
+                          button: step 0 reveals its sections one at a time, and
+                          a warning placed by the button appeared while the
+                          member was still typing their name, about a field not
+                          yet on screen. */}
+                      <IdentityNotice lock={identityLocks.gender} what="gender" always />
+                      <ChipGroup label="Gender" icon={<Users />} options={GENDER_OPTIONS} value={form.gender} onChange={(v) => setField("gender", v)} error={err("gender")} onBlur={touch("gender")} disabled={identityLocks.gender?.locked} />
+                    </div>
+                    <div>
+                      <IdentityNotice
+                        lock={identityLocks.height}
+                        what="height"
+                        editing={changedFrom("heightFeet", "heightInches")}
+                        silent={firstRun}
+                      />
+                      <span className="field-label field-label-row">
+                        <span className="field-label-icon" aria-hidden="true"><Ruler /></span>
+                        Height
+                      </span>
+                      <div className="flex gap-3">
+                        <PickerField label="Feet" errorValue={err("heightFeet")} onBlur={touch("heightFeet")} options={feetOptions} selectedFirst={false} value={form.heightFeet} onChange={(v) => setField("heightFeet", v)} className="w-28" disabled={identityLocks.height?.locked} />
+                        <PickerField label="Inches" options={inchOptions} selectedFirst={false} value={form.heightInches} onChange={(v) => setField("heightInches", v)} className="w-28" disabled={identityLocks.height?.locked} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1235,8 +1411,13 @@ export default function ProfileRegisterPage() {
                     Currently living in
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("currentCountry")} onBlur={touch("currentCountry")} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentCity: "" }))} searchable />
-                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.currentCountry)} errorValue={err("currentCity")} onBlur={touch("currentCity")} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("currentCountry")} onBlur={touch("currentCountry")} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentState: "", currentCity: "" }))} searchable />
+                    {/* Skipped entirely where the country has no states listed:
+                        an empty dropdown that must be answered is a dead end. */}
+                    {hasStates(form.currentCountry) && (
+                      <PickerField label="State" icon={<Map />} options={statesForCountry(form.currentCountry)} errorValue={err("currentState")} onBlur={touch("currentState")} value={form.currentState} onChange={(v) => setForm((p) => ({ ...p, currentState: v, currentCity: "" }))} searchable />
+                    )}
+                    <PickerField label="City" icon={<Building2 />} options={citiesForState(form.currentCountry, form.currentState)} errorValue={err("currentCity")} onBlur={touch("currentCity")} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
                   </div>
                 </div>
 
@@ -1246,8 +1427,11 @@ export default function ProfileRegisterPage() {
                     Place of birth
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("placeOfBirthCountry")} onBlur={touch("placeOfBirthCountry")} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthCity: "" }))} searchable />
-                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.placeOfBirthCountry)} errorValue={err("placeOfBirthCity")} onBlur={touch("placeOfBirthCity")} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("placeOfBirthCountry")} onBlur={touch("placeOfBirthCountry")} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthState: "", placeOfBirthCity: "" }))} searchable />
+                    {hasStates(form.placeOfBirthCountry) && (
+                      <PickerField label="State" icon={<Map />} options={statesForCountry(form.placeOfBirthCountry)} errorValue={err("placeOfBirthState")} onBlur={touch("placeOfBirthState")} value={form.placeOfBirthState} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthState: v, placeOfBirthCity: "" }))} searchable />
+                    )}
+                    <PickerField label="City" icon={<Building2 />} options={citiesForState(form.placeOfBirthCountry, form.placeOfBirthState)} errorValue={err("placeOfBirthCity")} onBlur={touch("placeOfBirthCity")} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
                   </div>
                 </div>
 
@@ -1382,8 +1566,11 @@ export default function ProfileRegisterPage() {
                     Where your family lives
                   </p>
                   <div className="form-grid-2 mt-3">
-                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("familyLivingInCountry")} onBlur={touch("familyLivingInCountry")} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInCity: "" }))} searchable />
-                    <PickerField label="City" icon={<Building2 />} options={citiesForCountry(form.familyLivingInCountry)} errorValue={err("familyLivingInCity")} onBlur={touch("familyLivingInCity")} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
+                    <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("familyLivingInCountry")} onBlur={touch("familyLivingInCountry")} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInState: "", familyLivingInCity: "" }))} searchable />
+                    {hasStates(form.familyLivingInCountry) && (
+                      <PickerField label="State" icon={<Map />} options={statesForCountry(form.familyLivingInCountry)} errorValue={err("familyLivingInState")} onBlur={touch("familyLivingInState")} value={form.familyLivingInState} onChange={(v) => setForm((p) => ({ ...p, familyLivingInState: v, familyLivingInCity: "" }))} searchable />
+                    )}
+                    <PickerField label="City" icon={<Building2 />} options={citiesForState(form.familyLivingInCountry, form.familyLivingInState)} errorValue={err("familyLivingInCity")} onBlur={touch("familyLivingInCity")} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
                   </div>
                   <div className="mt-4">
                     <PickerField label="Family income (per annum)" icon={<Wallet />} errorValue={err("familyIncome")} onBlur={touch("familyIncome")} options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
