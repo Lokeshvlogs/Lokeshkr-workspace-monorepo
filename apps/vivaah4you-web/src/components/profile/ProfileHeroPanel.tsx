@@ -9,7 +9,7 @@ import NameWithBadge from '@/components/profile/NameWithBadge'
 import Link from 'next/link'
 
 import { PROFILE_FIELDS } from '@/lib/profileFields'
-import { heroTags, type HeroTag } from '@/lib/heroTags'
+import { heroTags, HERO_PLACE_KEY, type HeroTag } from '@/lib/heroTags'
 import { presenceFor } from '@/lib/presence'
 import { fullName } from '@/lib/profileDisplay'
 import IdentityNotice from '@/components/profile/IdentityNotice'
@@ -47,6 +47,18 @@ const TILE_GROUP: Record<string, IdentityGroup> = {
  */
 const HERO_FACT_KEYS = ['age', 'gender', 'height', 'maritalStatus', 'dob'] as const
 
+/**
+ * Tiles only the owner sees.
+ *
+ * A reader does not need to be told a member's gender - matches are
+ * opposite-gender by definition, and where it matters the managed-by line below
+ * says it in a pronoun. The owner keeps the tile because this panel is the ONLY
+ * place gender renders or can be edited inline: its section `Basic Details` is
+ * not in `SECTIONS`, so there is no row to fall back to, and the identity-lock
+ * warning about spending the last allowed change hangs off this editor.
+ */
+const OWNER_ONLY_FACTS: ReadonlySet<string> = new Set(['gender'])
+
 interface Props {
   profile: PublicProfile
   /** Owner-only: makes the facts inline-editable. */
@@ -72,6 +84,13 @@ interface Props {
   searchHref?: (filter: { param: string; value: string }) => string
   /** The About me block, rendered inside this panel rather than beside it. */
   bio?: ReactNode
+  /**
+   * Who runs this profile, as a credit under the bio.
+   *
+   * A finished string rather than the raw key, so this panel stays out of the
+   * owner/visitor wording decision - the same way `subtitle` and `bio` work.
+   */
+  managed?: string
 }
 
 export default function ProfileHeroPanel({
@@ -83,6 +102,7 @@ export default function ProfileHeroPanel({
   silentIdentity = false,
   searchHref,
   bio,
+  managed,
 }: Props) {
   const name = fullName(profile) || 'Vivah4U member'
 
@@ -121,13 +141,16 @@ export default function ProfileHeroPanel({
 
   // `dob` is owner-only and never reaches a public payload, so on a match it
   // simply has no value and drops out below.
-  const facts = HERO_FACT_KEYS.map((key) => PROFILE_FIELDS.find((f) => f.key === key)).filter(
-    (def): def is NonNullable<typeof def> => Boolean(def),
-  )
+  const facts = HERO_FACT_KEYS.filter((key) => onSave || !OWNER_ONLY_FACTS.has(key))
+    .map((key) => PROFILE_FIELDS.find((f) => f.key === key))
+    .filter((def): def is NonNullable<typeof def> => Boolean(def))
 
   // `onSave` is the owner signal: it keeps blank tags on the page so there is
   // something to click the pencil on, since a promoted field has no row below.
-  const tags = heroTags(profile, { owner: Boolean(onSave) })
+  const allTags = heroTags(profile, { owner: Boolean(onSave) })
+  // Rendered under the name rather than among the pills - see HERO_PLACE_KEY.
+  const placeTag = allTags.find((tag) => tag.id === HERO_PLACE_KEY)
+  const tags = allTags.filter((tag) => tag !== placeTag)
 
   /** A pill: a link on someone else's profile, an editor on your own. */
   const renderTag = (tag: HeroTag) => {
@@ -209,6 +232,13 @@ export default function ProfileHeroPanel({
 
         {subtitle}
 
+        {/* Straight after the profile id, in the slot the managed-by pill used
+            to hold. It goes through the same `renderTag` as the row below, so
+            a visitor still gets a link into search and the owner still gets an
+            editor - the two behaviours the call sites already choose between by
+            passing `searchHref` or `onSave`. */}
+        {placeTag && <ul className="hero-place">{renderTag(placeTag)}</ul>}
+
         {presence.label && (
           <p className={`presence-line ${presence.online ? 'presence-line-online' : ''}`}>
             {presence.label}
@@ -264,8 +294,17 @@ export default function ProfileHeroPanel({
 
       {/* Inside the panel, not a card of its own. The bio is the one thing on
           the page written in the member's own words, and it belongs with their
-          face rather than below a row of other cards. */}
-      {bio && <div className="profile-hero-bio">{bio}</div>}
+          face rather than below a row of other cards.
+
+          Gated on either, not on `bio`: an empty About me is common, and the
+          managed-by credit still has to appear - the top rule then reads as a
+          footer rule, which is what it is. */}
+      {(bio || managed) && (
+        <div className="profile-hero-bio">
+          {bio}
+          {managed && <p className="hero-managed-by">&mdash; {managed}</p>}
+        </div>
+      )}
     </section>
   )
 }

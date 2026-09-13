@@ -35,6 +35,14 @@ function tagLabel(key: string, full: string): string {
   return full.split(',')[0].trim() || full
 }
 
+/**
+ * The tag promoted out of the row and up under the name.
+ *
+ * Where somebody lives is the first thing a reader checks after the name, and
+ * in a wrapped row of six pills it was wherever it happened to land.
+ */
+export const HERO_PLACE_KEY = 'currentCity'
+
 /** Which search parameter each promoted field narrows on. */
 const FILTER_PARAM: Record<string, string> = {
   currentCity: 'city',

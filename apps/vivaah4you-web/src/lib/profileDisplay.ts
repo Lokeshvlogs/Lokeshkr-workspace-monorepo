@@ -177,6 +177,21 @@ export function formatHeight(feet?: number | null, inches?: number | null): stri
   return `${feet} ft ${inches ?? 0} in`
 }
 
+/**
+ * "his" / "her", and "their" when gender is unstated or 'other'.
+ *
+ * NOT the same thing as `possessive` in CompatibilityPanel, which is module-
+ * private on purpose: that one falls back to the member's NAME rather than to
+ * "their", because it heads a column beside that person's photograph where
+ * "Their preferences" would read as though it meant somebody else's. Two
+ * different fallbacks for two different sentences - do not unify them.
+ */
+export function possessivePronoun(gender: string | undefined): string {
+  if (gender === 'male') return 'his'
+  if (gender === 'female') return 'her'
+  return 'their'
+}
+
 export function fullName(profile: Pick<PublicProfile, 'firstName' | 'surname'>): string {
   return [profile.firstName, profile.surname].filter(Boolean).join(' ').trim()
 }

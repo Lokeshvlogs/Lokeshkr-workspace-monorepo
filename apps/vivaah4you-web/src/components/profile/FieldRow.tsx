@@ -14,6 +14,13 @@ interface Props {
   emptyText?: string
   /** Trailing control, e.g. the edit pencil. */
   action?: ReactNode
+  /**
+   * Take the whole width of the panel rather than half of it.
+   *
+   * Decided by `spansRow` in profileFields, not here - the caller knows the
+   * field's editor kind and this component only ever sees a formatted string.
+   */
+  wide?: boolean
 }
 
 /**
@@ -30,7 +37,7 @@ interface Props {
  *
  * Shared by the read-only and editable views so the two cannot drift apart.
  */
-export default function FieldRow({ fieldKey, label, value, emptyText, action }: Props) {
+export default function FieldRow({ fieldKey, label, value, emptyText, action, wide }: Props) {
   const Icon = iconFor(fieldKey)
   const shown = value || emptyText || ''
 
@@ -40,7 +47,7 @@ export default function FieldRow({ fieldKey, label, value, emptyText, action }: 
     // needs a lane wide enough to hold it. Branching on `Icon` is something
     // this component already does, so the class costs nothing.
     <div
-      className={`field-row ${Icon ? '' : 'field-row-labelled'}`}
+      className={`field-row ${Icon ? '' : 'field-row-labelled'} ${wide ? 'field-row-wide' : ''}`}
       title={Icon ? label : undefined}
     >
       {Icon ? (

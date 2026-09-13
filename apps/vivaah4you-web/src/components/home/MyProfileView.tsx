@@ -10,6 +10,7 @@ import ProfileMediaPicks from '@/components/profile/ProfileMediaPicks'
 import FamilyGraph from '@/components/profile/FamilyGraph'
 import FamilyEditor from '@/components/profile/FamilyEditor'
 import FamilyFacts from '@/components/profile/FamilyFacts'
+import { managedByLine } from '@/lib/managedBy'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import { BIO_ADVANTAGE, suggestAboutMe } from '@/lib/aboutMe'
 import { fullName } from '@/lib/profileDisplay'
@@ -57,7 +58,6 @@ export default function MyProfileView({ profile, onSave }: Props) {
         subtitle={
           <>
             {profile.profile_id && <p className="profile-hero-id">{profile.profile_id}</p>}
-            {profile.managedByLabel && <p className="managed-by">{profile.managedByLabel}</p>}
           </>
         }
         actions={
@@ -77,6 +77,7 @@ export default function MyProfileView({ profile, onSave }: Props) {
             )}
           </>
         }
+        managed={managedByLine(profile.managedBy, profile.gender, { owner: true })}
         bio={
           /* Every prop carried across, not just `value`: `suggestion`,
              `advantage` and `autoSuggest` are what the wizard hands off to on

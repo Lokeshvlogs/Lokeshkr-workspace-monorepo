@@ -110,6 +110,15 @@ interface Props {
    */
   bare?: boolean
   /**
+   * Take the whole width of the panel rather than half of it - see `spansRow`.
+   *
+   * Only reaches the two read branches that delegate to `FieldRow`. The open
+   * editor needs nothing: it renders `.field-editor`, which the grid spans
+   * unconditionally, because "is this control usable in half a lane" has the
+   * same answer for every editor kind.
+   */
+  wide?: boolean
+  /**
    * Shown inside the open editor, above the control.
    *
    * Inside rather than beside: on this page editing is an explicit click, so
@@ -133,6 +142,7 @@ export default function EditableField({
   profile,
   onSave,
   bare = false,
+  wide = false,
   notice,
   locked = false,
 }: Props) {
@@ -203,6 +213,22 @@ export default function EditableField({
     }
   }
 
+  /* Before the pencil branch, not after it. `!editing && bare` matches every
+     case this one does, so while it sat second this was dead code and a locked
+     field still offered a pencil - opening an editor the server would refuse,
+     which is the exact waste the `locked` prop's own doc comment says it exists
+     to prevent. Gender is the field most likely to be locked. */
+  if (!editing && bare && locked) {
+    return (
+      <dd className={`hero-fact-value ${shown ? '' : 'field-value-empty'}`}>
+        {shown || 'Not added'}
+        <span className="field-locked-mark" title={`Your ${def.label.toLowerCase()} is fixed`}>
+          <LockIcon />
+        </span>
+      </dd>
+    )
+  }
+
   if (!editing && bare) {
     return (
       <dd className={`hero-fact-value ${shown ? '' : 'field-value-empty'}`}>
@@ -220,19 +246,10 @@ export default function EditableField({
     )
   }
 
-  if (!editing && bare && locked) {
-    return (
-      <dd className={`hero-fact-value ${shown ? '' : 'field-value-empty'}`}>
-        {shown || 'Not added'}
-        <span className="field-locked-mark" title={`Your ${def.label.toLowerCase()} is fixed`}>
-          <LockIcon />
-        </span>
-      </dd>
-    )
-  }
-
   if (!editing && locked) {
-    return <FieldRow fieldKey={def.key} label={def.label} value={shown} emptyText="Not added" />
+    return (
+      <FieldRow fieldKey={def.key} label={def.label} value={shown} emptyText="Not added" wide={wide} />
+    )
   }
 
   if (!editing) {
@@ -242,6 +259,7 @@ export default function EditableField({
         label={def.label}
         value={shown}
         emptyText="Not added"
+        wide={wide}
         action={
           <button
             type="button"

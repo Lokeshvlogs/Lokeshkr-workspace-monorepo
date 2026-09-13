@@ -42,6 +42,7 @@ import {
 } from '@/constants/selectOptions/partner'
 import { citiesForState, statesForCountry, citiesForCountry, communitiesFor, RELIGION_OPTIONS } from '@/lib/profileDisplay'
 import { TAG_CATEGORIES } from '@/constants/selectOptions/interests'
+import { iconFor } from '@/lib/profileIcons'
 import type { PublicProfile } from '@/types/profile'
 
 /**
@@ -423,6 +424,32 @@ export const heroTagFields = (): ProfileFieldDef[] => defsFor(HERO_TAG_KEYS)
 /** The defs behind the family facts strip, in the order they are shown. */
 export const familyFactFields = ({ owner = false }: { owner?: boolean } = {}) =>
   defsFor(FAMILY_FACT_KEYS).filter((def) => owner || !def.ownerOnly)
+
+/**
+ * Whether a row needs the whole width of its panel rather than half of it.
+ *
+ * Two clauses, and the second is the less obvious one:
+ *
+ * - A `textarea` or a `multiselect` has no ceiling on its length. `labelFor`
+ *   comma-joins a multiselect, and `partnerCommunities` or `interestsCuisines`
+ *   can run to hundreds of characters.
+ * - A field with no icon still prints its LABEL, and `.field-row-labelled`
+ *   spends 8.5rem of the row on that lane. Half a panel is about 11.7rem on a
+ *   public profile, so a labelled row squeezed into one would leave roughly
+ *   2.5rem for the value. Iconless is a reason a row CANNOT go half-width, not
+ *   a sign it is already fine.
+ *
+ * Deliberately not a length test on the value: that would lay the same panel
+ * out differently for two members, and the threshold would be invented. This
+ * decides on what a field IS, which is reviewable.
+ *
+ * In practice the iconless clause adds exactly one field beyond the editor
+ * test - `religiosityDetail` - since the only other two iconless fields in a
+ * rendered section are already textareas.
+ */
+export function spansRow(def: ProfileFieldDef): boolean {
+  return def.editor === 'textarea' || def.editor === 'multiselect' || !iconFor(def.key)
+}
 
 export function fieldsBySection(
   { owner = false }: { owner?: boolean } = {},

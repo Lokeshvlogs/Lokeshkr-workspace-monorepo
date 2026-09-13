@@ -132,7 +132,6 @@ export default function PhotoLightbox({
 
   const atStart = index <= 0
   const atEnd = index >= photos.length - 1
-  const hasMany = photos.length > 1
 
   return createPortal(
     <div
@@ -160,21 +159,22 @@ export default function PhotoLightbox({
 
       {/* The backdrop closes; the picture and the filmstrip do not. */}
       <div className="photo-lightbox-stage" onClick={(event) => event.stopPropagation()}>
-        {/* A single photo has no ends to be at, so it gets no arrows - the
-            same call the photo rail makes when everything already fits. With
-            two or more they are always drawn, and the one with nowhere to go
-            is dimmed rather than hidden. */}
-        {hasMany && (
-          <button
-            type="button"
-            className="photo-lightbox-arrow photo-lightbox-prev"
-            onClick={() => go(index - 1)}
-            disabled={atStart}
-            aria-label="Previous photo"
-          >
-            <ChevronLeft size={22} aria-hidden="true" />
-          </button>
-        )}
+        {/* Always drawn, never conditionally rendered. The one with nowhere to
+            go is `disabled`, which dims it to 35% and makes it inert - a state
+            a reader can see and understand ("I am at the end"), unlike an arrow
+            that is simply absent, which reads as "this viewer has no
+            navigation". On a single-photo gallery both are dimmed, which is
+            honest rather than useless: `disabled` also takes them out of the
+            tab order, so a keyboard user is never handed a dead control. */}
+        <button
+          type="button"
+          className="photo-lightbox-arrow photo-lightbox-prev"
+          onClick={() => go(index - 1)}
+          disabled={atStart}
+          aria-label="Previous photo"
+        >
+          <ChevronLeft size={22} aria-hidden="true" />
+        </button>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -183,17 +183,15 @@ export default function PhotoLightbox({
           className="photo-lightbox-image"
         />
 
-        {hasMany && (
-          <button
-            type="button"
-            className="photo-lightbox-arrow photo-lightbox-next"
-            onClick={() => go(index + 1)}
-            disabled={atEnd}
-            aria-label="Next photo"
-          >
-            <ChevronRight size={22} aria-hidden="true" />
-          </button>
-        )}
+        <button
+          type="button"
+          className="photo-lightbox-arrow photo-lightbox-next"
+          onClick={() => go(index + 1)}
+          disabled={atEnd}
+          aria-label="Next photo"
+        >
+          <ChevronRight size={22} aria-hidden="true" />
+        </button>
       </div>
 
       {photos.length > 1 && (

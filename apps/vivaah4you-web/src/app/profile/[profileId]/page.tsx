@@ -15,6 +15,7 @@ import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
 import { compareProfiles, statedPreferenceCount } from '@/lib/compatibility'
 import { fullName } from '@/lib/profileDisplay'
 import { tagSearchHref } from '@/lib/matchFilters'
+import { managedByLine } from '@/lib/managedBy'
 import { backTarget, DEFAULT_BACK } from '@/lib/navigation'
 import { useAuth } from '@/components/authProvider'
 import type { MyProfile, PublicProfile } from '@/types/profile'
@@ -139,7 +140,6 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
           subtitle={
             <>
               {profile.profile_id && <p className="profile-hero-id">{profile.profile_id}</p>}
-              {profile.managedByLabel && <p className="managed-by">{profile.managedByLabel}</p>}
             </>
           }
           /* Signed out this is `undefined`, not a sign-in button, and the
@@ -150,6 +150,7 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
           actions={
             auth.isAuthenticated ? <InterestButton profileId={profile.profile_id} /> : undefined
           }
+          managed={managedByLine(profile.managedBy, profile.gender, { owner: false })}
           bio={<ProfileBio bare value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />}
           /* `me` is already fetched for the comparison panel, so seeding a tag
              with the reader's own preferences costs no extra request. Signed

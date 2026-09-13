@@ -4,7 +4,7 @@ import React from 'react'
 
 import EditableField, { displayValue } from '@/components/profile/EditableField'
 import FieldRow from '@/components/profile/FieldRow'
-import { fieldsBySection, type ProfileFieldDef } from '@/lib/profileFields'
+import { fieldsBySection, spansRow, type ProfileFieldDef } from '@/lib/profileFields'
 import EducationTimeline from '@/components/profile/EducationTimeline'
 import { educationTimeline } from '@/lib/educationTimeline'
 import { SECTION_ICONS } from '@/lib/profileIcons'
@@ -78,10 +78,16 @@ export default function ProfileDetails({
   }
 
   const renderRow = (def: ProfileFieldDef) => {
+    // Whether this field can share a row with its neighbour, or needs the whole
+    // width of the panel. See `spansRow` for the two things that force it.
+    const wide = spansRow(def)
+
     // Derived values have no pencil even for the owner: the wizard step that
     // produces them would overwrite an inline edit on its next save.
     if (editable && onSave && def.editor !== 'readonly') {
-      return <EditableField key={def.key} def={def} profile={profile} onSave={onSave} />
+      return (
+        <EditableField key={def.key} def={def} profile={profile} onSave={onSave} wide={wide} />
+      )
     }
     return (
       <FieldRow
@@ -89,6 +95,7 @@ export default function ProfileDetails({
         fieldKey={def.key}
         label={def.label}
         value={displayValue(def, profile)}
+        wide={wide}
       />
     )
   }
@@ -111,7 +118,7 @@ export default function ProfileDetails({
               {section.title}
             </h3>
             {Extra && <Extra profile={profile} />}
-            <dl className="mt-2">{section.fields.map(renderRow)}</dl>
+            <dl className="field-list mt-2">{section.fields.map(renderRow)}</dl>
           </section>
         )
       })}

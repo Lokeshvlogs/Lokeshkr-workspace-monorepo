@@ -2196,13 +2196,20 @@ button.chip-selected:hover {
   color: var(--color-primary-text, #111827);
 }
 
-/* Who is actually answering the messages. Sits under the name because knowing
-   you are writing to a parent rather than the member changes how you open. */
-.managed-by {
-  @apply mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
-  background-color: var(--color-primary-surface, #fdf2f8);
+/* Where somebody lives, in the slot the managed-by pill used to hold.
+   One pill, never wrapping - it shares `.hero-tag` so it is visibly the same
+   object as the row further down, just promoted above the facts. */
+.hero-place {
+  @apply mt-1.5 flex justify-center sm:justify-start;
+}
+
+/* Who is actually answering the messages - moved out from under the name, where
+   it competed with the profile id for the same glance, to the foot of the
+   panel. Plain text rather than the pill it was: right-aligned under a
+   blockquote, a pill reads as a button. */
+.hero-managed-by {
+  @apply mt-4 text-right text-xs italic;
   color: var(--color-placeholder-text, #6b7280);
-  border: 1px solid var(--color-border, #fbcfe8);
 }
 
 /* The hour / minute triggers in TimePicker.
@@ -2535,6 +2542,39 @@ button.chip-selected:hover {
   top: -0.35em;
   font-size: 3.25rem;
   line-height: 1;
+  font-style: normal;
+  color: var(--color-primary, #ec4899);
+  opacity: 0.28;
+}
+
+/* The mark that closes what `::before` opened.
+
+   Inline rather than absolute, and that is the whole decision. The opener is a
+   drop-cap sitting in a gutter `padding-left` reserves for it, at a fixed spot
+   however long the text is. A closer placed the same way would pin itself to
+   the right edge of a 62ch measure, so a short bio would end with a quote mark
+   floating half a column away from the last word it is meant to close. Set
+   inline, it lands where the words stop - on one line or on six.
+
+   `line-height: 0` is what keeps a 2.5rem glyph out of the line-height maths:
+   an inline box of zero height adds nothing to the line box it joins, so the
+   last line keeps the rhythm of every line above it and the glyph overhangs
+   instead. Nothing clips it - `.profile-hero-bio` is a plain block and
+   `.profile-hero` sets no overflow. (`.form-section` IS overflow-hidden, but
+   both call sites pass `bare`, so the bio never wears that shell.)
+
+   Smaller than the opener on purpose: that one has an empty gutter to live in,
+   while this sits inside the text column, where matching its size would read as
+   a second drop-cap dropped in mid-sentence. */
+.profile-bio::after {
+  content: "\201D";
+  font-size: 2.5rem;
+  line-height: 0;
+  /* Relative rather than vertical-align: with line-height 0 neither touches the
+     line box, and a rem offset is the one that can be reasoned about. */
+  position: relative;
+  top: 0.85rem;
+  margin-left: 0.06em;
   font-style: normal;
   color: var(--color-primary, #ec4899);
   opacity: 0.28;
@@ -2902,6 +2942,43 @@ a.pick-card-link:hover {
 
   .field-row-labelled {
     grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr) auto;
+  }
+
+  /* Two fields to a row.
+     A one-word answer like "Occasionally" on a row of its own left two thirds
+     of the panel empty, and every panel on the page was doing it.
+
+     The grid goes on the LIST, not the rows: each `.field-row` is already a
+     grid, so as an item it is simply placed in a cell and keeps its own icon /
+     value / action tracks untouched.
+
+     Two explicit columns rather than `auto-fit`. The panels are not one fixed
+     width - this page is `max-w-4xl` while `/profile/me` is a 76rem shell, and
+     a track function sized to give two columns on the first gives three on the
+     second. The same profile would then lay out differently depending on who
+     was reading it.
+
+     Inside the 640px query on purpose: below it `.field-row` collapses to a
+     single column and stacks its icon above its value, and two of those side by
+     side is worse than one of them full width. */
+  .field-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.5rem;
+    /* Not `stretch`. A wrapped two-line value makes its grid row taller, and a
+       stretched row would then vertically centre its one-line neighbour against
+       it, since `.field-row` sets `align-items: center` from here up. */
+    align-items: start;
+  }
+
+  /* Anything that cannot live in half a panel takes the whole row: a value with
+     no ceiling on its length, a row that still prints its 8.5rem label lane,
+     and every open editor - a dropdown with a search box or a textarea plus its
+     Save/Cancel pair needs the width whatever field it belongs to. */
+  .field-list > .field-row-wide,
+  .field-list > .field-row-labelled,
+  .field-list > .field-editor {
+    grid-column: 1 / -1;
   }
 }
 
@@ -4460,8 +4537,14 @@ button.family-node:hover {
   background-color: var(--color-primary-surface, #fff0f8);
 }
 
+/* Dimmed and inert rather than hidden - the same contract
+   `.photo-lightbox-arrow:disabled` states. `pointer-events: none` so a dead
+   control does not claim the cursor, which is also why the cursor is left
+   alone rather than set to not-allowed. */
 .photo-rail-arrow:disabled {
-  @apply cursor-not-allowed opacity-35;
+  @apply cursor-default;
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 /* Scroll-snap so a flick lands on a photo rather than between two - the same
@@ -4528,8 +4611,15 @@ button.family-node:hover {
    `pointer-events: none` stops the faded button eating a click.
 
    The idle state is only ever entered after a real mouse has moved (see
-   PhotoLightbox), so a touch or keyboard-only member never reaches this rule. */
-.photo-lightbox[data-idle='true'] .photo-lightbox-close:not(:focus-visible) {
+   PhotoLightbox), so a touch or keyboard-only member never reaches this rule.
+
+   `:not(:hover)` because the timer has no idea the cursor is parked ON the
+   button. Without it the X fades out from under a stationary pointer, and the
+   `pointer-events: none` that comes with it then drops the click through to the
+   backdrop. That happens to close the overlay too, so nothing looks broken -
+   the control simply vanishes under the cursor, until the day something else
+   lives up here and the click lands on the wrong thing. */
+.photo-lightbox[data-idle='true'] .photo-lightbox-close:not(:focus-visible):not(:hover) {
   opacity: 0;
   pointer-events: none;
 }

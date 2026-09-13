@@ -51,36 +51,37 @@ export default function PhotoStrip({ photos, name }: { photos: string[]; name: s
     node.scrollBy({ left: direction * node.clientWidth * 0.8, behavior: 'smooth' })
   }
 
-  // Both arrows disappear when everything already fits, rather than sitting
-  // there greyed out on a profile with two photos.
-  const showArrows = canScroll.left || canScroll.right
-
   return (
     <section className="form-section">
       <div className="photo-rail-head">
         <h3 className="form-section-title">Photos</h3>
-        {showArrows && (
-          <div className="photo-rail-nav">
-            <button
-              type="button"
-              className="photo-rail-arrow"
-              onClick={() => nudge(-1)}
-              disabled={!canScroll.left}
-              aria-label="Scroll photos left"
-            >
-              <ChevronLeft size={18} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="photo-rail-arrow"
-              onClick={() => nudge(1)}
-              disabled={!canScroll.right}
-              aria-label="Scroll photos right"
-            >
-              <ChevronRight size={18} aria-hidden="true" />
-            </button>
-          </div>
-        )}
+        {/* Always drawn, and dimmed by `disabled` when there is nowhere to
+            scroll. They used to disappear whenever the rail already fitted,
+            which is most profiles - only a six-photo strip is wide enough to
+            overflow the panel. That read as "this rail has no navigation"
+            rather than "you can already see everything", and it disagreed with
+            the lightbox, which draws its arrows unconditionally and dims the
+            one with nowhere to go. */}
+        <div className="photo-rail-nav">
+          <button
+            type="button"
+            className="photo-rail-arrow"
+            onClick={() => nudge(-1)}
+            disabled={!canScroll.left}
+            aria-label="Scroll photos left"
+          >
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="photo-rail-arrow"
+            onClick={() => nudge(1)}
+            disabled={!canScroll.right}
+            aria-label="Scroll photos right"
+          >
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       <div className="photo-rail-track" ref={track}>
