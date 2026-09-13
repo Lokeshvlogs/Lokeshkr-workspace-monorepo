@@ -9,6 +9,7 @@ import ProfileBio from '@/components/profile/ProfileBio'
 import ProfileMediaPicks from '@/components/profile/ProfileMediaPicks'
 import FamilyGraph from '@/components/profile/FamilyGraph'
 import FamilyEditor from '@/components/profile/FamilyEditor'
+import FamilyFacts from '@/components/profile/FamilyFacts'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import { BIO_ADVANTAGE, suggestAboutMe } from '@/lib/aboutMe'
 import { fullName } from '@/lib/profileDisplay'
@@ -92,8 +93,16 @@ export default function MyProfileView({ profile, onSave }: Props) {
         }
       />
 
+      <PhotoStrip photos={profile.photos ?? []} name={name} />
+
       {editingFamily ? (
-        <FamilyEditor onClose={() => setEditingFamily(false)} />
+        /* The editor replaces the graph wholesale, so the household facts are
+           handed to it - otherwise they would vanish for as long as the tree
+           is being edited, on the one page where they are editable. */
+        <FamilyEditor
+          onClose={() => setEditingFamily(false)}
+          facts={<FamilyFacts profile={profile} onSave={onSave} />}
+        />
       ) : (
         <FamilyGraph
           profile={profile}
@@ -101,10 +110,9 @@ export default function MyProfileView({ profile, onSave }: Props) {
           selfName={profile.firstName || 'You'}
           selfPhoto={profile.photo}
           onEdit={() => setEditingFamily(true)}
+          onSave={onSave}
         />
       )}
-
-      <PhotoStrip photos={profile.photos ?? []} name={name} />
 
       <p className="text-sm text-color-placeholder-text">
         Tap the pencil beside any field to edit it here — no need to run through the wizard again.

@@ -2,6 +2,7 @@
 
 import React, { Suspense, use, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { HeartHandshake } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
 import ProfileDetails from '@/components/profile/ProfileDetails'
@@ -11,7 +12,7 @@ import ProfileMediaPicks from '@/components/profile/ProfileMediaPicks'
 import FamilyGraph from '@/components/profile/FamilyGraph'
 import PhotoStrip from '@/components/profile/PhotoStrip'
 import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
-import { compareProfiles } from '@/lib/compatibility'
+import { compareProfiles, statedPreferenceCount } from '@/lib/compatibility'
 import { fullName } from '@/lib/profileDisplay'
 import { tagSearchHref } from '@/lib/matchFilters'
 import { backTarget, DEFAULT_BACK } from '@/lib/navigation'
@@ -122,6 +123,11 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
   }
 
   const firstName = profile.firstName || 'this member'
+  /* Only worth teasing when there is something behind it. A member who has set
+     no preferences has nothing to measure anyone against, and CompatibilityPanel
+     says exactly that to a signed-in reader - so promising a match here would
+     be writing a cheque the next screen cannot cash. */
+  const statedPreferences = statedPreferenceCount(profile)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-color-primary-surface/40 px-4 py-10">
@@ -136,14 +142,13 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
               {profile.managedByLabel && <p className="managed-by">{profile.managedByLabel}</p>}
             </>
           }
+          /* Signed out this is `undefined`, not a sign-in button, and the
+             panel omits the whole actions block rather than rendering an empty
+             one. The page used to ask twice - here and again lower down - and
+             the lower ask is the better of the two: it names what signing in
+             gets you instead of only where it leads. */
           actions={
-            auth.isAuthenticated ? (
-              <InterestButton profileId={profile.profile_id} />
-            ) : (
-              <Link href={`/login?next=/profile/${profile.profile_id}`} className="btn bg-color-primary text-white">
-                Sign in to connect
-              </Link>
-            )
+            auth.isAuthenticated ? <InterestButton profileId={profile.profile_id} /> : undefined
           }
           bio={<ProfileBio bare value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />}
           /* `me` is already fetched for the comparison panel, so seeding a tag
@@ -151,6 +156,10 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
              out there is nothing to seed from and the tag is the whole filter. */
           searchHref={(filter) => tagSearchHref(filter, me)}
         />
+
+        {/* Photos before family: they are what a reader actually came to
+            scroll, and the tree reads better once you know the face. */}
+        <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
 
         {/* Unconditional. This used to be hidden for a signed-in reader
             because the comparison panel drew the same tree beside their own;
@@ -164,8 +173,6 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
           selfPhoto={profile.photo}
         />
 
-        <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
-
         <ProfileDetails profile={profile} columns={2} />
 
         {/* After the field rows, not among them: a wall of artwork above the
@@ -174,8 +181,13 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
 
         {/* Below the profile, not above it: the comparison is what you read
             once you have formed a view of the person. Used to be exclusive to
-            the dashboard's inline profile, which no longer exists. */}
-        {me && (
+            the dashboard's inline profile, which no longer exists.
+
+            Signed out, this slot would otherwise be empty: the raw preference
+            list is owner-only now, so a logged-out reader lost both the panel
+            and the thing it replaced. The teaser keeps the slot honest - it
+            says what is behind the door rather than leaving a gap. */}
+        {me ? (
           <CompatibilityPanel
             compatibility={compareProfiles(me, profile)}
             theirName={firstName}
@@ -184,6 +196,29 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
             myName={fullName(me) || 'You'}
             myPhoto={me.photo}
           />
+        ) : (
+          !auth.isAuthenticated && statedPreferences > 0 && (
+            <section className="form-section">
+              <h3 className="form-section-title">
+                <HeartHandshake className="form-section-icon" strokeWidth={1.8} aria-hidden="true" />
+                How you would match
+              </h3>
+              <p className="form-section-hint">
+                {firstName} has said{' '}
+                <strong>
+                  {statedPreferences} {statedPreferences === 1 ? 'thing' : 'things'}
+                </strong>{' '}
+                about who they are looking for. Sign in and we will show you which of them
+                you meet.
+              </p>
+              <Link
+                href={`/login?next=/profile/${profile.profile_id}`}
+                className="btn-primary mt-3 inline-block"
+              >
+                Sign in to see your match
+              </Link>
+            </section>
+          )
         )}
 
         <p className="text-center text-xs text-color-placeholder-text">

@@ -164,13 +164,19 @@ export function iconFor(key: string): FieldIcon | null {
  * headings beside the wizard's illustrated ones.
  */
 export const SECTION_ICONS: Record<string, FieldIcon | undefined> = {
-  'Religion & Community': Landmark,
   // Was "Location". Where someone lives is a hero tag now; what is left here is
   // where they were born and what passport they hold.
   Origins: MapPin,
   'Education & Career': GraduationCap,
-  Family: Users2,
   Lifestyle: Utensils,
   Interests: Sparkles,
   'Partner Preference': HeartHandshake,
 }
+
+/**
+ * The glyph the removed Family section carried.
+ *
+ * Its fields now live under the family graph, so the panel that inherited them
+ * inherits the icon too rather than losing it - see FamilyGraph.
+ */
+export const FAMILY_PANEL_ICON = Users2

@@ -126,15 +126,48 @@ const FAMILY_TYPE_OPTIONS: SelectOption[] = [
   { value: '2', label: 'Extended' },
 ]
 
+/**
+ * The panels `ProfileDetails` draws, in order.
+ *
+ * Two titles have left, and where their fields went matters more than that
+ * they are gone:
+ *
+ * - **Religion & Community** - `religion`, `community` and `mothertongue` are
+ *   hero tags; `religiosity` and `religiosityDetail` moved to Lifestyle. There
+ *   was nothing left to draw.
+ * - **Family** - all six fields are promoted into the family graph, beneath the
+ *   tree they describe.
+ *
+ * Both titles are removed rather than left to auto-filter as empty. Be aware of
+ * what that trades away: a field given a section that is NOT in this list
+ * renders nowhere, silently. `'Basic Details'` is the standing proof - it is
+ * the section of nine defs and is absent from here, which is why
+ * `bodyPhysique` and `manglikLevel` appear on no profile at all.
+ *
+ * Removal still wins for these two, because the alternative failure is worse:
+ * leaving the titles here means a field added later quietly RESURRECTS a panel
+ * that was deliberately taken away. Add the title back when a field genuinely
+ * needs it.
+ */
 export const SECTIONS = [
-  'Religion & Community',
   'Origins',
   'Education & Career',
-  'Family',
   'Lifestyle',
   'Interests',
   'Partner Preference',
 ] as const
+
+/**
+ * Panels only the owner sees.
+ *
+ * Partner Preference is a member's own answers about who they are looking for.
+ * A reader gets `CompatibilityPanel` instead, which scores them against those
+ * same answers - printing the raw list above it said the same thing twice.
+ *
+ * A section-level rule rather than `ownerOnly` on all sixteen defs, because the
+ * thing that is owner-only here is the panel, not each field independently.
+ */
+const OWNER_ONLY_SECTIONS: ReadonlySet<string> = new Set(['Partner Preference'])
 
 /**
  * Communities across every religion a member is open to.
@@ -198,23 +231,6 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
     options: motherTongueOptions as SelectOption[],
   },
 
-  {
-    key: 'religiosity',
-    label: 'Religious outlook',
-    section: 'Religion & Community',
-    step: 1,
-    editor: 'chips',
-    options: RELIGIOSITY_OPTIONS,
-    resets: ['religiosityDetail'],
-  },
-  {
-    key: 'religiosityDetail',
-    label: 'More specifically',
-    section: 'Religion & Community',
-    step: 1,
-    editor: 'select',
-    optionsFor: (profile) => religiosityDetailOptions(profile.religiosity),
-  },
 
   // ---- Origins (step 1) ----
   /* There is no Location panel any more: where someone lives is a tag on the
@@ -265,9 +281,17 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
      residency tag. */
   { key: 'salaryAmount', label: 'Annual income', section: 'Education & Career', step: 2, editor: 'select', options: familyIncomeOptions },
 
-  // ---- Family (step 1) ----
-  { key: 'familyLivingInCountry', label: 'Family country', section: 'Family', step: 3, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['familyLivingInState', 'familyLivingInCity'] },
-  { key: 'familyLivingInState', label: 'Family state', section: 'Family', step: 3, editor: 'select', searchable: true, optionsFor: (p) => statesForCountry(p.familyLivingInCountry), resets: ['familyLivingInCity'] },
+  /* ---- Family (step 3) ----
+     These no longer render as a panel of their own: FAMILY_FACT_KEYS promotes
+     all six into the family graph, under the tree they describe.
+
+     Country and state are `ownerOnly` for the same reason the Origins pair is:
+     `familyLivingInCity` stores the composed "City, State, Country", so a
+     reader needs only that one - but they are the inputs to the city
+     dropdown's `optionsFor`, and without them the owner's picker has nothing
+     to build from. */
+  { key: 'familyLivingInCountry', label: 'Family country', section: 'Family', step: 3, editor: 'select', searchable: true, ownerOnly: true, options: COUNTRY_OPTIONS, resets: ['familyLivingInState', 'familyLivingInCity'] },
+  { key: 'familyLivingInState', label: 'Family state', section: 'Family', step: 3, editor: 'select', searchable: true, ownerOnly: true, optionsFor: (p) => statesForCountry(p.familyLivingInCountry), resets: ['familyLivingInCity'] },
   { key: 'familyLivingInCity', label: 'Family lives in', section: 'Family', step: 3, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.familyLivingInCountry, p.familyLivingInState) },
   { key: 'familyType', label: 'Family type', section: 'Family', step: 3, editor: 'chips', options: FAMILY_TYPE_OPTIONS },
   { key: 'familyIncome', label: 'Family income', section: 'Family', step: 3, editor: 'select', options: familyIncomeOptions },
@@ -278,6 +302,28 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'smoking', label: 'Smoking', section: 'Lifestyle', step: 4, editor: 'select', options: smokingOptions },
   { key: 'drinking', label: 'Drinking', section: 'Lifestyle', step: 4, editor: 'select', options: drinkingOptions },
   { key: 'dailyRoutine', label: 'Rhythm', section: 'Lifestyle', step: 4, editor: 'chips', options: routineOptions },
+  /* Religious outlook reads as a way of living rather than a fact about
+     belief, so it sits with the daily habits rather than in a panel of its
+     own - the last of what was "Religion & Community". `step` stays 1: these
+     are still saved by the wizard's social-background step, and only the
+     panel they render in has changed. */
+  {
+    key: 'religiosity',
+    label: 'Religious outlook',
+    section: 'Lifestyle',
+    step: 1,
+    editor: 'chips',
+    options: RELIGIOSITY_OPTIONS,
+    resets: ['religiosityDetail'],
+  },
+  {
+    key: 'religiosityDetail',
+    label: 'More specifically',
+    section: 'Lifestyle',
+    step: 1,
+    editor: 'select',
+    optionsFor: (profile) => religiosityDetailOptions(profile.religiosity),
+  },
 
   // ---- Interests (step 4) ----
   /* Tag categories only. Music, films and reading hold named picks and are
@@ -338,27 +384,58 @@ export const HERO_TAG_KEYS = [
   'profession',
   'salaryAmount',
   'mothertongue',
+  // Between mother tongue and community on purpose: a community list is scoped
+  // to a religion, so the two read as a pair.
+  'religion',
   'community',
 ] as const
 
-const HERO_TAG_KEY_SET: ReadonlySet<string> = new Set(HERO_TAG_KEYS)
+/** The family facts, promoted into the family graph beneath its tree. */
+export const FAMILY_FACT_KEYS = [
+  'familyLivingInCountry',
+  'familyLivingInState',
+  'familyLivingInCity',
+  'familyType',
+  'familyIncome',
+  'livesWithFamily',
+] as const
+
+/**
+ * Every field a dedicated panel has taken ownership of.
+ *
+ * One set, filtered in one place, so a promoted field cannot also appear as a
+ * section row - on the public profile or the owner's. Adding a destination
+ * means adding its key list here and nowhere else.
+ */
+const PROMOTED_KEYS: ReadonlySet<string> = new Set<string>([
+  ...HERO_TAG_KEYS,
+  ...FAMILY_FACT_KEYS,
+])
+
+const defsFor = (keys: readonly string[]): ProfileFieldDef[] =>
+  keys
+    .map((key) => PROFILE_FIELDS.find((f) => f.key === key))
+    .filter((def): def is ProfileFieldDef => Boolean(def))
 
 /** The defs behind the hero tags, in the order the tags are shown. */
-export const heroTagFields = (): ProfileFieldDef[] =>
-  HERO_TAG_KEYS.map((key) => PROFILE_FIELDS.find((f) => f.key === key)).filter(
-    (def): def is ProfileFieldDef => Boolean(def),
-  )
+export const heroTagFields = (): ProfileFieldDef[] => defsFor(HERO_TAG_KEYS)
+
+/** The defs behind the family facts strip, in the order they are shown. */
+export const familyFactFields = ({ owner = false }: { owner?: boolean } = {}) =>
+  defsFor(FAMILY_FACT_KEYS).filter((def) => owner || !def.ownerOnly)
 
 export function fieldsBySection(
   { owner = false }: { owner?: boolean } = {},
 ): { title: string; fields: ProfileFieldDef[] }[] {
-  return SECTIONS.map((title) => ({
-    title,
-    fields: PROFILE_FIELDS.filter(
-      (f) =>
-        f.section === title &&
-        !HERO_TAG_KEY_SET.has(f.key) &&
-        (owner || !f.ownerOnly),
-    ),
-  })).filter((s) => s.fields.length > 0)
+  return SECTIONS.filter((title) => owner || !OWNER_ONLY_SECTIONS.has(title))
+    .map((title) => ({
+      title,
+      fields: PROFILE_FIELDS.filter(
+        (f) =>
+          f.section === title &&
+          !PROMOTED_KEYS.has(f.key) &&
+          (owner || !f.ownerOnly),
+      ),
+    }))
+    .filter((s) => s.fields.length > 0)
 }

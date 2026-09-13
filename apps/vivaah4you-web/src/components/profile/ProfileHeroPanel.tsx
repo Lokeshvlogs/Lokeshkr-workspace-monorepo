@@ -125,7 +125,9 @@ export default function ProfileHeroPanel({
     (def): def is NonNullable<typeof def> => Boolean(def),
   )
 
-  const tags = heroTags(profile)
+  // `onSave` is the owner signal: it keeps blank tags on the page so there is
+  // something to click the pencil on, since a promoted field has no row below.
+  const tags = heroTags(profile, { owner: Boolean(onSave) })
 
   /** A pill: a link on someone else's profile, an editor on your own. */
   const renderTag = (tag: HeroTag) => {

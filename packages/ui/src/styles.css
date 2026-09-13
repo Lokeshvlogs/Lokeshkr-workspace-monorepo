@@ -2147,6 +2147,18 @@ button.chip-selected:hover {
   @apply opacity-100;
 }
 
+/* The same contract for a tag. `.field-edit-btn` ships at opacity 0 and only
+   `.field-row` and `.hero-fact` ever revealed it, so every editable pill -
+   city, profession, income, language, religion, community - looked read-only
+   to anyone using a mouse. */
+.hero-tag-editable .field-edit-btn {
+  @apply h-5 w-5;
+}
+
+.hero-tag-editable:hover .field-edit-btn {
+  @apply opacity-100;
+}
+
 .profile-hero-avatar-initial {
   @apply flex items-center justify-center text-3xl font-bold text-white;
   background: linear-gradient(135deg, var(--color-primary, #ec4899), var(--color-secondary, #fb923c));
@@ -4123,6 +4135,54 @@ button.match-tab-active:hover,
   @apply mb-1 flex items-start justify-between gap-3;
 }
 
+/* --- The household band ---
+   What the tree cannot draw: where the family lives, how it is shaped, what it
+   earns, and whether this member is still under that roof. It sits between the
+   heading and the tree because it frames the picture below it.
+
+   Pills rather than a field grid - these are read at a glance beside a
+   drawing, not scanned as a list - and shaped like `.hero-tag` on purpose, so
+   a fact under the tree and a fact under the display picture read as the same
+   kind of object. */
+.family-facts {
+  @apply mt-3 flex flex-wrap items-center gap-2;
+}
+
+.family-fact {
+  @apply inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-primary-surface, #fff0f8);
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.family-fact-icon {
+  @apply h-3.5 w-3.5 shrink-0;
+  color: var(--color-primary, #ff1f8f);
+}
+
+.family-fact-value {
+  @apply min-w-0 truncate;
+}
+
+/* The pencil, on the same terms as the fact tiles and the hero tags. */
+.family-fact .field-edit-btn {
+  @apply h-5 w-5;
+}
+
+.family-fact:hover .field-edit-btn {
+  @apply opacity-100;
+}
+
+/* Country and state are the owner's inputs to the city list, not claims about
+   the family - so they are visibly subordinate rather than a fifth and sixth
+   equal fact. Nobody but the owner ever sees them. */
+.family-fact-feeder {
+  border-style: dashed;
+  background-color: transparent;
+  color: var(--color-placeholder-text, #2c2b2b);
+  opacity: 0.75;
+}
+
 .family-tree {
   @apply mt-4 flex flex-col gap-1;
 }
@@ -4446,13 +4506,32 @@ button.family-node:hover {
 }
 
 .photo-lightbox-close {
-  @apply absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full transition;
+  @apply absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full;
   background-color: rgba(255, 255, 255, 0.9);
   color: var(--color-placeholder-text, #2c2b2b);
+  transition: opacity 0.25s ease, background-color 0.15s ease;
 }
 
 .photo-lightbox-close:hover {
   background-color: #ffffff;
+}
+
+/* Gets out of the way of the picture once the mouse rests, and comes back the
+   moment it moves.
+
+   Hidden with `opacity` and NOT `visibility` or `display`, deliberately: a
+   `visibility: hidden` button cannot take focus, so Tab would skip it while it
+   was faded and `:focus-visible` could never fire to bring it back - leaving a
+   keyboard user cycling the focus trap with no visible way out. `opacity: 0`
+   keeps it in the ring, so the trap's membership never changes shape; the
+   `:focus-visible` escape makes it reappear the instant it is landed on.
+   `pointer-events: none` stops the faded button eating a click.
+
+   The idle state is only ever entered after a real mouse has moved (see
+   PhotoLightbox), so a touch or keyboard-only member never reaches this rule. */
+.photo-lightbox[data-idle='true'] .photo-lightbox-close:not(:focus-visible) {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .photo-lightbox-stage {
@@ -4475,8 +4554,14 @@ button.family-node:hover {
   background-color: #ffffff;
 }
 
+/* Dimmed and inert at the ends, never invisible. At `opacity: 0` a two-photo
+   gallery read as "this viewer has no navigation" rather than "you are at the
+   end", and left an unexplained gap where a control clearly used to be.
+   `pointer-events: none` so the dead control does not claim the cursor. */
 .photo-lightbox-arrow:disabled {
-  @apply cursor-not-allowed opacity-0;
+  @apply cursor-default;
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 .photo-lightbox-strip {

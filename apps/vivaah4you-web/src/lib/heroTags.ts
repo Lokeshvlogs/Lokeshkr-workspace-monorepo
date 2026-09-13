@@ -41,6 +41,7 @@ const FILTER_PARAM: Record<string, string> = {
   profession: 'profession',
   salaryAmount: 'salary',
   mothertongue: 'motherTongue',
+  religion: 'religion',
   community: 'community',
 }
 
@@ -57,16 +58,30 @@ const FILTER_PARAM: Record<string, string> = {
  * exactly the same test, and a second copy of it here would drift silently.
  * This function reads the flags the API already computed.
  */
-export function heroTags(profile: PublicProfile): HeroTag[] {
+export function heroTags(
+  profile: PublicProfile,
+  { owner = false }: { owner?: boolean } = {},
+): HeroTag[] {
   const tags: HeroTag[] = []
 
   for (const def of heroTagFields()) {
     const raw = (profile as unknown as Record<string, unknown>)[def.key]
     const label = labelFor(def.key, raw)
-    if (!label) continue
+
+    // An unanswered tag is dropped for a visitor and KEPT for the owner, where
+    // the blank is the prompt - the same rule `hero-facts` already applies.
+    //
+    // This is not tidiness. A promoted field has no section row to fall back
+    // to: `fieldsBySection` withholds every HERO_TAG_KEY before it checks
+    // `owner`. So dropping a blank one here leaves nowhere on the page to set
+    // it again. `religion` carries `resets: ['community']`, which makes that a
+    // two-click trap - change your religion and the community pill would
+    // vanish for good - and `currentCity` has the same hole today, reachable by
+    // changing your country.
+    if (!label && !owner) continue
 
     const param = FILTER_PARAM[def.key]
-    const short = tagLabel(def.key, label)
+    const short = label ? tagLabel(def.key, label) : ''
     tags.push({
       id: def.key,
       icon: iconFor(def.key) as FieldIcon | undefined,
@@ -75,8 +90,9 @@ export function heroTags(profile: PublicProfile): HeroTag[] {
       srLabel: def.label,
       def,
       // The filter carries the STORED value, never the shortened label: the
-      // search matches the same composed string the profile holds.
-      filter: param ? { param, value: String(raw) } : undefined,
+      // search matches the same composed string the profile holds. A blank
+      // tag is the owner's prompt to fill it in, not something to search on.
+      filter: param && label ? { param, value: String(raw) } : undefined,
     })
   }
 

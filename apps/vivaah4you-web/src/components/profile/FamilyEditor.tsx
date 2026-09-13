@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChipGroup, TextField } from '@lokesh-workspace/ui'
 
 import Avatar from '@/components/profile/Avatar'
@@ -29,6 +29,15 @@ interface Props {
   extended?: boolean
   /** Hides the "Done" button where the editor is part of a larger form. */
   embedded?: boolean
+  /**
+   * The household facts band, so it survives the swap.
+   *
+   * This editor replaces `FamilyGraph` wholesale while it is open, and the
+   * facts now live inside that component - so without this slot they would
+   * disappear the moment the owner clicked "Edit", on the one page where they
+   * are meant to be editable.
+   */
+  facts?: ReactNode
 }
 
 /**
@@ -37,7 +46,7 @@ interface Props {
  * A photo can only be attached after the row exists, because the upload needs
  * an id to attach to - so adding is two steps and the second one is optional.
  */
-export default function FamilyEditor({ onClose, extended = false, embedded = false }: Props) {
+export default function FamilyEditor({ onClose, extended = false, embedded = false, facts }: Props) {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -169,6 +178,8 @@ export default function FamilyEditor({ onClose, extended = false, embedded = fal
           </button>
         )}
       </div>
+
+      {facts}
 
       {loading ? (
         <div className="panel-skeleton-rows mt-3" aria-hidden="true">

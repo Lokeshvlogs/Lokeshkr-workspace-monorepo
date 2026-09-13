@@ -1,10 +1,13 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 import { useModalOverlay } from '@/hooks/useModalOverlay'
+
+/** Long enough not to flicker mid-decision, short enough to get out of the way. */
+const IDLE_MS = 2500
 
 interface Props {
   photos: string[]
@@ -43,6 +46,49 @@ export default function PhotoLightbox({
 
   useModalOverlay({ open: true, onClose, ref: dialog })
 
+  /**
+   * The close button gets out of the way of the picture when the mouse rests.
+   *
+   * The governing rule: **only ever go idle in response to a mouse that has
+   * actually moved.** That one rule covers the two ways this normally breaks -
+   * a keyboard user and a touch user never fire `pointermove`, so they never
+   * arm the timer and the button simply stays put. No device sniffing.
+   */
+  const [idle, setIdle] = useState(false)
+  const idleTimer = useRef<number | null>(null)
+
+  const clearIdleTimer = () => {
+    if (idleTimer.current !== null) {
+      window.clearTimeout(idleTimer.current)
+      idleTimer.current = null
+    }
+  }
+
+  /** Something that is not a mouse is driving: show, and do not arm anything. */
+  const holdChrome = useCallback(() => {
+    setIdle(false)
+    clearIdleTimer()
+  }, [])
+
+  useEffect(() => {
+    const wake = () => {
+      setIdle(false)
+      clearIdleTimer()
+      idleTimer.current = window.setTimeout(() => setIdle(true), IDLE_MS)
+    }
+    // `pointermove` filtered on pointerType, not `mousemove`: some mobile
+    // browsers synthesise a mousemove on tap, which would hide the close button
+    // on the one device with no way to bring it back.
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse') wake()
+    }
+    document.addEventListener('pointermove', onMove)
+    return () => {
+      document.removeEventListener('pointermove', onMove)
+      clearIdleTimer()
+    }
+  }, [])
+
   const go = useCallback(
     (next: number) => {
       // Clamped, not wrapping. On a gallery of four, looping from the last
@@ -54,6 +100,9 @@ export default function PhotoLightbox({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // Before the branching, so Tab counts too: the moment a member reaches
+      // for the keyboard the chrome returns and stops hiding itself.
+      holdChrome()
       if (event.key === 'ArrowLeft') go(index - 1)
       else if (event.key === 'ArrowRight') go(index + 1)
       else if (event.key === 'Home') go(0)
@@ -63,7 +112,7 @@ export default function PhotoLightbox({
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [go, index, photos.length])
+  }, [go, index, photos.length, holdChrome])
 
   // Keep the active thumbnail in view, and warm the two photos most likely to
   // be asked for next so a click does not land on a blank frame.
@@ -83,10 +132,12 @@ export default function PhotoLightbox({
 
   const atStart = index <= 0
   const atEnd = index >= photos.length - 1
+  const hasMany = photos.length > 1
 
   return createPortal(
     <div
       className="photo-lightbox"
+      data-idle={idle ? 'true' : undefined}
       role="dialog"
       aria-modal="true"
       aria-label={`Photos of ${name}`}
@@ -98,21 +149,32 @@ export default function PhotoLightbox({
         Photo {index + 1} of {photos.length}
       </p>
 
-      <button type="button" className="photo-lightbox-close" onClick={onClose} aria-label="Close">
+      <button
+        type="button"
+        className="photo-lightbox-close"
+        onClick={onClose}
+        aria-label="Close"
+      >
         <X size={18} aria-hidden="true" />
       </button>
 
       {/* The backdrop closes; the picture and the filmstrip do not. */}
       <div className="photo-lightbox-stage" onClick={(event) => event.stopPropagation()}>
-        <button
-          type="button"
-          className="photo-lightbox-arrow photo-lightbox-prev"
-          onClick={() => go(index - 1)}
-          disabled={atStart}
-          aria-label="Previous photo"
-        >
-          <ChevronLeft size={22} aria-hidden="true" />
-        </button>
+        {/* A single photo has no ends to be at, so it gets no arrows - the
+            same call the photo rail makes when everything already fits. With
+            two or more they are always drawn, and the one with nowhere to go
+            is dimmed rather than hidden. */}
+        {hasMany && (
+          <button
+            type="button"
+            className="photo-lightbox-arrow photo-lightbox-prev"
+            onClick={() => go(index - 1)}
+            disabled={atStart}
+            aria-label="Previous photo"
+          >
+            <ChevronLeft size={22} aria-hidden="true" />
+          </button>
+        )}
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -121,15 +183,17 @@ export default function PhotoLightbox({
           className="photo-lightbox-image"
         />
 
-        <button
-          type="button"
-          className="photo-lightbox-arrow photo-lightbox-next"
-          onClick={() => go(index + 1)}
-          disabled={atEnd}
-          aria-label="Next photo"
-        >
-          <ChevronRight size={22} aria-hidden="true" />
-        </button>
+        {hasMany && (
+          <button
+            type="button"
+            className="photo-lightbox-arrow photo-lightbox-next"
+            onClick={() => go(index + 1)}
+            disabled={atEnd}
+            aria-label="Next photo"
+          >
+            <ChevronRight size={22} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {photos.length > 1 && (

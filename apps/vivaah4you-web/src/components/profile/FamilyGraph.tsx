@@ -3,9 +3,12 @@
 import React, { useEffect, useState } from 'react'
 
 import Avatar from '@/components/profile/Avatar'
+import FamilyFacts from '@/components/profile/FamilyFacts'
+import { hasFamilyFacts } from '@/lib/familyFacts'
 import { deriveMembers, mergeMembers, toRows, type FamilyMember } from '@/lib/family'
 import { labelFor } from '@/lib/profileDisplay'
-import type { PublicProfile } from '@/types/profile'
+import type { PublicProfile, SaveField } from '@/types/profile'
+import { FAMILY_PANEL_ICON } from '@/lib/profileIcons'
 
 interface Props {
   /**
@@ -22,6 +25,13 @@ interface Props {
   selfPhoto?: string | null
   /** Owner-only: reveals the edit affordances. */
   onEdit?: () => void
+  /**
+   * Owner-only: makes the household facts inline-editable.
+   *
+   * Separate from `onEdit`, which swaps the whole graph for the family editor.
+   * This one is for the pencils on the band under the tree.
+   */
+  onSave?: SaveField
   /** Smaller nodes and no card of its own, for showing two families together. */
   compact?: boolean
   /** Replaces the "Family" heading. */
@@ -46,6 +56,7 @@ export default function FamilyGraph({
   selfName = 'Them',
   selfPhoto,
   onEdit,
+  onSave,
   compact = false,
   heading = 'Family',
 }: Props) {
@@ -85,7 +96,23 @@ export default function FamilyGraph({
 
   const shell = compact ? 'family family-compact' : 'form-section family'
 
+  /* This panel absorbed the Family section, so it now carries where and how
+     the family lives as well as who is in it. `hasFamilyFacts` deliberately
+     ignores familyType and livesWithFamily: Django defaults them to 0
+     ("Nuclear") and true, so they are answered on every profile and would
+     conjure a card for a member who has said nothing. */
+  const showFacts = !compact
+  const factsWorthACard = showFacts && hasFamilyFacts(profile)
+
+  // A visitor gets nothing only when there is neither a tree nor a fact. The
+  // owner always gets the card, because for them the blank is what to act on.
+  //
+  // Measured on the dev data before this guard was widened: 11 of 22 profiles
+  // render an empty tree, and 5 of those DO have a family location and income
+  // recorded - so the old `members.length === 0` test hid real content on
+  // nearly a quarter of profiles.
   if (loading) {
+    if (members.length === 0 && !factsWorthACard && !onEdit) return null
     return (
       <section className={shell}>
         <p className="form-section-title">{heading}</p>
@@ -96,16 +123,19 @@ export default function FamilyGraph({
     )
   }
 
-  // A visitor looking at an empty family gets nothing; the owner gets the
-  // prompt, because for them the blank is the thing to act on.
-  if (members.length === 0 && !onEdit) return null
+  if (members.length === 0 && !factsWorthACard && !onEdit) return null
 
   const rows = toRows(members, selfLabel)
 
   return (
     <section className={shell}>
       <div className="family-head">
-        <p className="form-section-title">{heading}</p>
+        <p className="form-section-title">
+          {/* The glyph the removed Family section carried, inherited along
+              with its fields. */}
+          <FAMILY_PANEL_ICON className="form-section-icon" strokeWidth={1.8} aria-hidden="true" />
+          {heading}
+        </p>
         {onEdit && (
           <button type="button" className="profile-bio-edit" onClick={onEdit}>
             {members.length === 0 ? 'Add your family' : 'Edit'}
@@ -113,11 +143,13 @@ export default function FamilyGraph({
         )}
       </div>
 
+      {showFacts && <FamilyFacts profile={profile as PublicProfile} onSave={onSave} />}
+
       {members.length === 0 ? (
         <p className="form-section-hint">
           {onEdit
             ? 'Add the people you live with. Families read each other’s profiles as closely as they read yours.'
-            : 'No family added yet.'}
+            : 'The people in this family have not been added yet.'}
         </p>
       ) : (
         <div className="family-tree">

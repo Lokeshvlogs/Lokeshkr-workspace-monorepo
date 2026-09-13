@@ -184,6 +184,23 @@ export function checkPreferences(owner: PublicProfile, candidate: PublicProfile)
   return checks
 }
 
+/**
+ * How many preferences this member has actually stated.
+ *
+ * Built from `checkPreferences` rather than its own list of columns, so it can
+ * never drift from what the score counts: every check sets `wanted` to `''`
+ * when the owner asked for nothing and to a non-empty summary when they did,
+ * and that decision reads only the owner's own answers. Adding a preference to
+ * the function above therefore teaches this one about it for free.
+ *
+ * The profile is passed as its own candidate because a candidate is required
+ * and none is available here - nothing but `wanted` is read off the result, so
+ * the comparison itself is discarded.
+ */
+export function statedPreferenceCount(profile: PublicProfile): number {
+  return checkPreferences(profile, profile).filter((check) => check.wanted !== '').length
+}
+
 const tally = (checks: PrefCheck[]) => ({
   met: checks.filter((c) => c.verdict === 'pass').length,
   considered: checks.filter((c) => c.verdict === 'pass' || c.verdict === 'fail').length,
