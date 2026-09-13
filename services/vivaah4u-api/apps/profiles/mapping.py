@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
-from . import education, identity, managed_by as managed_by_rules, presence
+from . import education, identity, managed_by as managed_by_rules, presence, residency
 from .media_paths import ALLOWED_EXTENSIONS, uuid_name
 from .constants import (
     MAX_PICK_SUBTITLE,
@@ -820,6 +820,13 @@ def profile_to_api(profile, request=None, public: bool = False, viewer=None) -> 
         "employerName": profile.employer_name,
         "workCountry": profile.work_country,
         "visaStatus": profile.visa_status,
+        # Derived server-side, deliberately. The identical rule drives the
+        # `nri` search filter (see apps.profiles.residency), and a second copy
+        # of it in TypeScript would drift silently. The visa *label* has to come
+        # from here too: the options are per-country catalog data the client
+        # never holds, so a client-side label would render `h1b` as "H1b".
+        "isNri": residency.is_nri(profile),
+        "residencyTag": residency.residency_tag(profile),
         "settleAbroad": profile.settle_abroad,
         "partnerRelocateAfterMarriage": profile.partner_relocate_after_marriage or [],
         "partnerSettleAbroad": profile.partner_settle_abroad or [],

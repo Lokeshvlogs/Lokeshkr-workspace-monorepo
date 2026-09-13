@@ -35,6 +35,15 @@
      input, a select and the date trigger line up pixel for pixel in a grid. */
   --control-height: 54px;
   --control-radius: 10px;
+
+  /* Panel elevation. The only shadow tokens in the app - everything else is
+     hand-written per component - because three separate wrappers were carrying
+     identical copies of the resting value and a hover state had to agree with
+     all of them. The hover shadow is brand-tinted rather than neutral, which is
+     what `.card` already does when it lifts. */
+  --shadow-panel: 0 4px 16px rgba(17, 24, 39, 0.04);
+  --shadow-panel-hover: 0 18px 38px color-mix(in srgb, var(--color-primary) 14%, transparent),
+    0 4px 12px rgba(17, 24, 39, 0.05);
 }
 
 /* ---------------------------------------------------------------------------
@@ -841,7 +850,7 @@ button.chip-selected:hover {
 /* --- Form layout helpers --- */
 .form-section {
   @apply relative overflow-hidden rounded-2xl border border-color-border bg-white p-5;
-  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+  box-shadow: var(--shadow-panel);
 }
 
 /* The signature edge the wizard card already uses, at lower opacity: enough to
@@ -1921,7 +1930,7 @@ button.chip-selected:hover {
   @apply rounded-2xl p-5;
   border: 1px solid var(--color-border, #fbcfe8);
   background-color: var(--color-bg, #ffffff);
-  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+  box-shadow: var(--shadow-panel);
 }
 
 .panel-title {
@@ -2030,12 +2039,20 @@ button.chip-selected:hover {
   border: 1px dashed var(--color-border, #fbcfe8);
 }
 
-/* --- Profile hero, shared by the inline own-profile and match views --- */
+/* --- Profile hero, shared by the inline own-profile and match views ---
+   A column of two rows now, not one row: the portrait, facts and tags sit in
+   `.profile-hero-top`, and About me runs the full width underneath. That is
+   what the extra wrapper is for - the bio needs the whole panel, and it could
+   not have it while the panel itself was the flex row. */
 .profile-hero {
-  @apply flex flex-col items-center gap-6 rounded-2xl p-6 sm:flex-row sm:items-start;
+  @apply flex flex-col gap-5 rounded-2xl p-6;
   border: 1px solid var(--color-border, #fbcfe8);
   background-color: var(--color-bg, #ffffff);
-  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.04);
+  box-shadow: var(--shadow-panel);
+}
+
+.profile-hero-top {
+  @apply flex flex-col items-center gap-6 sm:flex-row sm:items-start;
 }
 
 /* Positioning context for the presence dot. */
@@ -2043,8 +2060,10 @@ button.chip-selected:hover {
   @apply relative shrink-0;
 }
 
+/* Larger than it was: the panel grew vertically to take the bio, and a 9rem
+   portrait beside all of that looked like a thumbnail. */
 .profile-hero-avatar {
-  @apply h-36 w-36 shrink-0 rounded-full object-cover;
+  @apply h-36 w-36 shrink-0 rounded-full object-cover sm:h-44 sm:w-44;
   border: 4px solid var(--color-primary-surface, #fdf2f8);
 }
 
@@ -2858,9 +2877,19 @@ a.pick-card-link:hover {
 }
 
 @media (min-width: 640px) {
+  /* An icon lane, not a label lane. The 8.5rem below is sized to hold a
+     written-out label; when an icon stands in for one it holds a 16px glyph
+     and strands every value a hundred pixels from the thing naming it. Rows
+     that still print their label keep the wide lane - see .field-row-labelled
+     and the class FieldRow sets. */
   .field-row {
-    grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr) auto;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    column-gap: 0.625rem;
     align-items: center;
+  }
+
+  .field-row-labelled {
+    grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr) auto;
   }
 }
 
@@ -4255,20 +4284,6 @@ button.family-node:hover {
   color: var(--color-placeholder-text, #4a3b3b);
 }
 
-/* Two families side by side: smaller nodes, no card of its own, and the
-   detail panel suppressed - at this size it is a picture of a household, not
-   somewhere to read. */
-.family-compare {
-  @apply grid gap-4;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 720px) {
-  .family-compare {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 .family-compact {
   @apply rounded-2xl p-3;
   border: 1px solid var(--color-border, #ffcbe5);
@@ -4358,4 +4373,349 @@ button.family-node:hover {
    two rows suppresses it - which is what we want at a boundary. */
 .select-group-header + .select-option {
   border-top: 0;
+}
+
+/* --- Profile photos: one row, and the viewer it opens ---------------------
+   Separate from `.photo-grid` / `.photo-tile` on purpose: those belong to the
+   wizard's editor (PhotoGallery), which is still a grid with a remove button
+   on every tile. This is the read-only rail. */
+
+.photo-rail-head {
+  @apply flex items-center justify-between gap-3;
+}
+
+.photo-rail-nav {
+  @apply flex items-center gap-1.5;
+}
+
+.photo-rail-arrow {
+  @apply flex h-8 w-8 items-center justify-center rounded-full transition;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-primary, #ff1f8f);
+}
+
+.photo-rail-arrow:hover:not(:disabled) {
+  border-color: var(--color-primary, #ff1f8f);
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+.photo-rail-arrow:disabled {
+  @apply cursor-not-allowed opacity-35;
+}
+
+/* Scroll-snap so a flick lands on a photo rather than between two - the same
+   treatment the trending rail uses, at gallery proportions. */
+.photo-rail-track {
+  @apply mt-3 flex gap-3 overflow-x-auto pb-1;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.photo-rail-track > * {
+  scroll-snap-align: start;
+}
+
+.photo-rail-tile {
+  @apply relative h-32 w-32 shrink-0 overflow-hidden rounded-xl transition sm:h-36 sm:w-36;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-primary-surface, #fff0f8);
+}
+
+.photo-rail-tile img {
+  @apply h-full w-full object-cover transition-transform duration-300;
+}
+
+.photo-rail-tile:hover img {
+  transform: scale(1.06);
+}
+
+.photo-rail-tile:hover {
+  border-color: var(--color-primary-light, #ff66b3);
+}
+
+/* --- The lightbox ---
+   z-index 60, deliberately: the messenger drawer owns 50, and a photo opened
+   from behind an open drawer must not appear underneath it. The portaled
+   dropdown popups keep 9999 so a select inside any surface still wins. */
+.photo-lightbox {
+  @apply fixed inset-0 flex flex-col items-center justify-center gap-4 p-4;
+  z-index: 60;
+  background-color: rgba(12, 8, 12, 0.86);
+  backdrop-filter: blur(6px);
+}
+
+.photo-lightbox-close {
+  @apply absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full transition;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--color-placeholder-text, #2c2b2b);
+}
+
+.photo-lightbox-close:hover {
+  background-color: #ffffff;
+}
+
+.photo-lightbox-stage {
+  @apply flex min-h-0 w-full flex-1 items-center justify-center gap-2 sm:gap-4;
+}
+
+.photo-lightbox-image {
+  @apply max-h-full min-h-0 rounded-xl object-contain;
+  max-width: min(100%, 68rem);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.photo-lightbox-arrow {
+  @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition;
+  background-color: rgba(255, 255, 255, 0.88);
+  color: var(--color-placeholder-text, #2c2b2b);
+}
+
+.photo-lightbox-arrow:hover:not(:disabled) {
+  background-color: #ffffff;
+}
+
+.photo-lightbox-arrow:disabled {
+  @apply cursor-not-allowed opacity-0;
+}
+
+.photo-lightbox-strip {
+  @apply flex max-w-full shrink-0 gap-2 overflow-x-auto pb-1;
+  scrollbar-width: thin;
+}
+
+.photo-lightbox-thumb {
+  @apply h-16 w-16 shrink-0 overflow-hidden rounded-lg transition;
+  border: 2px solid transparent;
+  opacity: 0.55;
+}
+
+.photo-lightbox-thumb img {
+  @apply h-full w-full object-cover;
+}
+
+.photo-lightbox-thumb:hover {
+  opacity: 0.85;
+}
+
+.photo-lightbox-thumb[aria-current='true'] {
+  border-color: var(--color-primary, #ff1f8f);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-rail-track,
+  .photo-lightbox-strip {
+    scroll-behavior: auto;
+  }
+
+  .photo-rail-tile img,
+  .photo-rail-tile:hover img {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* --- Panels that lift ------------------------------------------------------
+   One rule for all three wrappers, which until now hand-wrote the same resting
+   shadow separately and had no hover state at all.
+
+   Three deliberate choices:
+
+   - `translateY(-3px)`, not the `-6px` `.card` uses. A grid tile rising 6px
+     reads as lift; a full-width panel moving the same distance reads as a
+     jolt.
+   - Gated on `(hover: hover) and (pointer: fine)`, so a touch device does not
+     end up holding a stuck hover state after a tap.
+   - `:focus-within` as well as `:hover`, because these panels now contain
+     focusable tags and links, and a keyboard user should get the same signal a
+     pointer does.
+
+   One thing to know before adding `transform` anywhere else: it creates a
+   containing block for `position: fixed` descendants. The photo lightbox is
+   portaled to `document.body` precisely so this rule cannot trap it. */
+.form-section,
+.panel,
+.profile-hero {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease,
+    border-color 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .form-section:hover,
+  .form-section:focus-within,
+  .panel:hover,
+  .panel:focus-within,
+  .profile-hero:hover,
+  .profile-hero:focus-within {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+    box-shadow: var(--shadow-panel-hover);
+  }
+
+  /* The signature hairline brightens with the lift - the cheapest part of the
+     effect and the most on-brand. */
+  .form-section:hover::before,
+  .form-section:focus-within::before {
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form-section,
+  .panel,
+  .profile-hero {
+    transition: box-shadow 0.28s ease, border-color 0.2s ease;
+  }
+
+  .form-section:hover,
+  .form-section:focus-within,
+  .panel:hover,
+  .panel:focus-within,
+  .profile-hero:hover,
+  .profile-hero:focus-within {
+    transform: none;
+  }
+}
+
+/* --- Hero tags -------------------------------------------------------------
+   The facts above are identity - age, height, marital status - and are read.
+   These are the ones worth acting on: where someone lives, what they do, what
+   they earn, what they speak, their community, and whether they are abroad.
+
+   Shaped like `.search-chip` on purpose. A tag here becomes a chip on the
+   search page when you follow it, and the two reading as the same object is
+   what makes that connection obvious rather than surprising. */
+.hero-tags {
+  @apply mt-3 flex flex-wrap justify-center gap-2 sm:justify-start;
+}
+
+.hero-tag {
+  @apply inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition;
+  border: 1px solid var(--color-border, #ffcbe5);
+  background-color: var(--color-primary-surface, #fff0f8);
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.hero-tag-icon {
+  @apply h-3.5 w-3.5 shrink-0;
+  color: var(--color-primary, #ff1f8f);
+}
+
+/* Only the followable ones invite a click. A computed tag on your own profile
+   is plain text and should not pretend otherwise. */
+.hero-tag-link:hover,
+.hero-tag-link:focus-visible {
+  border-color: var(--color-primary, #ff1f8f);
+  background-color: var(--color-primary-tint, #ffe4f1);
+  color: var(--color-primary-strong, #cb0b6b);
+  transform: translateY(-1px);
+}
+
+.hero-tag-editable {
+  @apply py-1;
+}
+
+/* --- About me, inside the hero ---
+   A rule above it rather than a card around it: it is part of the panel, and a
+   second border inside the first reads as a box in a box. */
+.profile-hero-bio {
+  @apply pt-5;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+}
+
+.profile-bio-bare {
+  @apply block;
+}
+
+/* The measure matters more here than it did in a two-column card: full-width
+   prose at this size runs to well over a hundred characters a line without it. */
+.profile-hero-bio .profile-bio {
+  max-width: 62ch;
+  font-size: 1rem;
+  line-height: 1.78;
+  letter-spacing: 0.003em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-tag-link:hover,
+  .hero-tag-link:focus-visible {
+    transform: none;
+  }
+}
+
+/* --- Education timeline ----------------------------------------------------
+   A line with a dot per qualification, newest at the top. The rule fades out
+   at the bottom rather than stopping dead, so it reads as a thread running
+   through the entries instead of a border with an end. */
+.edu-timeline {
+  @apply relative mt-3 flex flex-col gap-4 pl-6;
+}
+
+.edu-timeline::before {
+  content: "";
+  position: absolute;
+  left: 0.4375rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-primary, #ff1f8f),
+    color-mix(in srgb, var(--color-primary) 10%, transparent)
+  );
+}
+
+.edu-node {
+  @apply relative;
+  animation: edu-node-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The dot punches through the line with a ring in the panel's own colour, so
+   the line appears to pass behind it rather than stop at it. */
+.edu-node::before {
+  content: "";
+  position: absolute;
+  left: -1.5rem;
+  top: 0.3125rem;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--color-primary, #ff1f8f);
+  box-shadow: 0 0 0 3px var(--color-bg, #ffffff);
+}
+
+.edu-node-year {
+  @apply text-[0.6875rem] font-semibold uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary, #ff1f8f);
+}
+
+.edu-node-level {
+  @apply text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.edu-node-meta {
+  @apply text-xs;
+  color: var(--color-placeholder-text, #2c2b2b);
+  opacity: 0.75;
+}
+
+@keyframes edu-node-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edu-node {
+    animation: none;
+  }
 }

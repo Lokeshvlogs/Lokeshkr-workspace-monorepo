@@ -13,6 +13,7 @@ import PhotoStrip from '@/components/profile/PhotoStrip'
 import CompatibilityPanel from '@/components/profile/CompatibilityPanel'
 import { compareProfiles } from '@/lib/compatibility'
 import { fullName } from '@/lib/profileDisplay'
+import { tagSearchHref } from '@/lib/matchFilters'
 import { backTarget, DEFAULT_BACK } from '@/lib/navigation'
 import { useAuth } from '@/components/authProvider'
 import type { MyProfile, PublicProfile } from '@/types/profile'
@@ -144,22 +145,24 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
               </Link>
             )
           }
+          bio={<ProfileBio bare value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />}
+          /* `me` is already fetched for the comparison panel, so seeding a tag
+             with the reader's own preferences costs no extra request. Signed
+             out there is nothing to seed from and the tag is the whole filter. */
+          searchHref={(filter) => tagSearchHref(filter, me)}
         />
 
-        <ProfileBio value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />
-
-        {/* Only when there is no comparison below: signed in, that panel shows
-            this family beside the reader's own, and rendering it here as well
-            put the same tree on the page twice. */}
-        {!me && (
-          <FamilyGraph
-            profile={profile}
-            profileId={profile.profile_id}
-            selfLabel={`${firstName} and their siblings`}
-            selfName={firstName}
-            selfPhoto={profile.photo}
-          />
-        )}
+        {/* Unconditional. This used to be hidden for a signed-in reader
+            because the comparison panel drew the same tree beside their own;
+            that block is gone, so without this every signed-in reader would
+            see no family at all. */}
+        <FamilyGraph
+          profile={profile}
+          profileId={profile.profile_id}
+          selfLabel={`${firstName} and their siblings`}
+          selfName={firstName}
+          selfPhoto={profile.photo}
+        />
 
         <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
 
@@ -180,9 +183,6 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
             theirGender={profile.gender}
             myName={fullName(me) || 'You'}
             myPhoto={me.photo}
-            theirProfileId={profile.profile_id}
-            myProfile={me}
-            theirProfile={profile}
           />
         )}
 

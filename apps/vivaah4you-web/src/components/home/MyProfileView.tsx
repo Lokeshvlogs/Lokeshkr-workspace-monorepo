@@ -76,15 +76,20 @@ export default function MyProfileView({ profile, onSave }: Props) {
             )}
           </>
         }
-      />
-
-      <ProfileBio
-        value={profile.aboutMe ?? ''}
-        heading="About me"
-        onSave={onSave}
-        suggestion={bioSuggestion}
-        advantage={BIO_ADVANTAGE}
-        autoSuggest={welcome}
+        bio={
+          /* Every prop carried across, not just `value`: `suggestion`,
+             `advantage` and `autoSuggest` are what the wizard hands off to on
+             the way out, and dropping one would kill that silently. */
+          <ProfileBio
+            bare
+            value={profile.aboutMe ?? ''}
+            heading="About me"
+            onSave={onSave}
+            suggestion={bioSuggestion}
+            advantage={BIO_ADVANTAGE}
+            autoSuggest={welcome}
+          />
+        }
       />
 
       {editingFamily ? (

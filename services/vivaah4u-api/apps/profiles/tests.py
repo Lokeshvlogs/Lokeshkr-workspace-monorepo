@@ -54,7 +54,8 @@ from apps.profiles.models import (
     interest_pair_key,
 )
 from apps.auth_api.api import derive_gender
-from apps.profiles import identity, interests, presence
+from apps.catalog import visa
+from apps.profiles import identity, interests, matching, presence, residency
 from apps.profiles.api import (
     LAST_WIZARD_STEP,
     RECENTLY_JOINED_DAYS,
@@ -2727,3 +2728,303 @@ class ReorganiseMediaTests(MediaRootTestCase):
         member.refresh_from_db()
         self.assertTrue(photo.image.name.startswith("members/V4UF28000042/photos/"))
         self.assertTrue(member.photo.name.startswith("members/V4UF28000042/family/"))
+
+
+class ResidencyTests(TestCase):
+    """The NRI rule, and which second tag goes beside it.
+
+    Every row here came from a shape actually present in the dev data, plus the
+    all-blank case that a half-finished profile produces.
+    """
+
+    def _profile(self, **columns):
+        user = User.objects.create_user(username=f"res-{User.objects.count()}", password="x")
+        profile = Profile.objects.get(user=user)
+        for key, value in columns.items():
+            setattr(profile, key, value)
+        return profile
+
+    def test_blank_is_unknown_never_nri(self):
+        self.assertFalse(residency.is_nri(self._profile()))
+
+    def test_living_in_india_is_not_nri(self):
+        self.assertFalse(residency.is_nri(self._profile(current_country="IN")))
+        self.assertFalse(
+            residency.is_nri(self._profile(current_country="IN", work_country="IN"))
+        )
+
+    def test_living_abroad_is_nri(self):
+        self.assertTrue(residency.is_nri(self._profile(current_country="SE")))
+
+    def test_working_abroad_with_no_location_is_nri(self):
+        # The common half-finished profile: the job is the only clue.
+        self.assertTrue(residency.is_nri(self._profile(work_country="US")))
+
+    def test_where_you_live_outranks_where_you_work(self):
+        # Lives in South Africa, works in India - abroad, on the strength of
+        # where their life actually is.
+        self.assertTrue(
+            residency.is_nri(self._profile(current_country="ZA", work_country="IN"))
+        )
+
+    def test_foreign_citizenship_wins_over_visa(self):
+        tag = residency.residency_tag(
+            self._profile(current_country="GB", citizenship_country="GB", visa_status="citizen")
+        )
+        self.assertEqual(tag["kind"], "citizenship")
+        self.assertEqual(tag["value"], "GB")
+
+    def test_an_indian_citizen_abroad_shows_the_visa_with_its_real_label(self):
+        tag = residency.residency_tag(
+            self._profile(
+                current_country="US",
+                work_country="US",
+                citizenship_country="IN",
+                visa_status="h1b",
+            )
+        )
+        self.assertEqual(tag["kind"], "visa")
+        # Never "H1b" - the label is catalog data the client does not hold.
+        self.assertEqual(tag["label"], "H-1B")
+
+    def test_citizen_is_never_shown_as_a_visa_tag(self):
+        # It says nothing: either the citizenship tag already covers it, or -
+        # for someone living abroad but working in India - it describes the
+        # wrong country entirely.
+        self.assertIsNone(
+            residency.residency_tag(
+                self._profile(current_country="ZA", work_country="IN", visa_status="citizen")
+            )
+        )
+
+    def test_no_second_tag_when_nothing_is_recorded(self):
+        self.assertIsNone(residency.residency_tag(self._profile(current_country="SE")))
+
+    def test_indian_citizenship_is_not_a_tag(self):
+        self.assertIsNone(
+            residency.residency_tag(self._profile(current_country="US", citizenship_country="IN"))
+        )
+
+
+class ResidencyParityTests(TestCase):
+    """The Python predicate and the SQL filter must agree, always.
+
+    They are two expressions of one rule read by two different surfaces - the
+    tag on a profile, and the `nri` search filter. If they drift, a member is
+    tagged NRI and then missing from the results that filter on it, which is
+    invisible from either side alone.
+    """
+
+    MATRIX = [
+        ("", ""), ("IN", ""), ("", "IN"), ("IN", "IN"),
+        ("US", ""), ("", "US"), ("US", "IN"), ("IN", "US"),
+        ("SE", "SE"), ("ZA", "IN"), ("GB", "GB"),
+    ]
+
+    def setUp(self):
+        for index, (current, work) in enumerate(self.MATRIX):
+            user = User.objects.create_user(username=f"parity-{index}", password="x")
+            Profile.objects.filter(user=user).update(
+                current_country=current, work_country=work
+            )
+
+    def test_the_predicate_and_the_queryset_select_the_same_rows(self):
+        everyone = list(Profile.objects.all())
+        by_python = {p.pk for p in everyone if residency.is_nri(p)}
+        by_sql = set(
+            residency.filter_nri(Profile.objects.all(), True).values_list("pk", flat=True)
+        )
+        self.assertEqual(by_python, by_sql)
+
+        # And the complement, so `nri=0` is not quietly wrong either.
+        not_by_python = {p.pk for p in everyone if not residency.is_nri(p)}
+        not_by_sql = set(
+            residency.filter_nri(Profile.objects.all(), False).values_list("pk", flat=True)
+        )
+        self.assertEqual(not_by_python, not_by_sql)
+        self.assertEqual(by_python | not_by_python, {p.pk for p in everyone})
+
+
+class VisaLabelTests(TestCase):
+    def test_blank_and_unknown_give_nothing(self):
+        self.assertEqual(visa.label_for("US", ""), "")
+        self.assertEqual(visa.label_for("US", "not_a_status"), "")
+
+    def test_a_status_from_another_country_still_resolves_if_generic(self):
+        # visa_status is scoped to the country of work, and a member who moves
+        # keeps the old value until they re-answer.
+        self.assertEqual(visa.label_for("SE", "work_visa"), "Work visa")
+
+    def test_the_country_list_wins(self):
+        self.assertEqual(visa.label_for("US", "citizen"), "US citizen")
+        self.assertEqual(visa.label_for("GB", "citizen"), "British citizen")
+
+
+class MatchFilterTests(TestCase):
+    """Narrowing the match pool.
+
+    Driven through `apply_match_filters` rather than the HTTP layer, because
+    what is worth pinning is the rules - which rows survive which filter - not
+    ninja's query parsing.
+    """
+
+    def setUp(self):
+        # A seeker, and a pool of candidates to narrow.
+        self.seeker = _member("seeker-f", "F")
+        self.pool = []
+        for index, columns in enumerate(
+            [
+                dict(current_country="IN", current_city="Mumbai, Maharashtra, India",
+                     community="iyer", mother_tongue="Tamil", profession="software_engineer",
+                     annual_income="25-50", age=28, height_feet=5, height_inches=9),
+                dict(current_country="IN", current_city="Delhi, Delhi, India",
+                     community="jatav", mother_tongue="Hindi", profession="accountant",
+                     annual_income="50-100", age=34, height_feet=5, height_inches=4),
+                dict(current_country="US", work_country="US", current_city="Austin, Texas, United States",
+                     community="iyer", mother_tongue="Tamil", profession="software_engineer",
+                     annual_income="200-500", age=31, height_feet=6, height_inches=0),
+            ],
+            start=1,
+        ):
+            member = _member(f"cand-{index}", "M")
+            Profile.objects.filter(pk=member.pk).update(**columns)
+            self.pool.append(member)
+
+    def _filtered(self, **params):
+        schema = matching.MatchFilterSchema(**params)
+        qs = matching.apply_match_filters(eligible_matches(self.seeker), schema)
+        return set(qs.values_list("pk", flat=True))
+
+    def test_no_filters_changes_nothing(self):
+        self.assertEqual(self._filtered(), {m.pk for m in self.pool})
+
+    def test_a_single_value_narrows(self):
+        self.assertEqual(self._filtered(community=["jatav"]), {self.pool[1].pk})
+
+    def test_repeated_values_are_or_within_a_field(self):
+        self.assertEqual(
+            self._filtered(community=["iyer", "jatav"]),
+            {m.pk for m in self.pool},
+        )
+
+    def test_different_fields_are_and(self):
+        # Tamil-speaking Iyers, but only the one in India.
+        self.assertEqual(
+            self._filtered(community=["iyer"], country=["IN"]),
+            {self.pool[0].pk},
+        )
+
+    def test_an_unknown_value_returns_nothing_rather_than_everything(self):
+        self.assertEqual(self._filtered(community=["not-a-community"]), set())
+
+    def test_city_matches_the_whole_composed_label(self):
+        self.assertEqual(
+            self._filtered(city=["Mumbai, Maharashtra, India"]),
+            {self.pool[0].pk},
+        )
+
+    def test_city_does_not_substring_match(self):
+        # "field" must not find "Springfield", and a bare city name must not
+        # match the composed label - that is what `q` is for.
+        self.assertEqual(self._filtered(city=["Mumbai"]), set())
+
+    def test_salary_narrows_on_the_bracket(self):
+        self.assertEqual(self._filtered(salary=["200-500"]), {self.pool[2].pk})
+
+    def test_nri_agrees_with_the_residency_rule(self):
+        by_filter = self._filtered(nri=True)
+        by_rule = {
+            m.pk
+            for m in Profile.objects.filter(pk__in=[p.pk for p in self.pool])
+            if residency.is_nri(m)
+        }
+        self.assertEqual(by_filter, by_rule)
+        self.assertEqual(by_filter, {self.pool[2].pk})
+
+    def test_an_age_range_narrows(self):
+        self.assertEqual(self._filtered(ageMin=30, ageMax=32), {self.pool[2].pk})
+
+    def test_an_unanswered_age_is_not_a_mismatch(self):
+        blank = _member("cand-no-age", "M")
+        Profile.objects.filter(pk=blank.pk).update(age=None)
+        self.assertIn(blank.pk, self._filtered(ageMin=30))
+
+    def test_an_unanswered_height_is_not_a_mismatch(self):
+        blank = _member("cand-no-height", "M")
+        Profile.objects.filter(pk=blank.pk).update(height_feet=0, height_inches=0)
+        self.assertIn(blank.pk, self._filtered(heightMin=66))
+
+    def test_height_is_compared_in_total_inches(self):
+        # 5'9" is 69, 6'0" is 72, 5'4" is 64.
+        self.assertEqual(self._filtered(heightMin=69), {self.pool[0].pk, self.pool[2].pk})
+
+    def test_free_text_searches_the_same_haystack_as_before(self):
+        self.assertEqual(self._filtered(q="mumbai"), {self.pool[0].pk})
+        self.assertEqual(self._filtered(q="accountant"), {self.pool[1].pk})
+
+    def test_marital_status_is_translated_from_its_slug(self):
+        # Stored as an integer; the client speaks slugs.
+        Profile.objects.filter(pk=self.pool[1].pk).update(marital_status=2)
+        self.assertEqual(self._filtered(maritalStatus=["divorced"]), {self.pool[1].pk})
+
+
+class MatchSortTests(TestCase):
+    def setUp(self):
+        self.seeker = _member("sort-seeker", "F")
+        self.young = _member("sort-young", "M")
+        self.old = _member("sort-old", "M")
+        Profile.objects.filter(pk=self.young.pk).update(age=25)
+        Profile.objects.filter(pk=self.old.pk).update(age=40)
+
+    def _sorted(self, sort, tab="all"):
+        qs = matching.apply_sort(eligible_matches(self.seeker), sort, tab)
+        return list(qs.values_list("age", flat=True))
+
+    def test_age_ascending_and_descending(self):
+        self.assertEqual(self._sorted("age_asc"), [25, 40])
+        self.assertEqual(self._sorted("age_desc"), [40, 25])
+
+    def test_an_unknown_sort_falls_back_to_the_default(self):
+        self.assertEqual(len(self._sorted("nonsense")), 2)
+
+    def test_the_recency_tabs_keep_their_own_order(self):
+        # `new` and `recent` are defined by recency; re-sorting them would
+        # answer a different question from the one the tab asks.
+        qs = eligible_matches(self.seeker).order_by("-created_at")
+        self.assertEqual(
+            list(matching.apply_sort(qs, "age_asc", "recent").values_list("pk", flat=True)),
+            list(qs.values_list("pk", flat=True)),
+        )
+
+
+class MatchRegressionTests(TestCase):
+    """An unfiltered /matches must return exactly what it did before filters."""
+
+    def setUp(self):
+        self.seeker = _member("reg-seeker", "F")
+        for index in range(3):
+            _member(f"reg-cand-{index}", "M")
+
+    def test_no_filters_is_the_untouched_pool_in_the_untouched_order(self):
+        before = list(
+            match_queryset(self.seeker, "all").values_list("pk", flat=True)
+        )
+        empty = matching.MatchFilterSchema()
+        after = list(
+            matching.apply_sort(
+                matching.apply_match_filters(match_queryset(self.seeker, "all"), empty),
+                empty.sort,
+                "all",
+            ).values_list("pk", flat=True)
+        )
+        self.assertEqual(before, after)
+
+    def test_filtering_matches_does_not_move_the_dashboard_count(self):
+        # eligible_matches is shared with /stats. Filters are layered on top of
+        # it precisely so the dashboard figure keeps its meaning.
+        before = eligible_matches(self.seeker).count()
+        matching.apply_match_filters(
+            match_queryset(self.seeker, "all"),
+            matching.MatchFilterSchema(community=["iyer"]),
+        ).count()
+        self.assertEqual(eligible_matches(self.seeker).count(), before)

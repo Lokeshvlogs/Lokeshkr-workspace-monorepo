@@ -5,6 +5,8 @@ import React from 'react'
 import EditableField, { displayValue } from '@/components/profile/EditableField'
 import FieldRow from '@/components/profile/FieldRow'
 import { fieldsBySection, type ProfileFieldDef } from '@/lib/profileFields'
+import EducationTimeline from '@/components/profile/EducationTimeline'
+import { educationTimeline } from '@/lib/educationTimeline'
 import { SECTION_ICONS } from '@/lib/profileIcons'
 import type { PublicProfile, SaveField } from '@/types/profile'
 
@@ -21,13 +23,35 @@ interface Props {
   columns?: 1 | 2
 }
 
+/**
+ * Sections that lead with something richer than field rows.
+ *
+ * A map rather than a conditional in the JSX, so adding one is a line here and
+ * `page.tsx` / `MyProfileView` never learn about it.
+ */
+const SECTION_EXTRAS: Record<
+  string,
+  {
+    Component: React.ComponentType<{ profile: PublicProfile }>
+    /** Whether it would render anything for this profile. */
+    hasContent: (profile: PublicProfile) => boolean
+  }
+> = {
+  'Education & Career': {
+    Component: EducationTimeline,
+    hasContent: (profile) => educationTimeline(profile).length > 0,
+  },
+}
+
 export default function ProfileDetails({
   profile,
   editable = false,
   onSave,
   columns = 2,
 }: Props) {
-  const sections = fieldsBySection()
+  // `owner` gates the rows a visitor has no business reading because a hero tag
+  // already says it, but which the owner still needs an editor for.
+  const sections = fieldsBySection({ owner: editable })
     .map((section) => ({
       ...section,
       // Read-only viewers should not see rows the member never filled in;
@@ -36,7 +60,14 @@ export default function ProfileDetails({
         ? section.fields
         : section.fields.filter((def) => displayValue(def, profile) !== ''),
     }))
-    .filter((section) => section.fields.length > 0)
+    // A section with no rows left still earns its place if its extra has
+    // something to show - a member whose only career answer is their education
+    // would otherwise lose the timeline along with the empty rows.
+    .filter(
+      (section) =>
+        section.fields.length > 0 ||
+        Boolean(SECTION_EXTRAS[section.title]?.hasContent(profile)),
+    )
 
   if (sections.length === 0) {
     return (
@@ -71,6 +102,7 @@ export default function ProfileDetails({
     >
       {sections.map((section) => {
         const Icon = SECTION_ICONS[section.title]
+        const Extra = SECTION_EXTRAS[section.title]?.Component
 
         return (
           <section key={section.title} className="form-section">
@@ -78,6 +110,7 @@ export default function ProfileDetails({
               {Icon && <Icon className="form-section-icon" strokeWidth={1.8} aria-hidden="true" />}
               {section.title}
             </h3>
+            {Extra && <Extra profile={profile} />}
             <dl className="mt-2">{section.fields.map(renderRow)}</dl>
           </section>
         )

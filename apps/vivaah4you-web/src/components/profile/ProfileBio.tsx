@@ -32,6 +32,14 @@ interface Props {
    * waiting behind a button nobody was told about.
    */
   autoSuggest?: boolean
+  /**
+   * Drop the card wrapper: the hero panel is the card now.
+   *
+   * Both branches below honour this - the reading one AND the editing one.
+   * Handling only the first would re-grow a nested card the moment the owner
+   * clicked Edit.
+   */
+  bare?: boolean
 }
 
 /**
@@ -53,6 +61,7 @@ export default function ProfileBio({
   suggestion = '',
   advantage = '',
   autoSuggest = false,
+  bare = false,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -112,9 +121,11 @@ export default function ProfileBio({
     else setError(result?.detail || 'Could not save. Please try again.')
   }
 
+  const shell = bare ? 'profile-bio-bare' : 'form-section'
+
   if (editing) {
     return (
-      <section className="form-section">
+      <section className={shell}>
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-color-primary-text">{heading}</span>
           <div className="flex gap-2">
@@ -166,7 +177,7 @@ export default function ProfileBio({
   }
 
   return (
-    <section className="form-section profile-bio-card">
+    <section className={`${shell} profile-bio-card`}>
       <div className="profile-bio-head">
         <h3 className="form-section-title">{heading}</h3>
         {editable && (

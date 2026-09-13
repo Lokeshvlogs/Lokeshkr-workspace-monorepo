@@ -120,3 +120,22 @@ def is_valid(country: str, value: str) -> bool:
     if not value:
         return True
     return any(option["value"] == value for option in options_for(country))
+
+
+def label_for(country: str, value: str) -> str:
+    """The display label for one status, or "" when there is nothing to show.
+
+    Falls back to the generic list before giving up: `visa_status` is scoped to
+    the country of work, and a member who changes country keeps the old value
+    until they re-answer, so the status and the country can legitimately
+    disagree for a while. A recognisable label is better than a blank in that
+    window.
+    """
+    if not value:
+        return ""
+
+    for source in (options_for(country), [{"value": v, "label": l} for v, l in GENERIC]):
+        for option in source:
+            if option["value"] == value:
+                return option["label"]
+    return ""

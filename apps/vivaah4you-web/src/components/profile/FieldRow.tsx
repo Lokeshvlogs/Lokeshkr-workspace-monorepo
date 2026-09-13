@@ -35,7 +35,14 @@ export default function FieldRow({ fieldKey, label, value, emptyText, action }: 
   const shown = value || emptyText || ''
 
   return (
-    <div className="field-row" title={Icon ? label : undefined}>
+    // Two different lane widths, chosen here rather than in CSS: an icon-led
+    // row needs only an icon's width, while a row that still prints its label
+    // needs a lane wide enough to hold it. Branching on `Icon` is something
+    // this component already does, so the class costs nothing.
+    <div
+      className={`field-row ${Icon ? '' : 'field-row-labelled'}`}
+      title={Icon ? label : undefined}
+    >
       {Icon ? (
         <>
           <Icon className="field-icon" strokeWidth={1.6} aria-hidden="true" />

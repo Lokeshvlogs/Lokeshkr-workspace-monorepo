@@ -6,7 +6,10 @@ import Avatar from '@/components/profile/Avatar'
 import EditableField, { displayValue } from '@/components/profile/EditableField'
 import { iconFor } from '@/lib/profileIcons'
 import NameWithBadge from '@/components/profile/NameWithBadge'
+import Link from 'next/link'
+
 import { PROFILE_FIELDS } from '@/lib/profileFields'
+import { heroTags, type HeroTag } from '@/lib/heroTags'
 import { presenceFor } from '@/lib/presence'
 import { fullName } from '@/lib/profileDisplay'
 import IdentityNotice from '@/components/profile/IdentityNotice'
@@ -33,16 +36,16 @@ const TILE_GROUP: Record<string, IdentityGroup> = {
  * full name, and repeating it as two more rows was the duplication this panel
  * was built to remove. Both keep their `PROFILE_FIELDS` entries, so the wizard
  * and the editor still know about them.
+ *
+ * `bodyPhysique` and `manglikLevel` used to be here and are not any more. Note
+ * that this was their ONLY render site - their section, `Basic Details`, is not
+ * in `SECTIONS` - so they now appear nowhere on a profile. Their defs survive,
+ * so the wizard still collects them.
+ *
+ * What sits below these tiles is a different thing: `HERO_TAG_KEYS`, promoted
+ * out of the panels below and rendered as tags you can follow into search.
  */
-const HERO_FACT_KEYS = [
-  'age',
-  'gender',
-  'height',
-  'maritalStatus',
-  'bodyPhysique',
-  'manglikLevel',
-  'dob',
-] as const
+const HERO_FACT_KEYS = ['age', 'gender', 'height', 'maritalStatus', 'dob'] as const
 
 interface Props {
   profile: PublicProfile
@@ -62,6 +65,13 @@ interface Props {
   identityLocks?: IdentityLocks
   /** Suppresses every warning - set while registering for the first time. */
   silentIdentity?: boolean
+  /**
+   * Turns the tags into links into search. Absent on your own profile, where a
+   * tag opens its editor instead - one element cannot sensibly do both.
+   */
+  searchHref?: (filter: { param: string; value: string }) => string
+  /** The About me block, rendered inside this panel rather than beside it. */
+  bio?: ReactNode
 }
 
 export default function ProfileHeroPanel({
@@ -71,6 +81,8 @@ export default function ProfileHeroPanel({
   subtitle,
   identityLocks = {},
   silentIdentity = false,
+  searchHref,
+  bio,
 }: Props) {
   const name = fullName(profile) || 'Vivah4U member'
 
@@ -113,8 +125,50 @@ export default function ProfileHeroPanel({
     (def): def is NonNullable<typeof def> => Boolean(def),
   )
 
+  const tags = heroTags(profile)
+
+  /** A pill: a link on someone else's profile, an editor on your own. */
+  const renderTag = (tag: HeroTag) => {
+    const Icon = tag.icon
+    const glyph = Icon ? <Icon className="hero-tag-icon" strokeWidth={1.8} aria-hidden="true" /> : null
+
+    if (onSave && tag.def) {
+      return (
+        <li key={tag.id} className="hero-tag hero-tag-editable">
+          {glyph}
+          <span className="sr-only">{tag.srLabel}</span>
+          <EditableField def={tag.def} profile={profile} onSave={onSave} bare />
+        </li>
+      )
+    }
+
+    // Computed tags (NRI, residency) have no def, so there is nothing to edit -
+    // on the owner's own page they stay plain text rather than becoming a
+    // search for people like themselves.
+    if (!searchHref || !tag.filter) {
+      return (
+        <li key={tag.id} className="hero-tag" title={tag.title}>
+          {glyph}
+          <span className="sr-only">{tag.srLabel}</span>
+          {tag.label}
+        </li>
+      )
+    }
+
+    return (
+      <li key={tag.id}>
+        <Link href={searchHref(tag.filter)} className="hero-tag hero-tag-link" title={tag.title}>
+          {glyph}
+          <span className="sr-only">{tag.srLabel}</span>
+          {tag.label}
+        </Link>
+      </li>
+    )
+  }
+
   return (
     <section className="profile-hero">
+      <div className="profile-hero-top">
       <div className="profile-hero-portrait">
         <Avatar src={profile.photo} name={name} className="profile-hero-avatar" decorative />
         {/* Only ever rendered when the server actually said something. A
@@ -197,9 +251,19 @@ export default function ProfileHeroPanel({
             )
           })}
         </dl>
+
+        {tags.length > 0 && (
+          <ul className="hero-tags">{tags.map(renderTag)}</ul>
+        )}
       </div>
 
       {actions && <div className="profile-hero-actions">{actions}</div>}
+      </div>
+
+      {/* Inside the panel, not a card of its own. The bio is the one thing on
+          the page written in the member's own words, and it belongs with their
+          face rather than below a row of other cards. */}
+      {bio && <div className="profile-hero-bio">{bio}</div>}
     </section>
   )
 }

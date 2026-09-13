@@ -44,6 +44,15 @@
      reserved for a real identity check so it never comes to mean "complete". */
   --color-verified-complete: #94a3b8;
   --color-verified-id: #1d9bf0;
+
+  /* Panel elevation. The only shadow tokens in the app - everything else is
+     hand-written per component - because three separate wrappers were carrying
+     identical copies of the resting value and a hover state had to agree with
+     all of them. The hover shadow is brand-tinted rather than neutral, which is
+     what `.card` already does when it lifts. */
+  --shadow-panel: 0 4px 16px rgba(17, 24, 39, 0.04);
+  --shadow-panel-hover: 0 18px 38px color-mix(in srgb, var(--color-primary) 14%, transparent),
+    0 4px 12px rgba(17, 24, 39, 0.05);
 }
 
 html,
@@ -798,8 +807,9 @@ body,
 
 /* Bottom RIGHT, not left: Next's own dev-tools indicator sits in the
    bottom-left corner and covered this completely.
-   The z-index clears everything in the app - navbar (40), photo lightbox (50)
-   and the portaled dropdown popups (9999) - because being able to tweak the
+   The z-index clears everything in the app - navbar (40), messenger drawer
+   (50), photo lightbox (60) and the portaled dropdown popups (9999) - because
+   being able to tweak the
    palette while a dropdown or modal is open is the point, and because no
    stacking context in the page can then hide it. */
 .theme-panel-fab,

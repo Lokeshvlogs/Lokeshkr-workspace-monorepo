@@ -134,6 +134,24 @@ export interface PublicProfile {
   visaStatus: string
 
   /**
+   * Whether this member lives or works outside India.
+   *
+   * Computed server-side (`apps/profiles/residency.py`), deliberately: the
+   * `nri` search filter has to apply the identical test, and a second copy of
+   * the rule in TypeScript would drift from it without anything failing.
+   */
+  isNri: boolean
+  /**
+   * The one tag that goes beside NRI - nationality or residency status, never
+   * both, and null when neither says anything useful.
+   *
+   * `label` is filled in for a visa (its options are per-country catalog data
+   * the client does not hold) and left empty for a citizenship, whose ISO-2
+   * `value` the client already knows how to name.
+   */
+  residencyTag: { kind: 'citizenship' | 'visa'; value: string; label: string } | null
+
+  /**
    * Who runs this profile. Derived server-side from `managed_by`, falling
    * back to what `profileFor` implies - the raw `profileFor` stays
    * owner-only, since "son" would leak gender a second time.

@@ -81,6 +81,15 @@ export interface ProfileFieldDef {
   captions?: string[]
   /** Clears these keys when this field changes (country -> city). */
   resets?: string[]
+  /**
+   * Rendered only on the owner's own profile.
+   *
+   * For a field a visitor has no business reading as a row because a hero tag
+   * already says it, but which the owner still has to be able to edit - the
+   * country/state pair feeding the city dropdown being the whole reason this
+   * exists.
+   */
+  ownerOnly?: boolean
 }
 
 const GENDER_OPTIONS: SelectOption[] = [
@@ -119,7 +128,7 @@ const FAMILY_TYPE_OPTIONS: SelectOption[] = [
 
 export const SECTIONS = [
   'Religion & Community',
-  'Location',
+  'Origins',
   'Education & Career',
   'Family',
   'Lifestyle',
@@ -207,35 +216,53 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
     optionsFor: (profile) => religiosityDetailOptions(profile.religiosity),
   },
 
-  // ---- Location (step 1) ----
-  /* Country resets both the state and the city below it, and state resets the
+  // ---- Origins (step 1) ----
+  /* There is no Location panel any more: where someone lives is a tag on the
+     hero, and repeating it as three rows was the duplication this removed.
+
+     `currentCountry` and `currentState` stay as OWNER-ONLY rows rather than
+     going with it. They are the inputs to `currentCity`'s option list, so
+     without them a member who moves country could never fix their city outside
+     the wizard - the dropdown would have nothing to build from.
+
+     Country resets both the state and the city below it, and state resets the
      city: a Kerala city left standing under Sweden is worse than an empty
      field, because it looks answered. */
-  { key: 'currentCountry', label: 'Country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['currentState', 'currentCity'] },
-  { key: 'currentState', label: 'State', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => statesForCountry(p.currentCountry), resets: ['currentCity'] },
-  { key: 'currentCity', label: 'Lives in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.currentCountry, p.currentState) },
-  { key: 'placeOfBirthCountry', label: 'Birth country', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['placeOfBirthState', 'placeOfBirthCity'] },
-  { key: 'placeOfBirthState', label: 'Birth state', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => statesForCountry(p.placeOfBirthCountry), resets: ['placeOfBirthCity'] },
-  { key: 'placeOfBirthCity', label: 'Born in', section: 'Location', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.placeOfBirthCountry, p.placeOfBirthState) },
-  { key: 'citizenshipCountry', label: 'Citizen of', section: 'Location', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS },
+  { key: 'currentCountry', label: 'Country', section: 'Origins', step: 1, editor: 'select', searchable: true, ownerOnly: true, options: COUNTRY_OPTIONS, resets: ['currentState', 'currentCity'] },
+  { key: 'currentState', label: 'State', section: 'Origins', step: 1, editor: 'select', searchable: true, ownerOnly: true, optionsFor: (p) => statesForCountry(p.currentCountry), resets: ['currentCity'] },
+  { key: 'currentCity', label: 'Lives in', section: 'Origins', step: 1, editor: 'select', searchable: true, ownerOnly: true, optionsFor: (p) => citiesForState(p.currentCountry, p.currentState) },
+  /* Birthplace is kept and moved rather than dropped with the panel: it is what
+     a horoscope is read against, and losing it would be a regression dressed up
+     as a simplification. */
+  { key: 'placeOfBirthCountry', label: 'Birth country', section: 'Origins', step: 1, editor: 'select', searchable: true, options: COUNTRY_OPTIONS, resets: ['placeOfBirthState', 'placeOfBirthCity'] },
+  { key: 'placeOfBirthState', label: 'Birth state', section: 'Origins', step: 1, editor: 'select', searchable: true, optionsFor: (p) => statesForCountry(p.placeOfBirthCountry), resets: ['placeOfBirthCity'] },
+  { key: 'placeOfBirthCity', label: 'Born in', section: 'Origins', step: 1, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.placeOfBirthCountry, p.placeOfBirthState) },
+  /* Citizenship reads as a hero tag for a visitor; the owner still edits it
+     here, since the tag is not an editor. */
+  { key: 'citizenshipCountry', label: 'Citizen of', section: 'Origins', step: 1, editor: 'select', searchable: true, ownerOnly: true, options: COUNTRY_OPTIONS },
 
   // ---- Education & Career (step 2) ----
   // educationLevel / fieldOfStudy / collegeUniversity are DERIVED from the
   // education rows, so they are shown read-only here and edited in the wizard.
   // Offering a pencil on them would let an inline edit be silently overwritten
   // the next time the education step is saved.
-  { key: 'educationLevel', label: 'Education', section: 'Education & Career', step: 2, editor: 'readonly', options: educationOptions },
-  { key: 'fieldOfStudy', label: 'Field of study', section: 'Education & Career', step: 2, editor: 'readonly', options: fieldOfStudyOptions },
-  { key: 'collegeUniversity', label: 'College', section: 'Education & Career', step: 2, editor: 'readonly' },
+  /* educationLevel / fieldOfStudy / collegeUniversity have NO rows here any
+     more: they are a flattening of the education table, and EducationTimeline
+     renders that table above these fields. Keeping both would print the top
+     qualification twice - once as a node, once as three rows. Their defs stay,
+     because the wizard and `labelFor` still need them. */
   // employerName mirrors the education fields: written through the wizard's
   // picker, which resolves it against the catalog, so no pencil here.
   { key: 'employerName', label: 'Employer', section: 'Education & Career', step: 2, editor: 'readonly' },
-  { key: 'workCountry', label: 'Works in', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: COUNTRY_OPTIONS },
-  { key: 'visaStatus', label: 'Residency status', section: 'Education & Career', step: 2, editor: 'readonly' },
   { key: 'settleAbroad', label: 'Settling abroad', section: 'Education & Career', step: 2, editor: 'chips', options: YES_NO_MAYBE_OPTIONS },
   { key: 'profession', label: 'Profession', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: professionOptions },
   { key: 'employedIn', label: 'Employed in', section: 'Education & Career', step: 2, editor: 'select', options: employedInOptions },
   { key: 'employedAs', label: 'Employed as', section: 'Education & Career', step: 2, editor: 'select', searchable: true, options: employedAsOptions },
+  /* profession and salaryAmount are HERO TAGS - see HERO_TAG_KEYS below. Their
+     defs stay so the owner still gets an inline editor in the hero, and
+     `fieldsBySection` filters them out of this panel so they cannot render
+     twice. workCountry and visaStatus went entirely: both are folded into the
+     residency tag. */
   { key: 'salaryAmount', label: 'Annual income', section: 'Education & Career', step: 2, editor: 'select', options: familyIncomeOptions },
 
   // ---- Family (step 1) ----
@@ -297,9 +324,41 @@ export function optionsForField(def: ProfileFieldDef, profile: PublicProfile): S
   return def.options ?? []
 }
 
-export function fieldsBySection(): { title: string; fields: ProfileFieldDef[] }[] {
+/**
+ * The fields promoted out of their section and onto the hero as tags.
+ *
+ * ONE list drives two things: which tags the hero renders, and which fields
+ * `fieldsBySection` withholds from the panels below. That is the point of it
+ * being here rather than inside the hero component - a field promoted to a tag
+ * cannot then also appear as a row, on either the public profile or the
+ * owner's, because both read the same constant.
+ */
+export const HERO_TAG_KEYS = [
+  'currentCity',
+  'profession',
+  'salaryAmount',
+  'mothertongue',
+  'community',
+] as const
+
+const HERO_TAG_KEY_SET: ReadonlySet<string> = new Set(HERO_TAG_KEYS)
+
+/** The defs behind the hero tags, in the order the tags are shown. */
+export const heroTagFields = (): ProfileFieldDef[] =>
+  HERO_TAG_KEYS.map((key) => PROFILE_FIELDS.find((f) => f.key === key)).filter(
+    (def): def is ProfileFieldDef => Boolean(def),
+  )
+
+export function fieldsBySection(
+  { owner = false }: { owner?: boolean } = {},
+): { title: string; fields: ProfileFieldDef[] }[] {
   return SECTIONS.map((title) => ({
     title,
-    fields: PROFILE_FIELDS.filter((f) => f.section === title),
+    fields: PROFILE_FIELDS.filter(
+      (f) =>
+        f.section === title &&
+        !HERO_TAG_KEY_SET.has(f.key) &&
+        (owner || !f.ownerOnly),
+    ),
   })).filter((s) => s.fields.length > 0)
 }

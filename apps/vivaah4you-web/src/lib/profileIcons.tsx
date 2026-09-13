@@ -165,7 +165,9 @@ export function iconFor(key: string): FieldIcon | null {
  */
 export const SECTION_ICONS: Record<string, FieldIcon | undefined> = {
   'Religion & Community': Landmark,
-  Location: MapPin,
+  // Was "Location". Where someone lives is a hero tag now; what is left here is
+  // where they were born and what passport they hold.
+  Origins: MapPin,
   'Education & Career': GraduationCap,
   Family: Users2,
   Lifestyle: Utensils,

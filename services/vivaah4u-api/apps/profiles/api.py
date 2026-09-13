@@ -5,11 +5,11 @@ from django.db import transaction
 from django.db.models import Case, Count, IntegerField, Max, Value, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from ninja import File, Router
+from ninja import File, Query, Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from . import cards, identity, interests, presence
+from . import cards, identity, interests, matching, presence
 from .auth import active_auth, optional_auth
 from .mapping import apply_payload, profile_to_api
 from .models import Profile, ProfileView
@@ -144,11 +144,22 @@ def match_queryset(profile: Profile, tab: str):
 
 
 @router.get("/matches", auth=active_auth)
-def matches(request, tab: str = "all", limit: int = MATCH_PAGE_SIZE, offset: int = 0):
-    """Suggested matches.
+def matches(
+    request,
+    tab: str = "all",
+    limit: int = MATCH_PAGE_SIZE,
+    offset: int = 0,
+    filters: matching.MatchFilterSchema = Query(...),
+):
+    """Suggested matches, narrowed by whatever the search bar is asking for.
 
-    Placeholder ranking: opposite gender, visible profiles, most complete first.
-    A real compatibility algorithm replaces the ordering here later.
+    Filtering happens HERE rather than in `eligible_matches`, which is shared
+    with /stats - see the note at the top of apps.profiles.matching. `total` is
+    the filtered count, which is what the results header should report; there is
+    deliberately no second unfiltered count, since nobody reads "12 of 340".
+
+    Every filter is optional, so a client that sends none gets exactly what this
+    endpoint returned before they existed.
     """
     profile = get_object_or_404(Profile, user=request.user)
     if tab not in MATCH_TABS:
@@ -157,6 +168,8 @@ def matches(request, tab: str = "all", limit: int = MATCH_PAGE_SIZE, offset: int
     limit = max(1, min(limit, 48))
     # profile_to_api reads profile.photos per row.
     qs = match_queryset(profile, tab).prefetch_related("photos")
+    qs = matching.apply_match_filters(qs, filters)
+    qs = matching.apply_sort(qs, filters.sort, tab)
     total = qs.count()
     rows = [
         profile_to_api(p, request, public=True, viewer=profile)
