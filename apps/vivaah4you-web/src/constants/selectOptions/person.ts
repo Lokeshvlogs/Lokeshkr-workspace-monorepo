@@ -25,6 +25,9 @@ import { SelectOption } from '@lokesh-workspace/ui';
 
   export const dietOptions: SelectOption[] = [
     { value: 'vegetarian', label: 'Vegetarian' },
+    // Next to vegetarian rather than at the end: it is a stricter form of it,
+    // and somebody scanning for "vegetarian" should meet it in the same breath.
+    { value: 'jain', label: 'Jain' },
     { value: 'non_vegetarian', label: 'Non-Vegetarian' },
     { value: 'eggetarian', label: 'Eggetarian' },
     { value: 'vegan', label: 'Vegan' },

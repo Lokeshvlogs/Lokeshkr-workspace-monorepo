@@ -877,6 +877,12 @@ button.chip-selected:hover {
   @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
 }
 
+/* Country / state / city, which only read as one answer when they sit on one
+   row. Three columns from `sm` up and stacked below it, like form-grid-2. */
+.form-grid-3 {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-3;
+}
+
 .field-label,
 .chip-group-label {
   @apply mb-2 block text-color-primary-text;

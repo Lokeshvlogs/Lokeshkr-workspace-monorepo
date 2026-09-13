@@ -451,6 +451,7 @@ function PickerField({
   className = "",
   selectedFirst,
   disabled,
+  emptyText,
 }: {
   label: string;
   icon?: React.ReactNode;
@@ -464,6 +465,8 @@ function PickerField({
   /** Pass false where the list is a numeric ladder - see SelectDropdown. */
   selectedFirst?: boolean;
   disabled?: boolean;
+  /** Shown when the list is empty, in place of the generic "No options found". */
+  emptyText?: string;
 }) {
   return (
     <SelectDropdown
@@ -479,6 +482,7 @@ function PickerField({
       className={className}
       selectedFirst={selectedFirst}
       disabled={disabled}
+      {...(emptyText ? { emptyText } : {})}
     />
   );
 }
@@ -1410,13 +1414,15 @@ export default function ProfileRegisterPage() {
                     <MapPin size={17} className="form-section-icon" aria-hidden="true" />
                     Currently living in
                   </p>
-                  <div className="form-grid-2 mt-3">
+                  <div className="form-grid-3 mt-3">
                     <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("currentCountry")} onBlur={touch("currentCountry")} value={form.currentCountry} onChange={(v) => setForm((p) => ({ ...p, currentCountry: v, currentState: "", currentCity: "" }))} searchable />
-                    {/* Skipped entirely where the country has no states listed:
-                        an empty dropdown that must be answered is a dead end. */}
-                    {hasStates(form.currentCountry) && (
-                      <PickerField label="State" icon={<Map />} options={statesForCountry(form.currentCountry)} errorValue={err("currentState")} onBlur={touch("currentState")} value={form.currentState} onChange={(v) => setForm((p) => ({ ...p, currentState: v, currentCity: "" }))} searchable />
-                    )}
+                    {/* Always rendered, never conditional. It used to appear
+                        only once a country with states was chosen, which pushed
+                        City onto a second row the moment somebody picked one -
+                        the row re-laid itself out underneath them. Disabled
+                        until a country is chosen, because until then there is
+                        genuinely nothing to pick. */}
+                    <PickerField label="State" icon={<Map />} options={statesForCountry(form.currentCountry)} errorValue={err("currentState")} onBlur={touch("currentState")} value={form.currentState} onChange={(v) => setForm((p) => ({ ...p, currentState: v, currentCity: "" }))} searchable disabled={!form.currentCountry} emptyText="No states listed for this country" />
                     <PickerField label="City" icon={<Building2 />} options={citiesForState(form.currentCountry, form.currentState)} errorValue={err("currentCity")} onBlur={touch("currentCity")} value={form.currentCity} onChange={(v) => setField("currentCity", v)} searchable />
                   </div>
                 </div>
@@ -1426,11 +1432,15 @@ export default function ProfileRegisterPage() {
                     <Baby size={17} className="form-section-icon" aria-hidden="true" />
                     Place of birth
                   </p>
-                  <div className="form-grid-2 mt-3">
+                  <div className="form-grid-3 mt-3">
                     <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("placeOfBirthCountry")} onBlur={touch("placeOfBirthCountry")} value={form.placeOfBirthCountry} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthCountry: v, placeOfBirthState: "", placeOfBirthCity: "" }))} searchable />
-                    {hasStates(form.placeOfBirthCountry) && (
-                      <PickerField label="State" icon={<Map />} options={statesForCountry(form.placeOfBirthCountry)} errorValue={err("placeOfBirthState")} onBlur={touch("placeOfBirthState")} value={form.placeOfBirthState} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthState: v, placeOfBirthCity: "" }))} searchable />
-                    )}
+                    {/* Always rendered, never conditional. It used to appear
+                        only once a country with states was chosen, which pushed
+                        City onto a second row the moment somebody picked one -
+                        the row re-laid itself out underneath them. Disabled
+                        until a country is chosen, because until then there is
+                        genuinely nothing to pick. */}
+                    <PickerField label="State" icon={<Map />} options={statesForCountry(form.placeOfBirthCountry)} errorValue={err("placeOfBirthState")} onBlur={touch("placeOfBirthState")} value={form.placeOfBirthState} onChange={(v) => setForm((p) => ({ ...p, placeOfBirthState: v, placeOfBirthCity: "" }))} searchable disabled={!form.placeOfBirthCountry} emptyText="No states listed for this country" />
                     <PickerField label="City" icon={<Building2 />} options={citiesForState(form.placeOfBirthCountry, form.placeOfBirthState)} errorValue={err("placeOfBirthCity")} onBlur={touch("placeOfBirthCity")} value={form.placeOfBirthCity} onChange={(v) => setField("placeOfBirthCity", v)} searchable />
                   </div>
                 </div>
@@ -1565,11 +1575,15 @@ export default function ProfileRegisterPage() {
                     <MapPin size={17} className="form-section-icon" aria-hidden="true" />
                     Where your family lives
                   </p>
-                  <div className="form-grid-2 mt-3">
+                  <div className="form-grid-3 mt-3">
                     <PickerField label="Country" icon={<Globe2 />} options={COUNTRY_OPTIONS} errorValue={err("familyLivingInCountry")} onBlur={touch("familyLivingInCountry")} value={form.familyLivingInCountry} onChange={(v) => setForm((p) => ({ ...p, familyLivingInCountry: v, familyLivingInState: "", familyLivingInCity: "" }))} searchable />
-                    {hasStates(form.familyLivingInCountry) && (
-                      <PickerField label="State" icon={<Map />} options={statesForCountry(form.familyLivingInCountry)} errorValue={err("familyLivingInState")} onBlur={touch("familyLivingInState")} value={form.familyLivingInState} onChange={(v) => setForm((p) => ({ ...p, familyLivingInState: v, familyLivingInCity: "" }))} searchable />
-                    )}
+                    {/* Always rendered, never conditional. It used to appear
+                        only once a country with states was chosen, which pushed
+                        City onto a second row the moment somebody picked one -
+                        the row re-laid itself out underneath them. Disabled
+                        until a country is chosen, because until then there is
+                        genuinely nothing to pick. */}
+                    <PickerField label="State" icon={<Map />} options={statesForCountry(form.familyLivingInCountry)} errorValue={err("familyLivingInState")} onBlur={touch("familyLivingInState")} value={form.familyLivingInState} onChange={(v) => setForm((p) => ({ ...p, familyLivingInState: v, familyLivingInCity: "" }))} searchable disabled={!form.familyLivingInCountry} emptyText="No states listed for this country" />
                     <PickerField label="City" icon={<Building2 />} options={citiesForState(form.familyLivingInCountry, form.familyLivingInState)} errorValue={err("familyLivingInCity")} onBlur={touch("familyLivingInCity")} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
                   </div>
                   <div className="mt-4">
