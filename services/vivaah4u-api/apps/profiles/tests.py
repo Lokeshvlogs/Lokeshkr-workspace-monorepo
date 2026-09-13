@@ -10,13 +10,21 @@ Run with:  service.bat vivaah4u-api test
 """
 
 import json
+import shutil
+import tempfile
+from io import StringIO
+from pathlib import Path
 from types import SimpleNamespace
 from datetime import timedelta
 
+from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db.utils import IntegrityError
 from ninja.errors import HttpError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.catalog.models import Employer, Institution
@@ -41,6 +49,7 @@ from apps.profiles.models import (
     Interest,
     Profile,
     ProfileEducation,
+    ProfilePhoto,
     ProfileView,
     interest_pair_key,
 )
@@ -2049,9 +2058,22 @@ class FamilyApiTests(TestCase):
 
 
 class FamilyPhotoTests(TestCase):
-    """The upload path, end to end through Django's own multipart parsing."""
+    """The upload path, end to end through Django's own multipart parsing.
+
+    MEDIA_ROOT is redirected at a temporary directory, and that is not tidiness:
+    without it these tests drive the real upload endpoint against the real
+    `media/`, so every run of the suite left another copy of its fixture image
+    on disk. That is where the pile of `arun_1psNDwn.png`, `arun_57BIW4L.png`
+    … in `media/family_photos/` came from - test output, not member data.
+    """
 
     def setUp(self):
+        self.media_root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.media_root, ignore_errors=True)
+        overridden = override_settings(MEDIA_ROOT=self.media_root)
+        overridden.enable()
+        self.addCleanup(overridden.disable)
+
         self.user = User.objects.create_user(username="asha-ph", password="x")
         self.profile = Profile.objects.get(user=self.user)
         self.profile.gender = "F"
@@ -2104,3 +2126,604 @@ class FamilyPhotoTests(TestCase):
         with self.assertRaises(HttpError) as caught:
             upload_member_photo(request, theirs.pk, file=upload)
         self.assertEqual(caught.exception.status_code, 404)
+
+
+# --- The staff console -------------------------------------------------------
+#
+# What is pinned here is not "the admin renders". It is the handful of places
+# where the obvious admin implementation is silently wrong: an action that goes
+# through save() and rewrites derived columns as a side effect, a purge that
+# deletes on its first invocation, and a media sweep that cannot tell a live
+# file from an orphan.
+
+
+def _run_action(admin_instance, name, queryset):
+    """Invoke an admin action without a request/messages stack.
+
+    `message_user` is the only thing the actions need from the framework, and
+    stubbing it keeps these tests about behaviour rather than about plumbing.
+    """
+    sent = []
+    admin_instance.message_user = lambda request, message, *args, **kwargs: sent.append(message)
+    getattr(admin_instance, name)(SimpleNamespace(user=None), queryset)
+    return sent
+
+
+class AdminActionTests(TestCase):
+    def setUp(self):
+        from apps.profiles.admin import ProfileAdmin
+
+        self.admin = ProfileAdmin(Profile, AdminSite())
+        self.profile = _member("asha-admin", "F")
+
+    def test_unlock_identity_clears_the_ledger(self):
+        self.profile.identity_edits = {"name": {"count": 3, "opened_at": "2026-01-01T00:00:00Z"}}
+        self.profile.save()
+
+        _run_action(self.admin, "unlock_identity_fields", Profile.objects.filter(pk=self.profile.pk))
+
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.identity_edits, {})
+
+    def test_unlock_identity_does_not_touch_derived_columns(self):
+        # The whole reason the action uses .update() instead of save(). A stale
+        # percentage is written directly, so a recompute would visibly correct
+        # it - and must not, because unlocking a name is not a recompute.
+        Profile.objects.filter(pk=self.profile.pk).update(profile_completeness=3)
+        before = Profile.objects.filter(pk=self.profile.pk).values("updated_at").get()["updated_at"]
+
+        _run_action(self.admin, "unlock_identity_fields", Profile.objects.filter(pk=self.profile.pk))
+
+        row = (
+            Profile.objects.filter(pk=self.profile.pk)
+            .values("profile_completeness", "updated_at")
+            .get()
+        )
+        self.assertEqual(row["profile_completeness"], 3)
+        self.assertEqual(row["updated_at"], before)
+
+    def test_disable_and_enable_flip_is_active(self):
+        queryset = Profile.objects.filter(pk=self.profile.pk)
+
+        _run_action(self.admin, "disable_accounts", queryset)
+        self.profile.user.refresh_from_db()
+        self.assertFalse(self.profile.user.is_active)
+
+        _run_action(self.admin, "enable_accounts", queryset)
+        self.profile.user.refresh_from_db()
+        self.assertTrue(self.profile.user.is_active)
+
+    def test_disable_says_existing_tokens_survive(self):
+        # is_active is read at token issue and nowhere else, so "disabled" does
+        # not mean "logged out". If that ever changes, this message should too.
+        sent = _run_action(
+            self.admin, "disable_accounts", Profile.objects.filter(pk=self.profile.pk)
+        )
+        self.assertIn("already issued", " ".join(sent))
+
+    def test_mark_phone_verified_lifts_the_verification_level(self):
+        self.assertFalse(self.profile.phone_verified)
+        before = self.profile.verification_level
+
+        _run_action(self.admin, "mark_phone_verified", Profile.objects.filter(pk=self.profile.pk))
+
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.phone_verified)
+        self.assertGreaterEqual(self.profile.verification_level, before)
+
+    def test_clear_otp_cooldown_deletes_only_that_numbers_rows(self):
+        from apps.auth_api.models import OtpCode
+
+        Profile.objects.filter(pk=self.profile.pk).update(phone="9876500099")
+        self.profile.refresh_from_db()
+        OtpCode.objects.create(
+            phone="9876500099",
+            purpose=OtpCode.PURPOSE_LOGIN,
+            code_hash="x",
+            expires_at=timezone.now() + timedelta(minutes=5),
+        )
+        other = OtpCode.objects.create(
+            phone="9876500100",
+            purpose=OtpCode.PURPOSE_LOGIN,
+            code_hash="x",
+            expires_at=timezone.now() + timedelta(minutes=5),
+        )
+
+        _run_action(self.admin, "clear_otp_cooldown", Profile.objects.filter(pk=self.profile.pk))
+
+        self.assertFalse(OtpCode.objects.filter(phone="9876500099").exists())
+        self.assertTrue(OtpCode.objects.filter(pk=other.pk).exists())
+
+    def test_recompute_mints_a_missing_profile_id(self):
+        # profile_id is editable=False, so an action is the only way to repair
+        # one that was left blank when gender or age was still unknown.
+        Profile.objects.filter(pk=self.profile.pk).update(profile_id="", age=28)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.profile_id, "")
+
+        _run_action(self.admin, "recompute_and_repair", Profile.objects.filter(pk=self.profile.pk))
+
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.profile_id.startswith("V4UF28"))
+
+
+class AdminSurfaceTests(TestCase):
+    def test_derived_columns_are_read_only(self):
+        from apps.profiles.admin import ProfileAdmin
+
+        readonly = ProfileAdmin(Profile, AdminSite()).readonly_fields
+        for field in Profile.DERIVED_FIELDS:
+            self.assertIn(field, readonly, field)
+
+    def test_otp_admin_never_exposes_the_hash(self):
+        from apps.auth_api.admin import OtpCodeAdmin
+        from apps.auth_api.models import OtpCode
+
+        admin_instance = OtpCodeAdmin(OtpCode, AdminSite())
+        self.assertNotIn("code_hash", admin_instance.fields)
+        self.assertNotIn("code_hash", admin_instance.list_display)
+
+    def test_relationship_history_is_not_editable(self):
+        from apps.profiles.admin import BlockAdmin, InterestAdmin, ProfileViewAdmin
+
+        for admin_class, model in (
+            (InterestAdmin, Interest),
+            (BlockAdmin, Block),
+            (ProfileViewAdmin, ProfileView),
+        ):
+            instance = admin_class(model, AdminSite())
+            request = SimpleNamespace(user=None)
+            self.assertFalse(instance.has_change_permission(request), model.__name__)
+            self.assertFalse(instance.has_add_permission(request), model.__name__)
+
+
+class PurgeMembersTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(username="ops", password="x", is_staff=True)
+        self.member = _member("asha-purge", "F")
+        # Held separately: after the purge the FK cannot be walked to find it.
+        self.member_user_pk = self.member.user.pk
+
+    def test_it_refuses_when_no_staff_account_exists(self):
+        # Without this guard "everyone except staff" is "everyone", and the
+        # operator deletes their own account.
+        self.staff.delete()
+        with self.assertRaises(CommandError):
+            call_command("purge_members", "--yes", stdout=StringIO())
+        self.assertTrue(User.objects.filter(pk=self.member_user_pk).exists())
+
+    def test_a_dry_run_writes_nothing(self):
+        before = User.objects.count()
+        out = StringIO()
+        call_command("purge_members", stdout=out)
+
+        self.assertEqual(User.objects.count(), before)
+        self.assertIn("re-run with --yes", out.getvalue())
+
+    def test_the_dry_run_counts_cascaded_rows_not_just_accounts(self):
+        # Django puts a relation that cascades to nothing further and fires no
+        # signals into Collector.fast_deletes as a bare queryset, never into
+        # .data - which is where most of a Profile's rows land. Reading only
+        # .data reported "2 tables" for a purge that clears nine, which is
+        # exactly the reassurance an operator must not be given.
+        ProfilePhoto.objects.create(profile=self.member, image="profile_photos/x.png")
+        ProfileEducation.objects.create(profile=self.member, level="bachelors")
+
+        out = StringIO()
+        call_command("purge_members", stdout=out)
+        report = out.getvalue()
+
+        self.assertIn("profiles.ProfilePhoto", report)
+        self.assertIn("profiles.ProfileEducation", report)
+
+    def test_yes_deletes_members_and_keeps_staff(self):
+        call_command("purge_members", "--yes", "--keep-media", stdout=StringIO())
+
+        self.assertTrue(User.objects.filter(pk=self.staff.pk).exists())
+        self.assertFalse(User.objects.filter(pk=self.member_user_pk).exists())
+        self.assertFalse(Profile.objects.filter(pk=self.member.pk).exists())
+
+    def test_keep_email_spares_one_more_account(self):
+        Profile.objects.filter(pk=self.member.pk).update(email="keep@example.com")
+
+        call_command(
+            "purge_members", "--yes", "--keep-media",
+            "--keep-email", "KEEP@example.com",
+            stdout=StringIO(),
+        )
+
+        self.assertTrue(User.objects.filter(pk=self.member_user_pk).exists())
+
+    def test_it_removes_conversations_left_with_no_participants(self):
+        from apps.messaging.models import Conversation, Participant
+
+        conversation = Conversation.objects.create(participants_key=str(self.member.pk))
+        Participant.objects.create(conversation=conversation, participant=self.member)
+
+        call_command("purge_members", "--yes", "--keep-media", stdout=StringIO())
+
+        self.assertFalse(Conversation.objects.filter(pk=conversation.pk).exists())
+
+
+class SweepMediaTests(TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
+        self.member_photos = self.root / "members" / "V4UF28000042" / "photos"
+        self.member_photos.mkdir(parents=True)
+        # Kept alongside the current layout: nothing writes here any more, but
+        # the orphans already sitting in it must stay reclaimable.
+        (self.root / "profile_photos").mkdir(parents=True)
+
+    def test_it_keeps_a_referenced_file_and_removes_an_orphan(self):
+        profile = _member("asha-media", "F")
+        live = self.member_photos / "live.png"
+        live.write_bytes(b"live")
+        orphan = self.member_photos / "orphan.png"
+        orphan.write_bytes(b"orphan")
+
+        with override_settings(MEDIA_ROOT=self.root):
+            ProfilePhoto.objects.create(
+                profile=profile, image="members/V4UF28000042/photos/live.png"
+            )
+            call_command("sweep_media", "--yes", stdout=StringIO())
+
+        self.assertTrue(live.exists())
+        self.assertFalse(orphan.exists())
+
+    def test_it_still_sweeps_the_legacy_directories(self):
+        orphan = self.root / "profile_photos" / "left-behind.png"
+        orphan.write_bytes(b"orphan")
+
+        with override_settings(MEDIA_ROOT=self.root):
+            call_command("sweep_media", "--yes", stdout=StringIO())
+
+        self.assertFalse(orphan.exists())
+
+    def test_it_removes_a_member_folder_once_it_is_empty(self):
+        orphan = self.member_photos / "orphan.png"
+        orphan.write_bytes(b"orphan")
+
+        with override_settings(MEDIA_ROOT=self.root):
+            call_command("sweep_media", "--yes", stdout=StringIO())
+
+        # The folder and its member directory go; the layout root stays, because
+        # an empty members/ is the correct state for a fresh install.
+        self.assertFalse(self.member_photos.exists())
+        self.assertFalse((self.root / "members" / "V4UF28000042").exists())
+        self.assertTrue((self.root / "members").exists())
+
+    def test_it_keeps_a_folder_that_still_holds_a_live_file(self):
+        profile = _member("asha-media-keep", "F")
+        live = self.member_photos / "live.png"
+        live.write_bytes(b"live")
+        orphan = self.member_photos / "orphan.png"
+        orphan.write_bytes(b"orphan")
+
+        with override_settings(MEDIA_ROOT=self.root):
+            ProfilePhoto.objects.create(
+                profile=profile, image="members/V4UF28000042/photos/live.png"
+            )
+            call_command("sweep_media", "--yes", stdout=StringIO())
+
+        self.assertTrue(self.member_photos.exists())
+
+    def test_a_dry_run_deletes_nothing(self):
+        orphan = self.member_photos / "orphan.png"
+        orphan.write_bytes(b"orphan")
+
+        with override_settings(MEDIA_ROOT=self.root):
+            out = StringIO()
+            call_command("sweep_media", stdout=out)
+
+        self.assertTrue(orphan.exists())
+        self.assertIn("--yes", out.getvalue())
+
+
+# --- One folder per member ---------------------------------------------------
+#
+# Three things are pinned here, and each of them is a way the layout could go
+# wrong silently rather than loudly: a client filename reaching a public URL,
+# the foreign-key integer being mistaken for the public member id, and
+# sync_gallery deleting photos it merely failed to recognise.
+
+def _png_bytes():
+    """The smallest valid PNG - enough for ImageField to accept it."""
+    import base64
+    return base64.b64decode(
+        b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+
+
+class MediaRootTestCase(TestCase):
+    """Redirects MEDIA_ROOT at a temp directory for the whole test."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
+        overridden = override_settings(MEDIA_ROOT=self.root)
+        overridden.enable()
+        self.addCleanup(overridden.disable)
+
+
+class MemberMediaPathTests(MediaRootTestCase):
+    def setUp(self):
+        super().setUp()
+        self.profile = _member("asha-media-path", "F")
+        Profile.objects.filter(pk=self.profile.pk).update(profile_id="V4UF28000042")
+        self.profile.refresh_from_db()
+
+    def _upload(self, name="arun.png"):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return SimpleUploadedFile(name, _png_bytes(), content_type="image/png")
+
+    def test_a_display_picture_lands_under_the_public_id(self):
+        self.profile.display_picture.save("arun.png", ContentFile(_png_bytes()), save=True)
+        name = self.profile.display_picture.name
+
+        self.assertTrue(name.startswith("members/V4UF28000042/dp/"), name)
+        # The enumeration guarantee: /media/ is unauthenticated and the member id
+        # is public, so the filename is the only thing that is not guessable.
+        self.assertNotIn("arun", name)
+
+    def test_gallery_and_family_photos_get_their_own_subfolders(self):
+        photo = ProfilePhoto(profile=self.profile, position=0)
+        photo.image.save("g.png", ContentFile(_png_bytes()), save=True)
+        member = FamilyMember.objects.create(profile=self.profile, relation="brother")
+        member.photo.save("f.png", ContentFile(_png_bytes()), save=True)
+
+        self.assertTrue(photo.image.name.startswith("members/V4UF28000042/photos/"))
+        self.assertTrue(member.photo.name.startswith("members/V4UF28000042/family/"))
+
+    def test_the_same_filename_twice_does_not_collide(self):
+        first = ProfilePhoto(profile=self.profile, position=0)
+        first.image.save("same.png", ContentFile(_png_bytes()), save=True)
+        second = ProfilePhoto(profile=self.profile, position=1)
+        second.image.save("same.png", ContentFile(_png_bytes()), save=True)
+
+        self.assertNotEqual(first.image.name, second.image.name)
+        # Random names do not collide, so Django's _XXXXXXX suffix never fires.
+        self.assertNotIn("_", Path(first.image.name).stem)
+        self.assertNotIn("_", Path(second.image.name).stem)
+
+    def test_a_profile_with_no_public_id_falls_back_to_pending(self):
+        user = User.objects.create_user(username="no-id", password="x")
+        blank = Profile.objects.get(user=user)
+        self.assertFalse(blank.profile_id)
+
+        blank.display_picture.save("x.png", ContentFile(_png_bytes()), save=True)
+
+        self.assertTrue(
+            blank.display_picture.name.startswith(f"members/pending-{blank.pk}/dp/"),
+            blank.display_picture.name,
+        )
+
+    def test_the_fk_integer_is_never_mistaken_for_the_public_id(self):
+        # On ProfilePhoto, `profile_id` is the FK integer. A path built from it
+        # would put files in members/<pk>/ - a folder that looks like a member
+        # id and is not one. This is the regression that guard exists for.
+        user = User.objects.create_user(username="no-id-2", password="x")
+        blank = Profile.objects.get(user=user)
+
+        photo = ProfilePhoto(profile=blank, position=0)
+        photo.image.save("x.png", ContentFile(_png_bytes()), save=True)
+
+        self.assertIn(f"members/pending-{blank.pk}/photos/", photo.image.name)
+        self.assertNotIn(f"members/{blank.pk}/", photo.image.name)
+
+    def test_a_hostile_filename_cannot_escape_the_folder(self):
+        self.profile.display_picture.save(
+            "../../evil.php", ContentFile(_png_bytes()), save=True
+        )
+        name = self.profile.display_picture.name
+
+        self.assertTrue(name.startswith("members/V4UF28000042/dp/"), name)
+        self.assertNotIn("..", name)
+        self.assertTrue(name.endswith(".jpg"), name)
+
+    def test_a_generated_path_fits_the_column(self):
+        from apps.profiles.media_paths import dp_path
+
+        longest = dp_path(self.profile, "x" * 300 + ".jpeg")
+        self.assertLessEqual(
+            len(longest), Profile._meta.get_field("display_picture").max_length
+        )
+
+
+class GallerySyncTests(MediaRootTestCase):
+    """`sync_gallery` deletes whatever it cannot match, so matching is safety."""
+
+    def setUp(self):
+        super().setUp()
+        self.profile = _member("asha-gallery", "F")
+
+    def _photo(self, position=0):
+        photo = ProfilePhoto(profile=self.profile, position=position)
+        photo.image.save("p.png", ContentFile(_png_bytes()), save=True)
+        return photo
+
+    def test_a_stale_url_from_before_a_move_still_matches_by_filename(self):
+        from apps.profiles.mapping import sync_gallery
+
+        photo = self._photo()
+        basename = Path(photo.image.name).name
+        # The URL a client captured before the files moved.
+        stale = f"http://127.0.0.1:8001/media/profile_photos/{basename}"
+
+        sync_gallery(self.profile, [stale])
+
+        self.assertTrue(ProfilePhoto.objects.filter(pk=photo.pk).exists())
+
+    def test_an_unrecognised_url_does_not_wipe_the_gallery(self):
+        from apps.profiles.mapping import sync_gallery
+
+        first, second = self._photo(0), self._photo(1)
+
+        sync_gallery(self.profile, ["https://example.com/nothing-we-know.jpg"])
+
+        self.assertTrue(ProfilePhoto.objects.filter(pk=first.pk).exists())
+        self.assertTrue(ProfilePhoto.objects.filter(pk=second.pk).exists())
+
+    def test_an_empty_list_still_clears_the_gallery(self):
+        from apps.profiles.mapping import sync_gallery
+
+        self._photo()
+        # The guard above must not swallow a genuine "remove everything", which
+        # is what an empty list means.
+        sync_gallery(self.profile, [])
+
+        self.assertEqual(self.profile.photos.count(), 0)
+
+    def test_another_members_photo_cannot_be_grafted_in(self):
+        from apps.profiles.mapping import sync_gallery
+
+        theirs_owner = _member("ravi-gallery", "M")
+        theirs = ProfilePhoto(profile=theirs_owner, position=0)
+        theirs.image.save("p.png", ContentFile(_png_bytes()), save=True)
+
+        mine = self._photo()
+        sync_gallery(self.profile, [f"/media/{theirs.image.name}"])
+
+        # Their photo is not stolen, and mine is not silently dropped either -
+        # the entry matched nothing, so the no-match guard left things alone.
+        self.assertEqual(theirs.profile_id, theirs_owner.pk)
+        self.assertTrue(ProfilePhoto.objects.filter(pk=theirs.pk).exists())
+        self.assertEqual(ProfilePhoto.objects.get(pk=theirs.pk).profile_id, theirs_owner.pk)
+        self.assertTrue(ProfilePhoto.objects.filter(pk=mine.pk).exists())
+
+
+class ReorganiseMediaTests(MediaRootTestCase):
+    def setUp(self):
+        super().setUp()
+        self.profile = _member("asha-reorg", "F")
+        Profile.objects.filter(pk=self.profile.pk).update(profile_id="V4UF28000042")
+        self.profile.refresh_from_db()
+
+    def _legacy(self, relative, data=None):
+        """Put a file on disk and point a row at it, old-layout style."""
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data or _png_bytes())
+        return path
+
+    def _legacy_dp(self, basename="0123456789abcdef0123456789abcdef.jpg"):
+        relative = f"profile_pics/{basename}"
+        path = self._legacy(relative)
+        Profile.objects.filter(pk=self.profile.pk).update(display_picture=relative)
+        return relative, path
+
+    def test_a_dry_run_moves_nothing(self):
+        relative, path = self._legacy_dp()
+        out = StringIO()
+
+        call_command("reorganise_media", stdout=out)
+
+        self.assertTrue(path.exists())
+        self.assertEqual(
+            Profile.objects.values_list("display_picture", flat=True).get(pk=self.profile.pk),
+            relative,
+        )
+        self.assertIn("--yes", out.getvalue())
+
+    def test_it_moves_the_file_and_rewrites_the_row_together(self):
+        relative, path = self._legacy_dp()
+
+        call_command("reorganise_media", "--yes", stdout=StringIO())
+
+        stored = Profile.objects.values_list("display_picture", flat=True).get(
+            pk=self.profile.pk
+        )
+        self.assertTrue(stored.startswith("members/V4UF28000042/dp/"), stored)
+        self.assertTrue((self.root / stored).exists())
+        self.assertFalse(path.exists())
+
+    def test_it_preserves_a_minted_basename(self):
+        # What makes a pre-move URL still matchable in sync_gallery.
+        basename = "0123456789abcdef0123456789abcdef.jpg"
+        self._legacy_dp(basename)
+
+        call_command("reorganise_media", "--yes", stdout=StringIO())
+
+        stored = Profile.objects.values_list("display_picture", flat=True).get(
+            pk=self.profile.pk
+        )
+        self.assertEqual(Path(stored).name, basename)
+
+    def test_it_replaces_a_client_supplied_basename(self):
+        # The `Kavish.jpeg` case: a relative's name has no business in a URL.
+        self._legacy_dp("Kavish.jpeg")
+
+        call_command("reorganise_media", "--yes", stdout=StringIO())
+
+        stored = Profile.objects.values_list("display_picture", flat=True).get(
+            pk=self.profile.pk
+        )
+        self.assertNotIn("Kavish", stored)
+        self.assertTrue((self.root / stored).exists())
+
+    def test_a_second_run_is_a_no_op(self):
+        self._legacy_dp()
+        call_command("reorganise_media", "--yes", stdout=StringIO())
+        after_first = Profile.objects.values_list("display_picture", flat=True).get(
+            pk=self.profile.pk
+        )
+
+        out = StringIO()
+        call_command("reorganise_media", "--yes", stdout=out)
+
+        self.assertEqual(
+            Profile.objects.values_list("display_picture", flat=True).get(pk=self.profile.pk),
+            after_first,
+        )
+        self.assertIn("Moved 0 file(s)", out.getvalue())
+
+    def test_a_row_pointing_at_nothing_is_reported_and_left_alone(self):
+        Profile.objects.filter(pk=self.profile.pk).update(
+            display_picture="profile_pics/never-existed.jpg"
+        )
+        out = StringIO()
+
+        call_command("reorganise_media", "--yes", stdout=out)
+
+        self.assertEqual(
+            Profile.objects.values_list("display_picture", flat=True).get(pk=self.profile.pk),
+            "profile_pics/never-existed.jpg",
+        )
+        self.assertIn("not on disk", out.getvalue())
+
+    def test_it_rehomes_a_file_once_the_public_id_is_minted(self):
+        # Files written before an id existed sit under pending-<pk>; re-running
+        # is what moves them, which is why the fallback is not a permanent leak.
+        basename = "0123456789abcdef0123456789abcdef.jpg"
+        Profile.objects.filter(pk=self.profile.pk).update(profile_id=None)
+        self.profile.refresh_from_db()
+        relative = f"members/pending-{self.profile.pk}/dp/{basename}"
+        self._legacy(relative)
+        Profile.objects.filter(pk=self.profile.pk).update(display_picture=relative)
+
+        Profile.objects.filter(pk=self.profile.pk).update(profile_id="V4UF28000042")
+        call_command("reorganise_media", "--yes", stdout=StringIO())
+
+        stored = Profile.objects.values_list("display_picture", flat=True).get(
+            pk=self.profile.pk
+        )
+        self.assertEqual(stored, f"members/V4UF28000042/dp/{basename}")
+        self.assertTrue((self.root / stored).exists())
+
+    def test_it_moves_gallery_and_family_photos_too(self):
+        photo = ProfilePhoto.objects.create(
+            profile=self.profile, image="profile_photos/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png"
+        )
+        self._legacy(photo.image.name)
+        member = FamilyMember.objects.create(
+            profile=self.profile, relation="brother",
+            photo="family_photos/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png",
+        )
+        self._legacy(member.photo.name)
+
+        call_command("reorganise_media", "--yes", stdout=StringIO())
+
+        photo.refresh_from_db()
+        member.refresh_from_db()
+        self.assertTrue(photo.image.name.startswith("members/V4UF28000042/photos/"))
+        self.assertTrue(member.photo.name.startswith("members/V4UF28000042/family/"))

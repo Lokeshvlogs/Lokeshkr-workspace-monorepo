@@ -408,6 +408,8 @@ def upload_profile_photo(request, file: UploadedFile = File(...)):
     if file.size > max_size:
         raise HttpError(400, "Image size must be <= 5MB")
 
+    # The stored name is minted by `media_paths.dp_path`, not taken from the
+    # client - see that module. `file.name` only supplies the extension.
     profile.display_picture.save(file.name, file, save=True)
 
     try:

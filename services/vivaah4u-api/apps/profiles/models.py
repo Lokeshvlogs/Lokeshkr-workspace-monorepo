@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 
 from . import education
+from .media_paths import dp_path, family_path, gallery_path
 from .constants import PROFILE_COMPLETE_THRESHOLD
 from .verification import VerificationLevel, compute_level
 
@@ -361,7 +362,7 @@ class Profile(models.Model):
     partner_drinking = models.JSONField(default=list, blank=True)
 
     # Display Picture (DP)
-    display_picture = models.ImageField(upload_to="profile_pics/", null=True, blank=True)
+    display_picture = models.ImageField(upload_to=dp_path, null=True, blank=True)
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -658,7 +659,7 @@ class ProfilePhoto(models.Model):
     MAX_PER_PROFILE = 6
 
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="photos")
-    image = models.ImageField(upload_to="profile_photos/")
+    image = models.ImageField(upload_to=gallery_path)
     position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -857,7 +858,7 @@ class FamilyMember(models.Model):
     #: Free text rather than a date: "mid 50s" is what people actually know
     #: about an in-law, and an exact birthday is more than this needs.
     about = models.CharField(max_length=140, blank=True)
-    photo = models.ImageField(upload_to="family_photos/", null=True, blank=True)
+    photo = models.ImageField(upload_to=family_path, null=True, blank=True)
     is_married = models.BooleanField(default=False)
 
     position = models.PositiveIntegerField(default=0)
@@ -872,4 +873,4 @@ class FamilyMember(models.Model):
         return self.GENERATION.get(self.relation, 0)
 
     def __str__(self):
-        return f"{self.get_relation_display()} of {self.profile_id}"
+        return f"{self.get_relation_display()} of {self.profile.profile_id or self.profile_id}"

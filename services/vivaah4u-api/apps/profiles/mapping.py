@@ -9,14 +9,15 @@ from __future__ import annotations
 
 import base64
 import binascii
-import uuid
 from datetime import datetime
+from pathlib import PurePosixPath
 from urllib.parse import urlparse
 
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
 from . import education, identity, managed_by as managed_by_rules, presence
+from .media_paths import ALLOWED_EXTENSIONS, uuid_name
 from .constants import (
     MAX_PICK_SUBTITLE,
     MAX_PICK_TITLE,
@@ -268,14 +269,14 @@ def decode_data_url(data_url: str):
     try:
         header, encoded = data_url.split(",", 1)
         extension = header.split("/", 1)[1].split(";", 1)[0].lower()
-        if extension not in {"jpeg", "jpg", "png", "webp", "gif"}:
+        if extension not in ALLOWED_EXTENSIONS:
             return None
         raw = base64.b64decode(encoded, validate=True)
     except (ValueError, IndexError, binascii.Error):
         return None
     if len(raw) > 5 * 1024 * 1024:
         return None
-    return ContentFile(raw, name=f"{uuid.uuid4().hex}.{extension}")
+    return ContentFile(raw, name=uuid_name(extension))
 
 
 def sync_gallery(profile, entries) -> None:
@@ -294,6 +295,14 @@ def sync_gallery(profile, entries) -> None:
 
     existing = list(profile.photos.all())
     by_url = {p.image.url: p for p in existing if p.image}
+    # Matched on as well as the full URL, because a photo that moved on disk is
+    # still the same photo. Every entry the client fails to match is DELETED at
+    # the end of this function, so a URL that went stale - a tab left open
+    # across the move to per-member folders, a saved wizard draft, one day a CDN
+    # or a new domain - silently wipes the member's gallery. Basenames are
+    # random and preserved by any relocation, which makes them the stable half
+    # of the URL to compare.
+    by_name = {PurePosixPath(p.image.name).name: p for p in existing if p.image}
     keep = []
 
     for position, entry in enumerate(entries[: ProfilePhoto.MAX_PER_PROFILE]):
@@ -309,11 +318,25 @@ def sync_gallery(profile, entries) -> None:
 
         # Not a data URL - an already-stored photo coming back unchanged.
         match = next((p for url, p in by_url.items() if entry.endswith(url)), None)
+        if match is None:
+            match = by_name.get(PurePosixPath(urlparse(entry).path).name)
         if match is not None:
             if match.position != position:
                 match.position = position
                 match.save(update_fields=["position"])
             keep.append(match.pk)
+
+    if existing and entries and not keep:
+        # Every entry was a URL we could not place. That is a client whose URLs
+        # went stale, not somebody asking to delete their gallery - a real
+        # "remove everything" arrives as an empty list, which never reaches this
+        # guard and still falls through to the delete below.
+        #
+        # The basename fallback above already covers the move to per-member
+        # folders. This is the backstop for the next URL change - a CDN, a new
+        # domain, signed URLs - so that the failure is a save that does nothing
+        # rather than a member's photos silently disappearing.
+        return
 
     profile.photos.exclude(pk__in=keep).delete()
 
