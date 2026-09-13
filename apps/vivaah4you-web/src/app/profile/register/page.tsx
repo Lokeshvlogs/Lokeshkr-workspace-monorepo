@@ -1088,12 +1088,23 @@ export default function ProfileRegisterPage() {
   const handleJumpToStep = (target: number) => {
     if (step === undefined || target === step) return;
     if (target < step) {
+      // Going back is always allowed, and cannot be blocked by anything.
       setStep(target);
       return;
     }
+
     for (let s = step; s < target; s += 1) {
-      if (!canProceed(s)) return;
+      if (canProceed(s)) continue;
+
+      /* Mark the blocking step tried and go to it, rather than the marker
+         silently refusing to respond. `err` then reports every gap on that step,
+         so its unanswered fields carry an error border and "Required" the moment
+         it is on screen - which is where the member can actually act. */
+      setTriedSteps((prev) => new Set(prev).add(s));
+      if (s !== step) setStep(s);
+      return;
     }
+
     setStep(target);
   };
 

@@ -132,15 +132,27 @@
   color: var(--color-placeholder-text, #6b7280);
 }
 
+/* A field the wizard is waiting on.
+   The colour alone was too easy to miss in a column of grey-bordered fields, so
+   the error border reads as roughly twice the weight of a normal one. That
+   weight comes from an inset shadow rather than a wider `border-width`: growing
+   the border would move the field's content by a pixel, and a whole step's
+   fields twitching the instant they are marked looks like a rendering fault. */
 .input-error.input-error,
 .select-error.select-error {
   border-color: var(--color-error, #ef4444);
+  box-shadow: inset 0 0 0 1px var(--color-error, #ef4444);
 }
 
+/* Focused, the halo carries the emphasis, so the inset is kept alongside it
+   rather than replaced - dropping it would make the border appear to thin out
+   at the moment the member starts fixing the field. */
 .input-error.input-error:focus,
 .select-error.select-error:focus-visible {
   border-color: var(--color-error, #ef4444);
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+  box-shadow:
+    inset 0 0 0 1px var(--color-error, #ef4444),
+    0 0 0 3px rgba(239, 68, 68, 0.16);
 }
 
 .error-text {
@@ -812,11 +824,13 @@ button.chip-selected:hover {
    chip the member has actually picked is not the thing that is wrong. */
 .chip-group-error .chip:not(.chip-selected) {
   border-color: var(--color-error, #ef4444);
+  box-shadow: inset 0 0 0 1px var(--color-error, #ef4444);
 }
 
 .dob-trigger-error.dob-trigger-error,
 .dob-trigger-error.dob-trigger-error:hover {
   border-color: var(--color-error, #ef4444);
+  box-shadow: inset 0 0 0 1px var(--color-error, #ef4444);
 }
 
 /* An education row that is missing one of the parts the wizard requires. */
