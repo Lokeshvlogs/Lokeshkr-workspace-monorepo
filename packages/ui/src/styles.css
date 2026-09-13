@@ -2097,64 +2097,96 @@ button.chip-selected:hover {
   color: var(--color-success, #22c55e);
 }
 
-/* The headline facts, beside the picture.
-   Tiles rather than rows: as rows they sat on a fixed label lane holding a
-   16px icon, so every value was stranded ~100px from the thing naming it. An
-   auto-fitting grid also drops the old override, which was unmediaqueried and
-   kept the hero three-column below 640px while the rest of the page stacked. */
-.hero-facts {
-  @apply mt-4 grid gap-2;
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+/* --- The headline facts, as grouped lines rather than a grid of tiles -------
+   The tiles were the last tinted boxes in this panel, and the tint was doing
+   the work of a label: a pink card each made age and marital status look like
+   the two most important things about a member. They read as sentences now -
+   "28 yrs · 5 ft 4 in · Never married" - which is how anybody would say it.
+
+   Still a `dl`, not a `p`: every value keeps its own `dt`, hidden with
+   `sr-only`, so a screen reader gets "Age, 28 yrs" rather than an unlabelled
+   run of numbers.
+
+   Do NOT add a `.hero-line dt { … }` rule. This sheet is imported BEFORE
+   `@tailwind utilities`, so a descendant selector (0-1-1) outranks `.sr-only`
+   (0-1-0) and would unhide every label on the page. */
+.hero-line {
+  @apply mt-2 flex flex-wrap items-baseline justify-center gap-x-1 gap-y-1 sm:justify-start;
 }
 
-.hero-fact {
-  @apply relative flex min-w-0 flex-col gap-0.5 rounded-xl px-3 py-2 transition;
-  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
-  background-color: color-mix(in srgb, var(--color-primary-surface) 70%, transparent);
+/* Centred below 640px because `.profile-hero-top` centres everything there;
+   left-aligned lines would be the only thing out of step on a phone. */
+.hero-line-item {
+  @apply inline-flex min-w-0 max-w-full items-center gap-1.5;
+  overflow-wrap: anywhere;
 }
 
-.hero-fact:hover {
-  border-color: var(--color-primary-light, #ff66b3);
-  background-color: var(--color-primary-surface, #fff0f8);
+/* The separator rides on the item that FOLLOWS it, never the one before. A
+   trailing dot gets orphaned at the end of a wrapped line; a leading one sits
+   inside the following item's own box, so "· Never married" moves as a single
+   unbreakable unit when the line wraps. */
+.hero-line-item + .hero-line-item::before {
+  content: "·";
+  margin-right: 0.375rem;
+  color: color-mix(in srgb, var(--color-primary-text) 38%, transparent);
 }
 
-/* Explicitly lighter than the value. `--color-placeholder-text` is #2c2b2b -
-   darker than `--color-primary-text` - so using it for labels rendered them
-   heavier than the answers they name. */
-.hero-fact-label {
-  @apply flex min-w-0 items-center gap-1.5 truncate text-[0.6875rem] font-semibold uppercase;
-  letter-spacing: 0.05em;
-  color: color-mix(in srgb, var(--color-primary-text) 62%, transparent);
+/* Who they are, what they do, what they studied - in descending loudness. */
+.hero-line-identity {
+  @apply mt-3 text-sm font-semibold;
+  color: var(--color-primary-text, #5a5f6c);
 }
 
-.hero-fact-icon {
+.hero-line-work {
+  @apply text-sm font-medium;
+  color: var(--color-primary-text, #5a5f6c);
+}
+
+.hero-line-study {
+  @apply text-xs;
+  color: color-mix(in srgb, var(--color-primary-text) 75%, transparent);
+}
+
+.hero-line-icon {
   @apply h-3.5 w-3.5 shrink-0;
   color: var(--color-primary, #ff1f8f);
 }
 
+/* A word on a line of words, not a chip. No `translateY` here, unlike
+   `.hero-tag-link`: a pill is its own object and can lift, but a word inside a
+   sentence cannot move without the sentence appearing to break. */
+.hero-line-link {
+  @apply inline-flex items-center gap-1.5 rounded-md transition;
+  color: inherit;
+}
+
+.hero-line-link:hover,
+.hero-line-link:focus-visible {
+  color: var(--color-primary-strong, #cb0b6b);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+  text-underline-offset: 0.2em;
+}
+
 .hero-fact-value {
-  @apply flex min-w-0 items-center gap-1.5 text-sm font-semibold;
-  color: var(--color-primary-text, #5a5f6c);
+  @apply flex min-w-0 items-center gap-1.5;
+  color: inherit;
   overflow-wrap: anywhere;
 }
 
-/* The pencil rides with the value inside a tile. */
-.hero-fact-value .field-edit-btn {
-  @apply h-5 w-5;
-}
-
-.hero-fact:hover .field-edit-btn {
-  @apply opacity-100;
-}
-
-/* The same contract for a tag. `.field-edit-btn` ships at opacity 0 and only
-   `.field-row` and `.hero-fact` ever revealed it, so every editable pill -
-   city, profession, income, language, religion, community - looked read-only
-   to anyone using a mouse. */
+/* --- The hover-reveal contract ---------------------------------------------
+   `.field-edit-btn` ships at `opacity: 0` and is revealed ONLY by an explicit
+   rule; miss one and every inline editor in that container looks read-only to
+   anyone using a mouse. `.hero-fact:hover` went with the tiles, so the VALUE
+   hosts it now - which is tighter than the tile was, since hovering one end of
+   a line no longer lights up five pencils at once. */
+.hero-fact-value .field-edit-btn,
 .hero-tag-editable .field-edit-btn {
   @apply h-5 w-5;
 }
 
+.hero-line-item:hover .field-edit-btn,
+.hero-fact-value:hover .field-edit-btn,
 .hero-tag-editable:hover .field-edit-btn {
   @apply opacity-100;
 }
@@ -2196,20 +2228,33 @@ button.chip-selected:hover {
   color: var(--color-primary-text, #111827);
 }
 
-/* Where somebody lives, in the slot the managed-by pill used to hold.
-   One pill, never wrapping - it shares `.hero-tag` so it is visibly the same
-   object as the row further down, just promoted above the facts. */
+/* Where somebody lives, straight under the name. One pill, never wrapping - it
+   shares `.hero-tag` so it is visibly the same object as the row further down,
+   just promoted above the facts. */
 .hero-place {
   @apply mt-1.5 flex justify-center sm:justify-start;
 }
 
-/* Who is actually answering the messages - moved out from under the name, where
-   it competed with the profile id for the same glance, to the foot of the
-   panel. Plain text rather than the pill it was: right-aligned under a
-   blockquote, a pill reads as a button. */
+/* Who is actually answering the messages, at the foot of the panel rather than
+   under the name where it competed with the profile id for the same glance.
+   Position only - the pill inside owns the look, which is why these are two
+   classes and not one. */
 .hero-managed-by {
-  @apply mt-4 text-right text-xs italic;
+  @apply mt-4 text-center sm:text-right;
+}
+
+/* The pill, restored. The objection to it here was that "right-aligned under a
+   blockquote, a pill reads as a button" - which is answered by what this one
+   does NOT have: no hover, no focus ring, no pointer, and a colour pair that no
+   button in this app uses. The page already carries non-interactive pills of
+   exactly this shape - every `.hero-tag` without a link is one - so being
+   visibly the same object as those is what stops it reading as a control. */
+.managed-by {
+  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  background-color: var(--color-primary-surface, #fdf2f8);
   color: var(--color-placeholder-text, #6b7280);
+  border: 1px solid var(--color-border, #fbcfe8);
+  cursor: default;
 }
 
 /* The hour / minute triggers in TimePicker.

@@ -258,16 +258,26 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
      here, since the tag is not an editor. */
   { key: 'citizenshipCountry', label: 'Citizen of', section: 'Origins', step: 1, editor: 'select', searchable: true, ownerOnly: true, options: COUNTRY_OPTIONS },
 
-  // ---- Education & Career (step 2) ----
-  // educationLevel / fieldOfStudy / collegeUniversity are DERIVED from the
-  // education rows, so they are shown read-only here and edited in the wizard.
-  // Offering a pencil on them would let an inline edit be silently overwritten
-  // the next time the education step is saved.
-  /* educationLevel / fieldOfStudy / collegeUniversity have NO rows here any
-     more: they are a flattening of the education table, and EducationTimeline
-     renders that table above these fields. Keeping both would print the top
-     qualification twice - once as a node, once as three rows. Their defs stay,
-     because the wizard and `labelFor` still need them. */
+  /* ---- Education & Career (step 2) ----
+     educationLevel / fieldOfStudy / collegeUniversity have NO rows in this
+     section: they are a flattening of the education table, and
+     EducationTimeline renders that table above these fields. Printing both
+     would show the top qualification twice.
+
+     `fieldOfStudy` and `collegeUniversity` have no def at all any more - the
+     timeline reads `profile.educations` directly, and `labelFor` works off
+     LABEL_MAPS rather than off this list. An earlier version of this comment
+     claimed all three defs had survived; they had not.
+
+     `educationLevel` DOES have one, just below. It is in HERO_TAG_KEYS, so
+     PROMOTED_KEYS withholds it from this section and the hero is its only
+     render site - and the hero resolves every key through this list, so
+     without a def it would be dropped in silence. That is the same failure
+     recorded against `age`, which for months appeared on no profile at all. */
+  /* `readonly`: the wizard's education step recomputes this from the education
+     rows, so an inline edit would be overwritten on its next save. Both render
+     sites check the editor kind before offering a pencil. */
+  { key: 'educationLevel', label: 'Highest education', section: 'Education & Career', step: 2, editor: 'readonly', options: educationOptions },
   // employerName mirrors the education fields: written through the wizard's
   // picker, which resolves it against the catalog, so no pencil here.
   { key: 'employerName', label: 'Employer', section: 'Education & Career', step: 2, editor: 'readonly' },
@@ -389,6 +399,9 @@ export const HERO_TAG_KEYS = [
   // to a religion, so the two read as a pair.
   'religion',
   'community',
+  // Rendered as a line rather than a pill: "tag" here means "promoted to the
+  // hero", not "wears a chip". See the hero's own partition.
+  'educationLevel',
 ] as const
 
 /** The family facts, promoted into the family graph beneath its tree. */

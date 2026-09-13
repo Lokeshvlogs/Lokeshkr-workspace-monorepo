@@ -51,6 +51,7 @@ const FILTER_PARAM: Record<string, string> = {
   mothertongue: 'motherTongue',
   religion: 'religion',
   community: 'community',
+  educationLevel: 'education',
 }
 
 /**
@@ -77,7 +78,7 @@ export function heroTags(
     const label = labelFor(def.key, raw)
 
     // An unanswered tag is dropped for a visitor and KEPT for the owner, where
-    // the blank is the prompt - the same rule `hero-facts` already applies.
+    // the blank is the prompt - the same rule the identity line applies.
     //
     // This is not tidiness. A promoted field has no section row to fall back
     // to: `fieldsBySection` withholds every HERO_TAG_KEY before it checks
@@ -86,7 +87,12 @@ export function heroTags(
     // two-click trap - change your religion and the community pill would
     // vanish for good - and `currentCity` has the same hole today, reachable by
     // changing your country.
-    if (!label && !owner) continue
+    /* …except on a DERIVED field, which has no inline editor anywhere. The rule
+       above exists because a promoted field has no section row to set it in -
+       but a `readonly` one has no pencil either, so keeping it blank would give
+       the owner a permanent "Not added" with nothing to click. `educationLevel`
+       is the only one; it is answered in the wizard's education step. */
+    if (!label && (!owner || def.editor === 'readonly')) continue
 
     const param = FILTER_PARAM[def.key]
     const short = label ? tagLabel(def.key, label) : ''

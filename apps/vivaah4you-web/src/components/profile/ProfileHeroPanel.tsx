@@ -42,10 +42,18 @@ const TILE_GROUP: Record<string, IdentityGroup> = {
  * in `SECTIONS` - so they now appear nowhere on a profile. Their defs survive,
  * so the wizard still collects them.
  *
- * What sits below these tiles is a different thing: `HERO_TAG_KEYS`, promoted
- * out of the panels below and rendered as tags you can follow into search.
+ * They are grouped rather than tiled now: who somebody is on one line, what
+ * they do on the next, what they studied under that. A grid of identical
+ * tinted boxes gave a birth date the same weight as a salary and left the
+ * reader to do the sorting.
+ *
+ * `profession` and `salaryAmount` appear in the work line but are NOT facts -
+ * they are hero tags, rendered as links so they still follow into search. They
+ * stay in `HERO_TAG_KEYS` regardless, because that list is what withholds them
+ * from the panels below; only their rendering forks. See the partition in the
+ * component.
  */
-const HERO_FACT_KEYS = ['age', 'gender', 'height', 'maritalStatus', 'dob'] as const
+const HERO_FACT_KEYS = ['age', 'height', 'maritalStatus', 'gender', 'dob'] as const
 
 /**
  * Tiles only the owner sees.
@@ -57,7 +65,22 @@ const HERO_FACT_KEYS = ['age', 'gender', 'height', 'maritalStatus', 'dob'] as co
  * not in `SECTIONS`, so there is no row to fall back to, and the identity-lock
  * warning about spending the last allowed change hangs off this editor.
  */
-const OWNER_ONLY_FACTS: ReadonlySet<string> = new Set(['gender'])
+const OWNER_ONLY_FACTS: ReadonlySet<string> = new Set(['gender', 'dob'])
+
+/**
+ * Promoted fields that render as a line rather than as a pill.
+ *
+ * Not a different kind of thing from the tags - the same `heroTags()` builds
+ * them, and because they stay in `HERO_TAG_KEYS` they stay in `PROMOTED_KEYS`,
+ * so the panels below still withhold them. This set decides one thing only:
+ * which skin `renderTag` paints. What somebody does and earns reads as a
+ * statement about them; a row of six identical chips made everything look
+ * equally shoutable.
+ */
+const LINE_TAG_IDS: ReadonlySet<string> = new Set(['profession', 'salaryAmount'])
+
+/** Shown on a line of its own, under the work line. */
+const EDUCATION_TAG_ID = 'educationLevel'
 
 interface Props {
   profile: PublicProfile
@@ -139,38 +162,94 @@ export default function ProfileHeroPanel({
   }
   const presence = presenceFor(profile.presence)
 
-  // `dob` is owner-only and never reaches a public payload, so on a match it
-  // simply has no value and drops out below.
+  /* `dob` is owner-only and never reaches a public payload, so on a match it
+     simply has no value and drops out below. A line with nothing left in it is
+     not rendered at all. */
   const facts = HERO_FACT_KEYS.filter((key) => onSave || !OWNER_ONLY_FACTS.has(key))
     .map((key) => PROFILE_FIELDS.find((f) => f.key === key))
     .filter((def): def is NonNullable<typeof def> => Boolean(def))
+    .map((def) => ({ def, shown: displayValue(def, profile) }))
+    /* A blank is dropped for a visitor and kept for the owner as the prompt to
+       fill it in - except on a derived field, which has no editor to prompt
+       with. `age` is the one: the server computes it from `dob`. */
+    .filter(({ def, shown }) => shown || (onSave && def.editor !== 'readonly'))
 
   // `onSave` is the owner signal: it keeps blank tags on the page so there is
   // something to click the pencil on, since a promoted field has no row below.
   const allTags = heroTags(profile, { owner: Boolean(onSave) })
   // Rendered under the name rather than among the pills - see HERO_PLACE_KEY.
   const placeTag = allTags.find((tag) => tag.id === HERO_PLACE_KEY)
-  const tags = allTags.filter((tag) => tag !== placeTag)
+  /* What somebody does and earns reads as a statement about them, not as a
+     filter chip - so these two render on the work line instead of in the pill
+     row. They remain tags in every other sense: same `heroTags` plumbing, same
+     search link, same inline editor for the owner. */
+  const lineTags = allTags.filter((tag) => LINE_TAG_IDS.has(tag.id))
+  const eduTag = allTags.find((tag) => tag.id === EDUCATION_TAG_ID)
+  const pillTags = allTags.filter(
+    (tag) => tag !== placeTag && tag !== eduTag && !LINE_TAG_IDS.has(tag.id),
+  )
 
-  /** A pill: a link on someone else's profile, an editor on your own. */
-  const renderTag = (tag: HeroTag) => {
+  /**
+   * A tag: a link on someone else's profile, an editor on your own.
+   *
+   * Two looks, one set of rules. A `pill` is the rounded chip in the row below;
+   * a `line` is plain text that happens to be clickable, for the facts that
+   * read as a statement about a person rather than as a filter - what they do,
+   * what they earn. The decision of WHAT to render is made once here; only the
+   * wrapper differs, which is why this takes a variant rather than existing
+   * twice.
+   */
+  const renderTag = (tag: HeroTag, variant: 'pill' | 'line' = 'pill') => {
+    const line = variant === 'line'
     const Icon = tag.icon
-    const glyph = Icon ? <Icon className="hero-tag-icon" strokeWidth={1.8} aria-hidden="true" /> : null
+    const glyph = Icon ? (
+      <Icon
+        className={line ? 'hero-line-icon' : 'hero-tag-icon'}
+        strokeWidth={1.8}
+        aria-hidden="true"
+      />
+    ) : null
 
-    if (onSave && tag.def) {
+    const editable = Boolean(onSave && tag.def)
+    // Computed tags (NRI, residency) have no def and no filter, so on the
+    // owner's own page they stay plain text rather than becoming a search for
+    // people like themselves.
+    const followable = Boolean(searchHref && tag.filter && !editable)
+
+    if (line) {
+      /* A line item lives inside the <dl> its group renders, so the label is a
+         real <dt> and the value a real <dd> - the same term/definition pairing
+         the facts beside it use. */
+      return (
+        <div key={tag.id} className="hero-line-item" title={tag.title}>
+          {glyph}
+          <dt className="sr-only">{tag.srLabel}</dt>
+          {editable ? (
+            <EditableField def={tag.def!} profile={profile} onSave={onSave!} bare />
+          ) : followable ? (
+            <dd className="hero-fact-value">
+              <Link href={searchHref!(tag.filter!)} className="hero-line-link">
+                {tag.label}
+              </Link>
+            </dd>
+          ) : (
+            <dd className="hero-fact-value">{tag.label}</dd>
+          )}
+        </div>
+      )
+    }
+
+    if (editable) {
       return (
         <li key={tag.id} className="hero-tag hero-tag-editable">
           {glyph}
           <span className="sr-only">{tag.srLabel}</span>
-          <EditableField def={tag.def} profile={profile} onSave={onSave} bare />
+          <EditableField def={tag.def!} profile={profile} onSave={onSave!} bare />
         </li>
       )
     }
 
-    // Computed tags (NRI, residency) have no def, so there is nothing to edit -
-    // on the owner's own page they stay plain text rather than becoming a
-    // search for people like themselves.
-    if (!searchHref || !tag.filter) {
+    if (!followable) {
       return (
         <li key={tag.id} className="hero-tag" title={tag.title}>
           {glyph}
@@ -182,7 +261,7 @@ export default function ProfileHeroPanel({
 
     return (
       <li key={tag.id}>
-        <Link href={searchHref(tag.filter)} className="hero-tag hero-tag-link" title={tag.title}>
+        <Link href={searchHref!(tag.filter!)} className="hero-tag hero-tag-link" title={tag.title}>
           {glyph}
           <span className="sr-only">{tag.srLabel}</span>
           {tag.label}
@@ -232,8 +311,7 @@ export default function ProfileHeroPanel({
 
         {subtitle}
 
-        {/* Straight after the profile id, in the slot the managed-by pill used
-            to hold. It goes through the same `renderTag` as the row below, so
+        {/* Straight after the profile id. It goes through the same `renderTag` as the row below, so
             a visitor still gets a link into search and the owner still gets an
             editor - the two behaviours the call sites already choose between by
             passing `searchHref` or `onSave`. */}
@@ -245,29 +323,25 @@ export default function ProfileHeroPanel({
           </p>
         )}
 
-        {/* Tiles, not rows. As rows these sat on a fixed label lane holding a
-            16px icon, so every value was stranded a hundred pixels from the
-            thing naming it. A tile puts the label against its own value and
-            lets the grid do the aligning. */}
-        <dl className="hero-facts">
-          {facts.map((def) => {
-            const shown = displayValue(def, profile)
-            // An unanswered fact is dropped on a match's profile but kept for
-            // the owner, where the blank is the prompt to fill it in.
-            if (!shown && !onSave) return null
+        {/* Three groups, not a grid of tinted tiles. Identical pink boxes gave
+            a birth date the same weight as a salary and left the reader to do
+            the sorting; grouped lines say which facts belong together.
 
-            const Icon = iconFor(def.key)
+            Who they are, then what they do, then what they studied. */}
+        {facts.length > 0 && (
+          <dl className="hero-line hero-line-identity">
+            {facts.map(({ def, shown }) => (
+              <div key={def.key} className="hero-line-item">
+                {/* Visually hidden, never dropped: a screen reader still hears
+                    "Age, 28 yrs" rather than a bare run of numbers. */}
+                <dt className="sr-only">{def.label}</dt>
 
-            return (
-              <div key={def.key} className="hero-fact">
-                <dt className="hero-fact-label">
-                  {Icon && <Icon className="hero-fact-icon" strokeWidth={1.7} aria-hidden="true" />}
-                  {def.label}
-                </dt>
-
-                {onSave ? (
-                  // The editor owns its own row markup, so it replaces the
-                  // value rather than sitting beside it.
+                {/* The same `readonly` guard `ProfileDetails` applies: a
+                    derived value gets no pencil even for the owner, because the
+                    wizard step that computes it would overwrite an inline edit
+                    on its next save. Without it `age` opens an editor with no
+                    control in it. */}
+                {onSave && def.editor !== 'readonly' ? (
                   <EditableField
                     def={def}
                     profile={profile}
@@ -280,12 +354,22 @@ export default function ProfileHeroPanel({
                   <dd className="hero-fact-value">{shown}</dd>
                 )}
               </div>
-            )
-          })}
-        </dl>
+            ))}
+          </dl>
+        )}
 
-        {tags.length > 0 && (
-          <ul className="hero-tags">{tags.map(renderTag)}</ul>
+        {lineTags.length > 0 && (
+          <dl className="hero-line hero-line-work">
+            {lineTags.map((tag) => renderTag(tag, 'line'))}
+          </dl>
+        )}
+
+        {eduTag && (
+          <dl className="hero-line hero-line-study">{renderTag(eduTag, 'line')}</dl>
+        )}
+
+        {pillTags.length > 0 && (
+          <ul className="hero-tags">{pillTags.map((tag) => renderTag(tag))}</ul>
         )}
       </div>
 
@@ -302,7 +386,14 @@ export default function ProfileHeroPanel({
       {(bio || managed) && (
         <div className="profile-hero-bio">
           {bio}
-          {managed && <p className="hero-managed-by">&mdash; {managed}</p>}
+          {managed && (
+            <p className="hero-managed-by">
+              {/* The em dash is gone with the plain text: it was how a
+                  run of italics said "this is a credit, not a sentence",
+                  and inside a pill it reads as a typo. */}
+              <span className="managed-by">{managed}</span>
+            </p>
+          )}
         </div>
       )}
     </section>

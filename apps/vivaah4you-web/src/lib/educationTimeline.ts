@@ -63,6 +63,16 @@ export function educationTimeline(profile: PublicProfile): TimelineNode[] {
   const institution = profile.collegeUniversity || ''
   if (!level && !fieldOfStudy && !institution) return []
 
+  /* The hero prints `educationLevel` on a line of its own now, so a synthetic
+     node carrying ONLY the level is a verbatim second copy - same `labelFor`,
+     same key, same value. It earns its place the moment it also carries a field
+     of study or an institution, because neither of those has a def, a row or a
+     hero line: this node is their only render site.
+     Row-backed timelines are untouched. Their top node repeats the level too,
+     but beside a year, a subject and an institution - a summary opening into a
+     record rather than a duplicate. */
+  if (!fieldOfStudy && !institution) return []
+
   return [
     {
       key: 'derived',
