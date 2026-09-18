@@ -1,18 +1,24 @@
 'use client'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 import PhotoLightbox from '@/components/profile/PhotoLightbox'
 
 /**
- * The gallery, as one row you scroll rather than a block you scan.
+ * The gallery, as a two-up grid you scroll down rather than a block you scan.
+ *
+ * It shares its row with the family graph, so it is sized to exactly two
+ * thumbnails across and capped at two rows tall; everything past the fourth
+ * photo is reached by scrolling. Alone in that row - a profile with no family
+ * on record - the panel stretches and the grid simply lays out more columns,
+ * which is handled entirely in CSS by `.photo-rail-track`'s auto-fill.
  *
  * A native scroll container, not a transform track: the number of photos is
  * small and variable, and scrolling natively keeps touch momentum, trackpad
- * gestures and keyboard scrolling without any width arithmetic. The wizard's
+ * gestures and keyboard scrolling without any height arithmetic. The wizard's
  * `HorizontalFormSlider` uses a transform because it needs an authoritative
- * "current step"; a photo row has no such notion.
+ * "current step"; a photo grid has no such notion.
  *
  * It deliberately does not reuse `.photo-grid` / `.photo-tile` - those belong to
  * `PhotoGallery`, the wizard's editor, and this is the read-only viewer.
@@ -20,15 +26,15 @@ import PhotoLightbox from '@/components/profile/PhotoLightbox'
 export default function PhotoStrip({ photos, name }: { photos: string[]; name: string }) {
   const [openAt, setOpenAt] = useState<number | null>(null)
   const track = useRef<HTMLDivElement | null>(null)
-  const [canScroll, setCanScroll] = useState({ left: false, right: false })
+  const [canScroll, setCanScroll] = useState({ up: false, down: false })
 
   const measure = useCallback(() => {
     const node = track.current
     if (!node) return
     // A pixel of tolerance: fractional scroll positions would otherwise leave
     // an arrow enabled at the very end of the track with nothing to scroll to.
-    const maxLeft = node.scrollWidth - node.clientWidth
-    setCanScroll({ left: node.scrollLeft > 1, right: node.scrollLeft < maxLeft - 1 })
+    const maxTop = node.scrollHeight - node.clientHeight
+    setCanScroll({ up: node.scrollTop > 1, down: node.scrollTop < maxTop - 1 })
   }, [])
 
   useEffect(() => {
@@ -48,38 +54,41 @@ export default function PhotoStrip({ photos, name }: { photos: string[]; name: s
   const nudge = (direction: -1 | 1) => {
     const node = track.current
     if (!node) return
-    node.scrollBy({ left: direction * node.clientWidth * 0.8, behavior: 'smooth' })
+    // Half the viewport is one row: the track is capped at two rows tall, so a
+    // click advances the grid by exactly one rank of thumbnails.
+    node.scrollBy({ top: direction * node.clientHeight * 0.5, behavior: 'smooth' })
   }
 
   return (
-    <section className="form-section">
+    <section className="form-section photo-panel">
       <div className="photo-rail-head">
         <h3 className="form-section-title">Photos</h3>
         {/* Always drawn, and dimmed by `disabled` when there is nowhere to
-            scroll. They used to disappear whenever the rail already fitted,
-            which is most profiles - only a six-photo strip is wide enough to
-            overflow the panel. That read as "this rail has no navigation"
-            rather than "you can already see everything", and it disagreed with
-            the lightbox, which draws its arrows unconditionally and dims the
-            one with nowhere to go. */}
+            scroll. They used to disappear whenever the grid already fitted.
+            That read as "this panel has no navigation" rather than "you can
+            already see everything", and it disagreed with the lightbox, which
+            draws its arrows unconditionally and dims the one with nowhere to
+            go. Two visible rows means five photos are already enough to
+            overflow, so these are live far more often than the old sideways
+            pair, which needed all six. */}
         <div className="photo-rail-nav">
           <button
             type="button"
             className="photo-rail-arrow"
             onClick={() => nudge(-1)}
-            disabled={!canScroll.left}
-            aria-label="Scroll photos left"
+            disabled={!canScroll.up}
+            aria-label="Scroll photos up"
           >
-            <ChevronLeft size={18} aria-hidden="true" />
+            <ChevronUp size={18} aria-hidden="true" />
           </button>
           <button
             type="button"
             className="photo-rail-arrow"
             onClick={() => nudge(1)}
-            disabled={!canScroll.right}
-            aria-label="Scroll photos right"
+            disabled={!canScroll.down}
+            aria-label="Scroll photos down"
           >
-            <ChevronRight size={18} aria-hidden="true" />
+            <ChevronDown size={18} aria-hidden="true" />
           </button>
         </div>
       </div>

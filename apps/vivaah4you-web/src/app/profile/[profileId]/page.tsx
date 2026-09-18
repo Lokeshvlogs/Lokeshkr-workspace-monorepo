@@ -158,21 +158,26 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
           searchHref={(filter) => tagSearchHref(filter, me)}
         />
 
-        {/* Photos before family: they are what a reader actually came to
-            scroll, and the tree reads better once you know the face. */}
-        <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
+        {/* One row. Photos on the left at two thumbnails wide, the tree taking
+            the rest - see `.profile-panel-row`, which also covers the case of
+            either one rendering null. Photos first: they are what a reader
+            actually came to look at, and the tree reads better once you know
+            the face. Below `lg` the row stacks and the order still holds. */}
+        <div className="profile-panel-row gap-6">
+          <PhotoStrip photos={profile.photos ?? []} name={fullName(profile) || 'this member'} />
 
-        {/* Unconditional. This used to be hidden for a signed-in reader
-            because the comparison panel drew the same tree beside their own;
-            that block is gone, so without this every signed-in reader would
-            see no family at all. */}
-        <FamilyGraph
-          profile={profile}
-          profileId={profile.profile_id}
-          selfLabel={`${firstName} and their siblings`}
-          selfName={firstName}
-          selfPhoto={profile.photo}
-        />
+          {/* Unconditional. This used to be hidden for a signed-in reader
+              because the comparison panel drew the same tree beside their own;
+              that block is gone, so without this every signed-in reader would
+              see no family at all. */}
+          <FamilyGraph
+            profile={profile}
+            profileId={profile.profile_id}
+            selfLabel={`${firstName} and their siblings`}
+            selfName={firstName}
+            selfPhoto={profile.photo}
+          />
+        </div>
 
         <ProfileDetails profile={profile} columns={2} />
 

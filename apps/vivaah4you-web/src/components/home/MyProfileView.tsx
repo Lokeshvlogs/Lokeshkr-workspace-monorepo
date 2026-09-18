@@ -45,6 +45,11 @@ export default function MyProfileView({ profile, onSave }: Props) {
 
   const bioSuggestion = useMemo(() => suggestAboutMe(profile), [profile])
 
+  /* Hoisted because it appears in both arms of the family branch below, and a
+     second `<PhotoStrip>` element would remount the panel - losing the grid's
+     scroll position - every time the family editor opened or closed. */
+  const photos = <PhotoStrip photos={profile.photos ?? []} name={name} />
+
   return (
     <div className="flex flex-col gap-5">
       <ProfileHeroPanel
@@ -94,25 +99,33 @@ export default function MyProfileView({ profile, onSave }: Props) {
         }
       />
 
-      <PhotoStrip photos={profile.photos ?? []} name={name} />
-
       {editingFamily ? (
-        /* The editor replaces the graph wholesale, so the household facts are
-           handed to it - otherwise they would vanish for as long as the tree
-           is being edited, on the one page where they are editable. */
-        <FamilyEditor
-          onClose={() => setEditingFamily(false)}
-          facts={<FamilyFacts profile={profile} onSave={onSave} />}
-        />
+        /* No row while editing. The editor is a form, not a graph, and it is
+           the one panel here that genuinely wants the full shell width - so it
+           drops out of the side-by-side layout and sits under the photos, the
+           way both panels did before.
+           The household facts are handed to it because it replaces the graph
+           wholesale; otherwise they would vanish for as long as the tree is
+           being edited, on the one page where they are editable. */
+        <>
+          {photos}
+          <FamilyEditor
+            onClose={() => setEditingFamily(false)}
+            facts={<FamilyFacts profile={profile} onSave={onSave} />}
+          />
+        </>
       ) : (
-        <FamilyGraph
-          profile={profile}
-          selfLabel="You and your siblings"
-          selfName={profile.firstName || 'You'}
-          selfPhoto={profile.photo}
-          onEdit={() => setEditingFamily(true)}
-          onSave={onSave}
-        />
+        <div className="profile-panel-row gap-5">
+          {photos}
+          <FamilyGraph
+            profile={profile}
+            selfLabel="You and your siblings"
+            selfName={profile.firstName || 'You'}
+            selfPhoto={profile.photo}
+            onEdit={() => setEditingFamily(true)}
+            onSave={onSave}
+          />
+        </div>
       )}
 
       <p className="text-sm text-color-placeholder-text">

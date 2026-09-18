@@ -4396,7 +4396,14 @@ button.match-tab-active:hover,
 /* No wrapping: a tree that reflows stops being a tree, because the bar and the
    drops below are positioned against one row. It scrolls sideways instead. */
 .family-nodes {
-  @apply flex items-start justify-center gap-3 overflow-x-auto;
+  @apply flex items-start gap-3 overflow-x-auto;
+  /* `safe`, not plain `center`: a centred flex scroll container splits its
+     overflow across both ends and the leading half is unreachable by scrolling.
+     That was survivable at full panel width; beside the photo grid the tree has
+     ~528px and a five-node generation overflows. `safe` centres while there is
+     room and falls back to flex-start when there is not, without changing any
+     box sizes - so the ::before/::after connector geometry below is untouched. */
+  justify-content: safe center;
   padding-inline: 0.25rem;
 }
 
@@ -4613,10 +4620,62 @@ button.family-node:hover {
   border-top: 0;
 }
 
-/* --- Profile photos: one row, and the viewer it opens ---------------------
+/* --- Two panels on one line -----------------------------------------------
+   Photos on the left at a width that fits exactly two thumbnails, the family
+   graph taking whatever is left.
+
+   Flex rather than `grid-cols-[21.5rem_minmax(0,1fr)]`, and that is the whole
+   reason this is not a grid: EITHER panel can render null. `PhotoStrip` returns
+   null with no photos, `FamilyGraph` returns null for a visitor with neither a
+   tree nor household facts. A null first child in a grid would drop the family
+   panel into the FIXED track and leave the fluid one empty; a lone flex child
+   just takes the row.
+
+   `items-start` for the reason `ProfileDetails` already documents: the family
+   panel outgrows a two-row photo grid, and stretching the photo card to match
+   pads it out with white.
+
+   `lg`, not `md`: the public profile column is 56rem, so the split leaves the
+   tree ~528px - past the 428px a four-node generation needs. At `md` the column
+   is 736px and the tree would be scrolling sideways on most profiles. Below
+   `lg` both pages stack, Photos first, exactly as they did before.
+
+   The gap is left to the call site - the two pages' columns already disagree
+   (gap-6 public, gap-5 on /profile/me), and utilities are emitted after this
+   sheet so a gap class in the JSX wins either way. */
+.profile-panel-row {
+  @apply flex flex-col items-stretch lg:flex-row lg:items-start;
+}
+
+/* Both panels can be null at once - a visitor on a profile with no photos and
+   no family on record - and an empty flex box still earns its share of the
+   column's gap on both sides. Nothing to show, nothing to take up. */
+.profile-panel-row:empty {
+  display: none;
+}
+
+/* 21.5rem outer, less the panel's p-5 and its border, leaves 302px of content -
+   two 145px thumbnails and the 12px gap between them. */
+.profile-panel-row > .photo-panel {
+  @apply lg:w-[21.5rem] lg:shrink-0;
+}
+
+/* Alone in the row it stretches, and `.photo-rail-track`'s auto-fill does the
+   rest. A 344px card marooned beside 528px of nothing reads as a bug. */
+.profile-panel-row > .photo-panel:only-child {
+  @apply lg:w-auto;
+}
+
+/* `min-w-0` so the panel may shrink below its contents: `.family-facts` pills
+   would otherwise hold the track open at their unwrapped width. */
+.profile-panel-row > .family {
+  @apply lg:min-w-0 lg:flex-1;
+}
+
+/* --- Profile photos: the grid, and the viewer it opens ---------------------
    Separate from `.photo-grid` / `.photo-tile` on purpose: those belong to the
    wizard's editor (PhotoGallery), which is still a grid with a remove button
-   on every tile. This is the read-only rail. */
+   on every tile. This is the read-only viewer. */
 
 .photo-rail-head {
   @apply flex items-center justify-between gap-3;
@@ -4648,11 +4707,25 @@ button.family-node:hover {
   pointer-events: none;
 }
 
-/* Scroll-snap so a flick lands on a photo rather than between two - the same
+/* A grid that scrolls DOWN, not a row that scrolls sideways. Beside the family
+   graph the panel is only ~302px of content wide, which `minmax(8.5rem, 1fr)`
+   resolves to exactly two columns; alone in the row it stretches and the same
+   rule lays out five or six. Fluid `1fr` tracks rather than a fixed
+   `repeat(2, 9rem)` so a 10-12px scrollbar eating into the content box shrinks
+   the thumbnails instead of collapsing the grid to a single column.
+
+   Scroll-snap so a flick lands on a row rather than between two - the same
    treatment the trending rail uses, at gallery proportions. */
 .photo-rail-track {
-  @apply mt-3 flex gap-3 overflow-x-auto pb-1;
-  scroll-snap-type: x proximity;
+  @apply mt-3 overflow-y-auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.75rem;
+  /* Two rows of ~145px plus the gap between them. A third row peeking by a
+     hairline is a feature: it is the only thing on the panel that says there is
+     more below. */
+  max-height: 19rem;
+  scroll-snap-type: y proximity;
   scrollbar-width: thin;
 }
 
@@ -4660,8 +4733,12 @@ button.family-node:hover {
   scroll-snap-align: start;
 }
 
+/* No width of its own: the grid track sets it, and `aspect-ratio` gives the
+   track a height before the image has decoded - which is why the arrows can
+   measure the scroller on mount without a ResizeObserver. */
 .photo-rail-tile {
-  @apply relative h-32 w-32 shrink-0 overflow-hidden rounded-xl transition sm:h-36 sm:w-36;
+  @apply relative w-full overflow-hidden rounded-xl transition;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--color-border, #ffcbe5);
   background-color: var(--color-primary-surface, #fff0f8);
 }
