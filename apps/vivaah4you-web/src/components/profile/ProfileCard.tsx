@@ -6,6 +6,14 @@ import Link from 'next/link'
 import NameWithBadge from '@/components/profile/NameWithBadge'
 import InterestButton from '@/components/profile/InterestButton'
 import { profileHref } from '@/lib/navigation'
+import { iconFor } from '@/lib/profileIcons'
+
+/* Resolved once, at module level: the same glyphs the profile page puts on
+   these facts, so a card and the profile it opens agree. `settleAbroad` is the
+   plane heroTags() already uses for its NRI tag. */
+const EducationIcon = iconFor('educationLevel')
+const SalaryIcon = iconFor('salaryAmount')
+const NriIcon = iconFor('settleAbroad')
 
 export type ProfileCardData = {
   /** Present for real profiles; absent for the sample/placeholder cards. */
@@ -15,6 +23,16 @@ export type ProfileCardData = {
   location: string
   image: string | null
   headline?: string
+  /** Highest qualification, already label-resolved. */
+  education?: string
+  /** Annual income, already label-resolved from its bucket (e.g. "25-50 lacs"). */
+  salary?: string
+  /**
+   * Whether this member lives abroad. Computed by the API
+   * (`apps/profiles/residency.py`) and only read here - the `nri` search filter
+   * applies the same test, and a second copy of the rule would drift from it.
+   */
+  isNri?: boolean
   /** Secondary facts (height, religion, community, language), shown as pills. */
   details?: string[]
   /** Gallery size, surfaced as a small count over the photo. */
@@ -44,6 +62,9 @@ export default function ProfileCard({
   location,
   image,
   headline,
+  education,
+  salary,
+  isNri = false,
   details = [],
   photoCount = 0,
   verificationLevel = 0,
@@ -67,6 +88,13 @@ export default function ProfileCard({
         <div className="card-initial" aria-hidden="true">
           {name.charAt(0).toUpperCase()}
         </div>
+      )}
+
+      {isNri && (
+        <span className="card-nri" aria-label="Living abroad">
+          {NriIcon && <NriIcon strokeWidth={2} aria-hidden="true" />}
+          NRI
+        </span>
       )}
 
       {photoCount > 1 && (
@@ -114,6 +142,27 @@ export default function ProfileCard({
 
       <div className="card-body">
         {headline && <p className="card-headline">{headline}</p>}
+
+        {(education || salary) && (
+          <div className="card-facts">
+            {education && (
+              <p className="card-fact" aria-label="Education">
+                {EducationIcon && (
+                  <EducationIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
+                )}
+                <span className="truncate" title={education}>{education}</span>
+              </p>
+            )}
+            {salary && (
+              <p className="card-fact" aria-label="Annual income">
+                {SalaryIcon && (
+                  <SalaryIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
+                )}
+                <span className="truncate" title={salary}>{salary}</span>
+              </p>
+            )}
+          </div>
+        )}
 
         {shown.length > 0 && (
           <ul className="card-pills">

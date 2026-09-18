@@ -1519,8 +1519,13 @@ button.chip-selected:hover {
 }
 
 /* --- Profile cards --- */
+/* Four across on a wide screen. The `lg` step is not decoration: the grid used
+   to go 2 -> 3 only at `xl`, so 1024-1279px sat at two columns with a wide empty
+   gutter, and going straight to four there would have skipped a size entirely.
+   The gap tightens at the 4-up breakpoint rather than the shell widening -
+   `.page-shell` is shared by every route. */
 .match-grid {
-  @apply grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3;
+  @apply grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-4;
 }
 
 .card {
@@ -1572,6 +1577,20 @@ button.chip-selected:hover {
   @apply h-3.5 w-3.5;
 }
 
+/* The mirror of .card-photo-count, on the other corner. Tinted rather than
+   neutral, because the two say different kinds of thing: one is about the
+   gallery, this one is about the member. */
+.card-nri {
+  @apply absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-1
+         text-[0.6875rem] font-semibold uppercase tracking-wide text-white;
+  background-color: color-mix(in srgb, var(--color-primary) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.card-nri svg {
+  @apply h-3 w-3;
+}
+
 /* Taller, softer gradient than a flat bar: the photo stays visible through it
    while the text over it keeps its contrast. */
 .card-scrim {
@@ -1615,12 +1634,30 @@ button.chip-selected:hover {
 }
 
 .card-body {
-  @apply flex flex-1 flex-col gap-3 p-4;
+  @apply flex flex-1 flex-col gap-2 p-4;
 }
 
 .card-headline {
   @apply truncate text-sm font-semibold;
   color: var(--color-primary-text, #111827);
+}
+
+/* Education and salary. Icon-led rather than pills: on a 283px card a bare
+   "25-50 lacs" sitting between a height and a religion does not say which fact
+   it is, and these two are worth reading at a glance - they are what the search
+   bar filters on. */
+.card-facts {
+  @apply flex flex-col gap-1;
+}
+
+.card-fact {
+  @apply flex items-center gap-1.5 text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.card-fact-icon {
+  @apply h-3.5 w-3.5 shrink-0;
+  color: var(--color-primary, #ec4899);
 }
 
 .card-pills {

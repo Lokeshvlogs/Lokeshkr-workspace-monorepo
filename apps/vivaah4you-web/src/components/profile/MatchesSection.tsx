@@ -30,12 +30,15 @@ const toCard = (profile: PublicProfile): ProfileCardData => ({
   age: profile.age,
   location: locationLabel(profile),
   image: profile.photo,
-  headline: [
-    labelFor('profession', profile.profession),
-    labelFor('educationLevel', profile.educationLevel),
-  ]
-    .filter(Boolean)
-    .join(' · '),
+  /* Profession alone. Education used to be joined on with " · ", and since the
+     headline is a single truncate() line it was usually the half that got cut
+     off - on a card in a four-column grid, always. It has its own line now. */
+  headline: labelFor('profession', profile.profession),
+  education: labelFor('educationLevel', profile.educationLevel),
+  // A stored bucket slug ("25-50"); labelFor turns it into "25-50 lacs".
+  salary: labelFor('salaryAmount', profile.salaryAmount),
+  // Computed by the API, never re-derived here. See apps/profiles/residency.py.
+  isNri: profile.isNri,
   details: [
     profile.heightFeet ? formatHeight(profile.heightFeet, profile.heightInches) : '',
     labelFor('religion', profile.religion),
@@ -70,6 +73,7 @@ function MatchSkeleton() {
     <div className="match-skeleton" aria-hidden="true">
       <div className="match-skeleton-media" />
       <div className="match-skeleton-line" />
+      <div className="match-skeleton-line match-skeleton-line-short" />
       <div className="match-skeleton-line match-skeleton-line-short" />
     </div>
   )
@@ -243,7 +247,7 @@ export default function MatchesSection() {
 
       <div className="match-grid mt-6">
         {loading
-          ? Array.from({ length: 6 }, (_, i) => <MatchSkeleton key={i} />)
+          ? Array.from({ length: 8 }, (_, i) => <MatchSkeleton key={i} />)
           : visible.map((entry) => (
               <ProfileCard key={entry.card.profileId} {...entry.card} from={from} />
             ))}
