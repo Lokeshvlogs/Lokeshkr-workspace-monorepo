@@ -39,11 +39,14 @@ const toCard = (profile: PublicProfile): ProfileCardData => ({
   salary: labelFor('salaryAmount', profile.salaryAmount),
   // Computed by the API, never re-derived here. See apps/profiles/residency.py.
   isNri: profile.isNri,
+  /* Height, religion, community - and deliberately NOT mother tongue. Four
+     entries against a slice(0, 3) meant the language was almost always
+     collapsed into a "+1" pill that said nothing, and at five cards to a row
+     there is no width to spend on a fact nobody reads here. */
   details: [
     profile.heightFeet ? formatHeight(profile.heightFeet, profile.heightInches) : '',
     labelFor('religion', profile.religion),
     labelFor('community', profile.community),
-    labelFor('mothertongue', profile.mothertongue),
   ].filter(Boolean),
   // Display picture plus gallery - what a visitor would actually be able to see.
   photoCount: (profile.photo ? 1 : 0) + (profile.photos?.length ?? 0),
@@ -109,6 +112,10 @@ export default function MatchesSection() {
   /* Held separately from `entries` so the badge does not drop to zero the
      moment the member opens the New tab and the list is replaced. */
   const [newCount, setNewCount] = useState(0)
+  /* Which profiles this member has already saved. Read once as a set of ids
+     rather than as a field on every match row: the grid only needs to know
+     which bookmarks to fill, and each card owns its own state after that. */
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
 
   const filters = useMemo(() => filtersFromParams(params), [params])
   /* A string, so the fetch effect has something React can compare. The filters
@@ -185,6 +192,15 @@ export default function MatchesSection() {
       })
       .catch(() => {})
 
+    fetch('/api/profile/saved/ids')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setSavedIds(new Set<string>(Array.isArray(data?.ids) ? data.ids : []))
+      })
+      // An empty set is the right fallback: every bookmark simply starts
+      // hollow, and the first tap still writes through to the server.
+      .catch(() => {})
+
     return () => {
       cancelled = true
     }
@@ -249,7 +265,12 @@ export default function MatchesSection() {
         {loading
           ? Array.from({ length: 8 }, (_, i) => <MatchSkeleton key={i} />)
           : visible.map((entry) => (
-              <ProfileCard key={entry.card.profileId} {...entry.card} from={from} />
+              <ProfileCard
+                key={entry.card.profileId}
+                {...entry.card}
+                from={from}
+                isSaved={savedIds.has(entry.card.profileId ?? '')}
+              />
             ))}
       </div>
 

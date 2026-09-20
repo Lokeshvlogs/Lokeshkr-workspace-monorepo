@@ -811,6 +811,38 @@ class Block(models.Model):
         return f"{self.blocker_id} blocked {self.blocked_id}"
 
 
+class SavedProfile(models.Model):
+    """One member privately bookmarking another.
+
+    Directed and one-sided by design. Unlike Interest this is never shown to
+    the other person and has no status to keep in step, so a plain row with a
+    uniqueness constraint is the whole model - there is no "unsaved" state to
+    store, because unsaving is deleting.
+    """
+
+    owner = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="saved_profiles"
+    )
+    saved = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name="saved_by"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "saved"], name="uniq_saved_profile"),
+            models.CheckConstraint(
+                check=~models.Q(owner=models.F("saved")), name="saved_not_self"
+            ),
+        ]
+        # The only read there is: "everything I saved, newest first".
+        indexes = [models.Index(fields=["owner", "-created_at"])]
+
+    def __str__(self):
+        return f"{self.owner_id} saved {self.saved_id}"
+
+
 class FamilyMember(models.Model):
     """One person in a member's family.
 

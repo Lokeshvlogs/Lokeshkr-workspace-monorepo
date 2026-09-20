@@ -51,16 +51,21 @@ export function useInterest() {
   return { state, error, send, busy: state === 'sending' }
 }
 
-/** The button label for a given state, so the three call sites agree. */
+/** The button label for a given state, so the three call sites agree.
+ *
+ * "Connect", not "Express interest": the action is the same POST it always
+ * was, but the card now sits beside a Save button and needed a verb short
+ * enough to share a row with it. Changed here rather than per call site so the
+ * card, the match profile and the public profile cannot drift apart. */
 export function interestLabel(state: InterestState): string {
   switch (state) {
     case 'sending':
-      return 'Sending…'
+      return 'Connecting…'
     case 'sent':
-      return 'Interest sent'
+      return 'Request sent'
     case 'mutual':
       return "It's mutual!"
     default:
-      return 'Express interest'
+      return 'Connect'
   }
 }

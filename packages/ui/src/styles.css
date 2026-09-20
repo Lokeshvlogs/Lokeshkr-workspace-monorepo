@@ -1519,13 +1519,14 @@ button.chip-selected:hover {
 }
 
 /* --- Profile cards --- */
-/* Four across on a wide screen. The `lg` step is not decoration: the grid used
-   to go 2 -> 3 only at `xl`, so 1024-1279px sat at two columns with a wide empty
-   gutter, and going straight to four there would have skipped a size entirely.
-   The gap tightens at the 4-up breakpoint rather than the shell widening -
+/* Five across on a wide screen. `lg` carries four rather than three so the card
+   barely changes size over the last two steps: four in the 976px `lg` shell is
+   ~229px, five in the 1216px `xl` shell is ~222px. Going lg:3 -> xl:5 would
+   have jumped two columns at once and shrunk the card by a third in one step.
+   The gap tightens at the 5-up breakpoint rather than the shell widening -
    `.page-shell` is shared by every route. */
 .match-grid {
-  @apply grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-4;
+  @apply grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5 xl:gap-3.5;
 }
 
 .card {
@@ -1543,8 +1544,17 @@ button.chip-selected:hover {
   box-shadow: 0 22px 44px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
-.card-media-link {
-  @apply block;
+/* The whole card is the link. It sits over everything except the action row,
+   which is lifted above it - see .card-actions. Transparent and box-less: the
+   card's own hover lift is the affordance, this only catches the click. */
+.card-stretch {
+  @apply absolute inset-0 z-[1];
+}
+
+.card-stretch:focus-visible {
+  outline: none;
+  border-radius: 1rem;
+  box-shadow: inset 0 0 0 2px var(--color-primary, #ec4899);
 }
 
 .card-media {
@@ -1638,20 +1648,33 @@ button.chip-selected:hover {
 }
 
 .card-headline {
-  @apply truncate text-sm font-semibold;
+  @apply flex min-w-0 items-center gap-1.5 text-sm font-semibold;
   color: var(--color-primary-text, #111827);
 }
 
-/* Education and salary. Icon-led rather than pills: on a 283px card a bare
-   "25-50 lacs" sitting between a height and a religion does not say which fact
-   it is, and these two are worth reading at a glance - they are what the search
-   bar filters on. */
+/* Income on the left, education on the right, one line BELOW the profession.
+   Icon-led rather than pills: on a 222px card a bare "25-50 lacs" sitting
+   between a height and a religion does not say which fact it is, and these two
+   are worth reading at a glance - they are what the search bar filters on. */
 .card-facts {
-  @apply flex flex-col gap-1;
+  @apply flex items-center justify-between gap-2;
+}
+
+/* Income, tinted rather than grey, so the eye lands on it rather than on the
+   qualification beside it. `shrink-0` because a bucket label is a fixed short
+   string - "25-50 la…" would be worse than nothing, and education is the
+   longer of the two, so it is the one with room to give. */
+.card-salary {
+  @apply flex shrink-0 items-center gap-1 text-xs font-semibold;
+  color: var(--color-primary, #ec4899);
+}
+
+.card-salary-icon {
+  @apply h-3.5 w-3.5 shrink-0;
 }
 
 .card-fact {
-  @apply flex items-center gap-1.5 text-xs;
+  @apply flex min-w-0 items-center gap-1.5 text-xs;
   color: var(--color-placeholder-text, #6b7280);
 }
 
@@ -3670,12 +3693,56 @@ button.match-tab-active:hover,
   color: var(--color-error, #ef4444);
 }
 
+/* Lifted above .card-stretch, or the overlay would swallow every tap on them
+   and send the member to the profile instead. */
 .card-actions {
-  @apply flex items-center gap-2;
+  @apply relative z-[2] flex items-center gap-2;
 }
 
 .card-actions > * {
   @apply min-w-0 flex-1;
+}
+
+/* The quiet half of the row. Same height and radius as .card-cta so the two
+   read as one control, but neutral and deliberately left out of the
+   `.card:hover .card-cta` fill - only one action on a card should look urgent. */
+.card-save {
+  @apply inline-flex w-full items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition;
+  height: 40px;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.card-save-icon {
+  @apply h-4 w-4 shrink-0;
+}
+
+.card-save:hover {
+  border-color: var(--color-primary-light, #f96cba);
+  color: var(--color-primary, #ec4899);
+}
+
+/* Saved: the bookmark fills, the way a saved reel's does, and the label says so. */
+.card-save-on {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary, #ec4899);
+}
+
+.card-save-on .card-save-icon {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.card-save:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.card-save:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
 }
 
 /* --- Interests inbox --- */

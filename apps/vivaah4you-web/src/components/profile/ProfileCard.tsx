@@ -5,12 +5,14 @@ import Link from 'next/link'
 
 import NameWithBadge from '@/components/profile/NameWithBadge'
 import InterestButton from '@/components/profile/InterestButton'
+import SaveButton from '@/components/profile/SaveButton'
 import { profileHref } from '@/lib/navigation'
 import { iconFor } from '@/lib/profileIcons'
 
 /* Resolved once, at module level: the same glyphs the profile page puts on
    these facts, so a card and the profile it opens agree. `settleAbroad` is the
    plane heroTags() already uses for its NRI tag. */
+const ProfessionIcon = iconFor('profession')
 const EducationIcon = iconFor('educationLevel')
 const SalaryIcon = iconFor('salaryAmount')
 const NriIcon = iconFor('settleAbroad')
@@ -44,6 +46,8 @@ export type ProfileCardData = {
    * return here. Absent on the signed-out marketing page.
    */
   from?: string
+  /** Whether the viewer has already saved this member. Seeded by the grid. */
+  isSaved?: boolean
 }
 
 function PinIcon() {
@@ -69,6 +73,7 @@ export default function ProfileCard({
   photoCount = 0,
   verificationLevel = 0,
   from,
+  isSaved = false,
 }: ProfileCardData) {
   /* A plain link now. Profiles used to open in place in the dashboard, which
      meant intercepting left-clicks and letting modifier-clicks through; with a
@@ -128,37 +133,50 @@ export default function ProfileCard({
 
   return (
     <article className="card">
-      {href ? (
-        <Link
-          href={href}
-          aria-label={`View ${name}'s profile`}
-          className="card-media-link"
-        >
-          {media}
-        </Link>
-      ) : (
-        media
+      {media}
+
+      {/* One link, stretched over the whole card, instead of a "View profile"
+          button: the card IS the link now. An overlay rather than a wrapper
+          because the action row below holds <button>s, which may not sit inside
+          an <a> - and a second link over the photo would give a screen reader
+          the same destination twice. */}
+      {href && (
+        <Link href={href} className="card-stretch" aria-label={`View ${name}'s profile`} />
       )}
 
       <div className="card-body">
-        {headline && <p className="card-headline">{headline}</p>}
+        {/* The job title gets the whole line. Sharing it with the income meant
+            a 222px card truncated "Software Engineer" to "Software Engi…" -
+            the fact that identifies the person, cut so a fixed-width number
+            could sit beside it. */}
+        {headline && (
+          <p className="card-headline" title={headline}>
+            {ProfessionIcon && (
+              <ProfessionIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
+            )}
+            <span className="truncate">{headline}</span>
+          </p>
+        )}
 
-        {(education || salary) && (
+        {/* Income and education pair off on the line below: both are short,
+            both are what the search bar filters on, and neither needs the full
+            width the profession above them does. */}
+        {(salary || education) && (
           <div className="card-facts">
+            {salary && (
+              <p className="card-salary" aria-label="Annual income" title={salary}>
+                {SalaryIcon && (
+                  <SalaryIcon className="card-salary-icon" strokeWidth={1.8} aria-hidden="true" />
+                )}
+                {salary}
+              </p>
+            )}
             {education && (
-              <p className="card-fact" aria-label="Education">
+              <p className="card-fact" aria-label="Education" title={education}>
                 {EducationIcon && (
                   <EducationIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
                 )}
-                <span className="truncate" title={education}>{education}</span>
-              </p>
-            )}
-            {salary && (
-              <p className="card-fact" aria-label="Annual income">
-                {SalaryIcon && (
-                  <SalaryIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
-                )}
-                <span className="truncate" title={salary}>{salary}</span>
+                <span className="truncate">{education}</span>
               </p>
             )}
           </div>
@@ -173,14 +191,14 @@ export default function ProfileCard({
           </ul>
         )}
 
-        {href && profileId ? (
+        {profileId ? (
           <div className="card-actions">
-            <Link href={href} className="card-cta">View profile</Link>
+            <SaveButton profileId={profileId} initialSaved={isSaved} />
             <InterestButton profileId={profileId} variant="card" />
           </div>
         ) : (
           // Sample cards on the signed-out home page have no profile behind
-          // them, so there is nobody to express interest in.
+          // them, so there is nobody to connect with.
           <button type="button" className="card-cta" disabled>Connect</button>
         )}
       </div>

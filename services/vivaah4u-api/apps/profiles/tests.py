@@ -51,11 +51,13 @@ from apps.profiles.models import (
     ProfileEducation,
     ProfilePhoto,
     ProfileView,
+    SavedProfile,
     interest_pair_key,
 )
 from apps.auth_api.api import derive_gender
 from apps.catalog import visa
 from apps.profiles import identity, interests, matching, presence, residency
+from apps.profiles import saved_api
 from apps.profiles.api import (
     LAST_WIZARD_STEP,
     RECENTLY_JOINED_DAYS,
@@ -1733,6 +1735,65 @@ class BlockTests(TestCase):
 
         self.assertNotIn(self.ravi, eligible_matches(self.asha))
         self.assertNotIn(self.asha, eligible_matches(self.ravi))
+
+
+class SavedProfileTests(TestCase):
+    """Saving is a private bookmark, so the rules are all about the row itself.
+
+    There is no domain module between the router and the model - the only
+    policy is "not yourself" and "at most once" - so these call the handlers
+    directly with a stub request, which is all `saved_api` reads from one.
+    """
+
+    def setUp(self):
+        self.asha = _member("asha-s", "F")
+        self.ravi = _member("ravi-s", "M")
+        self.asha.profile_id = "SAVE-ASHA"
+        self.asha.save(update_fields=["profile_id"])
+        self.ravi.profile_id = "SAVE-RAVI"
+        self.ravi.save(update_fields=["profile_id"])
+
+    def _request(self, profile):
+        return SimpleNamespace(user=profile.user)
+
+    def test_save_then_unsave_round_trips(self):
+        self.assertEqual(
+            saved_api.save_profile(self._request(self.asha), "SAVE-RAVI"), {"saved": True}
+        )
+        self.assertTrue(SavedProfile.objects.filter(owner=self.asha, saved=self.ravi).exists())
+
+        self.assertEqual(
+            saved_api.unsave_profile(self._request(self.asha), "SAVE-RAVI"), {"saved": False}
+        )
+        self.assertFalse(SavedProfile.objects.filter(owner=self.asha).exists())
+
+    def test_saving_twice_leaves_one_row(self):
+        """A double-tap is the state the member asked for, not an error."""
+        saved_api.save_profile(self._request(self.asha), "SAVE-RAVI")
+        saved_api.save_profile(self._request(self.asha), "SAVE-RAVI")
+        self.assertEqual(SavedProfile.objects.filter(owner=self.asha).count(), 1)
+
+    def test_unsaving_what_was_never_saved_is_not_an_error(self):
+        self.assertEqual(
+            saved_api.unsave_profile(self._request(self.asha), "SAVE-RAVI"), {"saved": False}
+        )
+
+    def test_saving_yourself_is_refused(self):
+        with self.assertRaises(HttpError):
+            saved_api.save_profile(self._request(self.asha), "SAVE-ASHA")
+
+    def test_ids_lists_only_your_own_saves(self):
+        SavedProfile.objects.create(owner=self.asha, saved=self.ravi)
+        self.assertEqual(
+            saved_api.saved_ids(self._request(self.asha)), {"ids": ["SAVE-RAVI"]}
+        )
+        self.assertEqual(saved_api.saved_ids(self._request(self.ravi)), {"ids": []})
+
+    def test_uniqueness_is_enforced_by_the_database(self):
+        """Pins the constraint itself, not the handler that respects it."""
+        SavedProfile.objects.create(owner=self.asha, saved=self.ravi)
+        with self.assertRaises(IntegrityError):
+            SavedProfile.objects.create(owner=self.asha, saved=self.ravi)
 
 
 class MatchTabTests(TestCase):
