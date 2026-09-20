@@ -15,7 +15,7 @@ import {
 import TabStrip, { type TabDef } from '@/components/common/TabStrip'
 import { currentPath } from '@/lib/navigation'
 import { useAuth } from '@/components/authProvider'
-import { formatHeight, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
+import { formatHeightShort, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
 import type { PublicProfile } from '@/types/profile'
 
 /** A match plus the raw profile, so filtering can read fields the card omits. */
@@ -39,12 +39,11 @@ const toCard = (profile: PublicProfile): ProfileCardData => ({
   salary: labelFor('salaryAmount', profile.salaryAmount),
   // Computed by the API, never re-derived here. See apps/profiles/residency.py.
   isNri: profile.isNri,
-  /* Height, religion, community - and deliberately NOT mother tongue. Four
-     entries against a slice(0, 3) meant the language was almost always
-     collapsed into a "+1" pill that said nothing, and at five cards to a row
-     there is no width to spend on a fact nobody reads here. */
+  height: formatHeightShort(profile.heightFeet, profile.heightInches),
+  /* Religion and community only. Mother tongue was dropped - at five cards to
+     a row there is no width for a fact nobody reads here - and height moved up
+     beside the profession, where an icon says what the number is. */
   details: [
-    profile.heightFeet ? formatHeight(profile.heightFeet, profile.heightInches) : '',
     labelFor('religion', profile.religion),
     labelFor('community', profile.community),
   ].filter(Boolean),

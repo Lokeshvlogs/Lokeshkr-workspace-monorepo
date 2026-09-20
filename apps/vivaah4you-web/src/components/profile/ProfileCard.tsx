@@ -13,6 +13,7 @@ import { iconFor } from '@/lib/profileIcons'
    these facts, so a card and the profile it opens agree. `settleAbroad` is the
    plane heroTags() already uses for its NRI tag. */
 const ProfessionIcon = iconFor('profession')
+const HeightIcon = iconFor('height')
 const EducationIcon = iconFor('educationLevel')
 const SalaryIcon = iconFor('salaryAmount')
 const NriIcon = iconFor('settleAbroad')
@@ -29,13 +30,15 @@ export type ProfileCardData = {
   education?: string
   /** Annual income, already label-resolved from its bucket (e.g. "25-50 lacs"). */
   salary?: string
+  /** Already formatted in prime marks (`5'8"`); rides beside the profession. */
+  height?: string
   /**
    * Whether this member lives abroad. Computed by the API
    * (`apps/profiles/residency.py`) and only read here - the `nri` search filter
    * applies the same test, and a second copy of the rule would drift from it.
    */
   isNri?: boolean
-  /** Secondary facts (height, religion, community, language), shown as pills. */
+  /** Secondary facts (religion, community), shown as pills. */
   details?: string[]
   /** Gallery size, surfaced as a small count over the photo. */
   photoCount?: number
@@ -68,6 +71,7 @@ export default function ProfileCard({
   headline,
   education,
   salary,
+  height,
   isNri = false,
   details = [],
   photoCount = 0,
@@ -145,17 +149,29 @@ export default function ProfileCard({
       )}
 
       <div className="card-body">
-        {/* The job title gets the whole line. Sharing it with the income meant
-            a 222px card truncated "Software Engineer" to "Software Engi…" -
-            the fact that identifies the person, cut so a fixed-width number
-            could sit beside it. */}
-        {headline && (
-          <p className="card-headline" title={headline}>
-            {ProfessionIcon && (
-              <ProfessionIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
+        {/* Profession leads, height rides on the right. Height was a pill
+            before, where it sat among religion and community saying nothing
+            about which fact it was; three words wide and never truncating, it
+            costs this row almost nothing. */}
+        {(headline || height) && (
+          <div className="card-headline-row">
+            {headline && (
+              <p className="card-headline" title={headline}>
+                {ProfessionIcon && (
+                  <ProfessionIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
+                )}
+                <span className="truncate">{headline}</span>
+              </p>
             )}
-            <span className="truncate">{headline}</span>
-          </p>
+            {height && (
+              <p className="card-height" aria-label="Height">
+                {HeightIcon && (
+                  <HeightIcon className="card-fact-icon" strokeWidth={1.8} aria-hidden="true" />
+                )}
+                {height}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Income and education pair off on the line below: both are short,

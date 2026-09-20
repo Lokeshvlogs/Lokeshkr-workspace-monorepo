@@ -178,6 +178,19 @@ export function formatHeight(feet?: number | null, inches?: number | null): stri
 }
 
 /**
+ * The same height in prime marks - `5'8"`.
+ *
+ * A third of the width of "5 ft 8 in", which is the whole point: on a search
+ * card it shares a line with the profession, and every pixel it does not take
+ * is a pixel the job title does not have to truncate. The long form stays the
+ * default everywhere it has a line to itself.
+ */
+export function formatHeightShort(feet?: number | null, inches?: number | null): string {
+  if (!feet) return ''
+  return `${feet}'${inches ?? 0}"`
+}
+
+/**
  * "his" / "her", and "their" when gender is unstated or 'other'.
  *
  * NOT the same thing as `possessive` in CompatibilityPanel, which is module-

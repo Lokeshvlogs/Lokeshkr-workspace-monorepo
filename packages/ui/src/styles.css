@@ -1647,9 +1647,21 @@ button.chip-selected:hover {
   @apply flex flex-1 flex-col gap-2 p-4;
 }
 
+/* Profession on the left, height on the right. */
+.card-headline-row {
+  @apply flex items-center justify-between gap-2;
+}
+
 .card-headline {
   @apply flex min-w-0 items-center gap-1.5 text-sm font-semibold;
   color: var(--color-primary-text, #111827);
+}
+
+/* Height, in prime marks. `shrink-0` and never truncated: `5'8"` is ~30px and
+   means nothing cut short, so the profession beside it keeps the rest. */
+.card-height {
+  @apply flex shrink-0 items-center gap-1 text-xs whitespace-nowrap;
+  color: var(--color-placeholder-text, #6b7280);
 }
 
 /* Income on the left, education on the right, one line BELOW the profession.
