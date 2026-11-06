@@ -2,7 +2,7 @@ import type { ComponentType } from 'react'
 
 import { heroTagFields, type ProfileFieldDef } from '@/lib/profileFields'
 import { iconFor } from '@/lib/profileIcons'
-import { labelFor } from '@/lib/profileDisplay'
+import { displayLabelFor, labelFor } from '@/lib/profileDisplay'
 import type { PublicProfile } from '@/types/profile'
 
 type FieldIcon = ComponentType<{ className?: string; strokeWidth?: number; size?: number }>
@@ -75,7 +75,7 @@ export function heroTags(
 
   for (const def of heroTagFields()) {
     const raw = (profile as unknown as Record<string, unknown>)[def.key]
-    const label = labelFor(def.key, raw)
+    const label = displayLabelFor(def.key, raw, profile.incomeCurrency)
 
     // An unanswered tag is dropped for a visitor and KEPT for the owner, where
     // the blank is the prompt - the same rule the identity line applies.

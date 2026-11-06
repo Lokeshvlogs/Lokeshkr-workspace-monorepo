@@ -14,8 +14,15 @@ import {
 } from '@/lib/matchFilters'
 import TabStrip, { type TabDef } from '@/components/common/TabStrip'
 import { currentPath } from '@/lib/navigation'
+import { toConnectionStates, type ConnectionStates } from '@/lib/interests'
 import { useAuth } from '@/components/authProvider'
-import { formatHeightShort, fullName, labelFor, locationLabel } from '@/lib/profileDisplay'
+import {
+  displayLabelFor,
+  formatHeightShort,
+  fullName,
+  labelFor,
+  locationLabel,
+} from '@/lib/profileDisplay'
 import type { PublicProfile } from '@/types/profile'
 
 /** A match plus the raw profile, so filtering can read fields the card omits. */
@@ -35,18 +42,21 @@ const toCard = (profile: PublicProfile): ProfileCardData => ({
      off - on a card in a four-column grid, always. It has its own line now. */
   headline: labelFor('profession', profile.profession),
   education: labelFor('educationLevel', profile.educationLevel),
-  // A stored bucket slug ("25-50"); labelFor turns it into "25-50 lacs".
-  salary: labelFor('salaryAmount', profile.salaryAmount),
+  /* A stored tier slug ("25-50"); displayLabelFor turns it into the label of
+     the currency it was picked in, plus the unit of time the tier itself does
+     not carry - "₹25-50 lacs p.a.", or "$75-150k p.a." for a member abroad. */
+  salary: displayLabelFor('salaryAmount', profile.salaryAmount, profile.incomeCurrency),
   // Computed by the API, never re-derived here. See apps/profiles/residency.py.
   isNri: profile.isNri,
   height: formatHeightShort(profile.heightFeet, profile.heightInches),
-  /* Religion and community only. Mother tongue was dropped - at five cards to
-     a row there is no width for a fact nobody reads here - and height moved up
-     beside the profession, where an icon says what the number is. */
-  details: [
-    labelFor('religion', profile.religion),
-    labelFor('community', profile.community),
-  ].filter(Boolean),
+  // labelFor, not displayLabelFor: only income carries a suffix.
+  religion: labelFor('religion', profile.religion),
+  community: labelFor('community', profile.community),
+  /* Empty on purpose, not by accident. Religion and community are the pills
+     now, passed as named props above so the community can be capped; height
+     went up beside the profession, and mother tongue was dropped outright.
+     This list is left in place for whatever fact earns a pill next. */
+  details: [],
   // Display picture plus gallery - what a visitor would actually be able to see.
   photoCount: (profile.photo ? 1 : 0) + (profile.photos?.length ?? 0),
   verificationLevel: profile.verification_level ?? 0,
@@ -115,6 +125,10 @@ export default function MatchesSection() {
      rather than as a field on every match row: the grid only needs to know
      which bookmarks to fill, and each card owns its own state after that. */
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
+  /* Where the member stands with each profile in the grid. Read as one map
+     rather than per card: 48 cards would otherwise be 48 requests to decide
+     whether a button says Connect or Chat. */
+  const [connections, setConnections] = useState<ConnectionStates>({})
 
   const filters = useMemo(() => filtersFromParams(params), [params])
   /* A string, so the fetch effect has something React can compare. The filters
@@ -189,6 +203,15 @@ export default function MatchesSection() {
       .then((data) => {
         if (!cancelled) setNewCount(Number(data?.newMatches ?? 0))
       })
+      .catch(() => {})
+
+    fetch('/api/interests/states')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setConnections(toConnectionStates(data))
+      })
+      // An empty map is the right fallback: every button falls back to
+      // Connect, and sending one still writes through to the server.
       .catch(() => {})
 
     fetch('/api/profile/saved/ids')
@@ -269,6 +292,7 @@ export default function MatchesSection() {
                 {...entry.card}
                 from={from}
                 isSaved={savedIds.has(entry.card.profileId ?? '')}
+                connection={connections[entry.card.profileId ?? '']}
               />
             ))}
       </div>

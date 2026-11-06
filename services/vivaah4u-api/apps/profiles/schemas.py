@@ -54,6 +54,7 @@ class ProfileUpdateSchema(Schema):
     employedIn: Optional[str] = None
     employedAs: Optional[str] = None
     salaryAmount: Optional[str] = None
+    incomeCurrency: Optional[str] = None
 
     # About the member (optional)
     aboutMe: Optional[str] = None

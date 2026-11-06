@@ -1,0 +1,219 @@
+:root {
+  --lm-bg: #0d0d0f;
+  --lm-panel: #17171b;
+  --lm-line: #2a2a31;
+  --lm-text: #ececec;
+  --lm-muted: #9a9aa3;
+  --lm-accent: #ff4d8d;
+  --lm-accent-2: #ffb547;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--lm-bg);
+  color: var(--lm-text);
+  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+a {
+  color: var(--lm-accent-2);
+}
+
+/* ---- landing and simple pages ---- */
+.lm-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+.lm-center {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+}
+.lm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0;
+}
+.lm-logo {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--lm-text);
+  text-decoration: none;
+  background: linear-gradient(90deg, var(--lm-accent), var(--lm-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.lm-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.lm-nav a {
+  color: var(--lm-muted);
+  text-decoration: none;
+}
+.lm-hero {
+  padding: 48px 0 32px;
+  max-width: 720px;
+}
+.lm-hero h1 {
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1.1;
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+}
+.lm-hero p {
+  color: var(--lm-muted);
+  font-size: 18px;
+  margin: 0 0 24px;
+}
+.lm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.lm-muted {
+  color: var(--lm-muted);
+}
+.lm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 16px 0 32px;
+}
+.lm-card {
+  background: var(--lm-panel);
+  border: 1px solid var(--lm-line);
+  border-radius: 12px;
+  padding: 18px;
+}
+.lm-card h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+.lm-card p {
+  margin: 0;
+  color: var(--lm-muted);
+  font-size: 15px;
+}
+.lm-card p + p {
+  margin-top: 8px;
+}
+.lm-note {
+  background: var(--lm-panel);
+  border-left: 3px solid var(--lm-accent-2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: var(--lm-muted);
+}
+.lm-footer {
+  margin-top: 40px;
+  font-size: 13px;
+  color: var(--lm-muted);
+}
+
+/* ---- buttons and account ---- */
+.lm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--lm-line);
+  background: var(--lm-panel);
+  color: var(--lm-text);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.lm-btn:hover {
+  border-color: #44444d;
+}
+.lm-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.lm-btn-primary {
+  border-color: transparent;
+  background: linear-gradient(90deg, var(--lm-accent), #ff7a59);
+  color: #fff;
+  font-weight: 600;
+}
+.lm-btn-big {
+  padding: 12px 22px;
+  font-size: 16px;
+}
+.lm-btn-quiet {
+  background: transparent;
+}
+.lm-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.lm-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--lm-accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+.lm-account-name {
+  font-size: 14px;
+}
+
+/* ---- the editor page ---- */
+.lm-editor-host {
+  position: fixed;
+  inset: 0;
+}
+.lm-editor-loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--lm-muted);
+}
+.lm-editor-error {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: #3a1520;
+  border: 1px solid #7a2a3f;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+/* The account button inside the editor's top bar. */
+.lm-topbar {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+}
+.lm-topbar .lm-btn {
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 6px;
+}
+.lm-topbar .lm-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}

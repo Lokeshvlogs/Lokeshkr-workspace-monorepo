@@ -57,7 +57,7 @@ from apps.profiles.models import (
 from apps.auth_api.api import derive_gender
 from apps.catalog import visa
 from apps.profiles import identity, interests, matching, presence, residency
-from apps.profiles import saved_api
+from apps.profiles import blocks_api, interests_api, messaging_hooks, saved_api
 from apps.profiles.api import (
     LAST_WIZARD_STEP,
     RECENTLY_JOINED_DAYS,
@@ -1794,6 +1794,220 @@ class SavedProfileTests(TestCase):
         SavedProfile.objects.create(owner=self.asha, saved=self.ravi)
         with self.assertRaises(IntegrityError):
             SavedProfile.objects.create(owner=self.asha, saved=self.ravi)
+
+
+class ConnectionStateTests(TestCase):
+    """`states_for` is what a whole page of cards reads instead of 48 queries."""
+
+    def setUp(self):
+        self.asha = _member("asha-cs", "F")
+        self.ravi = _member("ravi-cs", "M")
+        self.vik = _member("vik-cs", "M")
+
+    def test_nothing_between_them_is_absent_rather_than_a_row(self):
+        self.assertEqual(interests.states_for(self.asha), {})
+
+    def test_direction_is_from_the_callers_point_of_view(self):
+        interests.send(self.asha, self.ravi)
+
+        mine = interests.states_for(self.asha)[self.ravi.pk]
+        theirs = interests.states_for(self.ravi)[self.asha.pk]
+
+        self.assertEqual(mine["direction"], "sent")
+        self.assertEqual(theirs["direction"], "received")
+        self.assertEqual(mine["status"], Interest.Status.PENDING)
+
+    def test_accept_is_seen_by_both_sides(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+
+        for me, other in ((self.asha, self.ravi), (self.ravi, self.asha)):
+            self.assertEqual(
+                interests.states_for(me)[other.pk]["status"], Interest.Status.ACCEPTED
+            )
+
+    def test_a_live_row_beats_a_dead_one_for_the_same_pair(self):
+        """A declined A->B may sit beside a live B->A; the live one is the state."""
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.decline(interest.id, self.ravi)
+        interests.send(self.ravi, self.asha)
+
+        state = interests.states_for(self.asha)[self.ravi.pk]
+        self.assertEqual(state["status"], Interest.Status.PENDING)
+        self.assertEqual(state["direction"], "received")
+
+    def test_one_query_covers_every_pair(self):
+        interests.send(self.asha, self.ravi)
+        interests.send(self.vik, self.asha)
+
+        with self.assertNumQueries(1):
+            states = interests.states_for(self.asha)
+        self.assertEqual(set(states), {self.ravi.pk, self.vik.pk})
+
+    def test_the_endpoint_keys_on_public_profile_ids(self):
+        self.ravi.profile_id = "STATE-RAVI"
+        self.ravi.save(update_fields=["profile_id"])
+        interests.send(self.asha, self.ravi)
+
+        out = interests_api.interest_states(SimpleNamespace(user=self.asha.user))
+        self.assertEqual(out["states"]["STATE-RAVI"]["direction"], "sent")
+
+
+class ConnectedPoolTests(TestCase):
+    """A connected member belongs in the inbox's accepted tab, not the grid."""
+
+    def setUp(self):
+        self.asha = _member("asha-cp", "F")
+        self.ravi = _member("ravi-cp", "M")
+
+    def test_a_pending_interest_leaves_them_in_the_pool(self):
+        """Still being decided - the card is where the member sees they wait."""
+        interests.send(self.asha, self.ravi)
+        self.assertIn(self.ravi, eligible_matches(self.asha))
+        self.assertIn(self.asha, eligible_matches(self.ravi))
+
+    def test_accepting_removes_them_both_ways(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+
+        self.assertNotIn(self.ravi, eligible_matches(self.asha))
+        self.assertNotIn(self.asha, eligible_matches(self.ravi))
+
+    def test_a_declined_interest_leaves_them_in_the_pool(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.decline(interest.id, self.ravi)
+        self.assertIn(self.ravi, eligible_matches(self.asha))
+
+    def test_connected_profiles_are_absent_from_every_match_tab(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+
+        for tab in ("all", "new", "recent"):
+            self.assertNotIn(self.ravi, match_queryset(self.asha, tab), tab)
+
+    def test_connected_profiles_are_absent_from_the_trending_rail(self):
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+
+        for tab in ("trending", "online", "new"):
+            self.assertNotIn(self.ravi, trending_queryset(self.asha, tab), tab)
+
+    def test_they_are_still_reachable_from_the_accepted_tab(self):
+        """Removed from search, NOT from the product."""
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+
+        self.assertIn(interest, interests.for_tab(self.asha, "accepted"))
+        self.assertIn(interest, interests.for_tab(self.ravi, "accepted"))
+
+
+class BlockApiTests(TestCase):
+    """The standalone block, which is new - decline(block=True) was the only way.
+
+    These pin what that older path never had to answer: blocking somebody who
+    never wrote to you, blocking yourself, undoing it, and what happens to a
+    pair that had already accepted.
+    """
+
+    def setUp(self):
+        self.asha = _member("asha-ba", "F")
+        self.ravi = _member("ravi-ba", "M")
+        for profile, pid in ((self.asha, "BLOCK-ASHA"), (self.ravi, "BLOCK-RAVI")):
+            profile.profile_id = pid
+            profile.save(update_fields=["profile_id"])
+
+    def _request(self, profile):
+        return SimpleNamespace(user=profile.user)
+
+    def test_blocking_a_stranger_is_allowed(self):
+        """The whole point: no pending interest is needed first."""
+        self.assertEqual(
+            blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI"),
+            {"blocked": True},
+        )
+        self.assertTrue(interests.is_blocked_between(self.asha, self.ravi))
+        self.assertNotIn(self.ravi, eligible_matches(self.asha))
+
+    def test_blocking_yourself_is_refused(self):
+        with self.assertRaises(HttpError):
+            blocks_api.block_profile(self._request(self.asha), "BLOCK-ASHA")
+
+    def test_blocking_twice_leaves_one_row(self):
+        blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI")
+        blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI")
+        self.assertEqual(Block.objects.filter(blocker=self.asha).count(), 1)
+
+    def test_unblock_restores_the_pool(self):
+        blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI")
+        blocks_api.unblock_profile(self._request(self.asha), "BLOCK-RAVI")
+
+        self.assertFalse(interests.is_blocked_between(self.asha, self.ravi))
+        self.assertIn(self.ravi, eligible_matches(self.asha))
+
+    def test_unblocking_what_was_never_blocked_is_not_an_error(self):
+        self.assertEqual(
+            blocks_api.unblock_profile(self._request(self.asha), "BLOCK-RAVI"),
+            {"blocked": False},
+        )
+
+    def test_a_live_interest_is_declined_by_the_block(self):
+        interest, _ = interests.send(self.ravi, self.asha)
+        blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI")
+
+        interest.refresh_from_db()
+        self.assertEqual(interest.status, Interest.Status.DECLINED)
+        self.assertIsNotNone(interest.responded_at)
+
+    def test_blocking_an_accepted_pair_cuts_the_chat_off(self):
+        interest, _ = interests.send(self.ravi, self.asha)
+        interests.accept(interest.id, self.asha)
+        conversation = interests.conversation_with(self.asha, self.ravi)
+
+        blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI")
+
+        conversation.refresh_from_db()
+        self.assertTrue(conversation.is_closed)
+        # Both ways: the blocked member must not be able to tell, but they also
+        # must not be able to keep writing.
+        self.assertFalse(messaging_hooks.can_post_message(self.ravi, conversation))
+        self.assertFalse(messaging_hooks.can_post_message(self.asha, conversation))
+
+    def test_chat_is_refused_once_blocked(self):
+        interest, _ = interests.send(self.ravi, self.asha)
+        interests.accept(interest.id, self.asha)
+        blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI")
+
+        with self.assertRaises(interests.InterestError):
+            interests.conversation_with(self.ravi, self.asha)
+
+    def test_the_list_is_only_your_own(self):
+        blocks_api.block_profile(self._request(self.asha), "BLOCK-RAVI")
+
+        mine = blocks_api.list_blocks(self._request(self.asha))
+        theirs = blocks_api.list_blocks(self._request(self.ravi))
+
+        self.assertEqual(mine["total"], 1)
+        self.assertEqual(mine["results"][0]["profile"]["profile_id"], "BLOCK-RAVI")
+        self.assertEqual(theirs["total"], 0)
+
+
+class ConversationWithTests(TestCase):
+    def setUp(self):
+        self.asha = _member("asha-cw", "F")
+        self.ravi = _member("ravi-cw", "M")
+
+    def test_chat_needs_a_mutual_interest(self):
+        with self.assertRaises(interests.InterestError):
+            interests.conversation_with(self.asha, self.ravi)
+
+    def test_it_opens_the_thread_the_accept_may_have_missed(self):
+        """open_conversation swallows every exception, so this cannot assume one."""
+        interest, _ = interests.send(self.asha, self.ravi)
+        interests.accept(interest.id, self.ravi)
+
+        first = interests.conversation_with(self.asha, self.ravi)
+        second = interests.conversation_with(self.ravi, self.asha)
+        self.assertEqual(first.pk, second.pk)
 
 
 class MatchTabTests(TestCase):

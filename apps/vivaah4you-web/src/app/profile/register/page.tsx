@@ -66,6 +66,7 @@ import { fieldIssue } from "@/lib/validation/schemas/profileWizardSchema";
 import EducationList, { isEducationComplete, type EducationEntry } from "@/components/profile/EducationList";
 import AchievementList, { type AchievementEntry } from "@/components/profile/AchievementList";
 import EmployerPicker from "@/components/profile/EmployerPicker";
+import IncomePicker from "@/components/profile/IncomePicker";
 import FamilyEditor from "@/components/profile/FamilyEditor";
 import VisaStatusPicker from "@/components/profile/VisaStatusPicker";
 import { useAuth } from "@/components/authProvider";
@@ -91,7 +92,6 @@ import {
   employedInOptions,
 } from "@/constants/selectOptions/career";
 import { employedAsFits, employedAsFor } from "@/constants/selectOptions/employedAs";
-import { familyIncomeOptions } from "@/constants/selectOptions/people";
 import {
   physiqueOptions,
   smokingOptions,
@@ -311,6 +311,10 @@ const INITIAL_FORM = {
   employedIn: "",
   employedAs: "",
   salaryAmount: "",
+  // The currency `salaryAmount`'s tier was quoted in, set by IncomePicker from
+  // the country of residence. Stored so a later move abroad cannot relabel an
+  // answer in a currency the member never chose.
+  incomeCurrency: "",
   settleAbroad: "",
   employerSlug: "",
   employerName: "",
@@ -387,7 +391,7 @@ const STEP_FIELDS: (keyof FormState)[][] = [
      step 0 saves it. */
   ["firstName", "surname", "dob", "gender", "heightFeet", "heightInches", "bodyPhysique", "maritalStatus", "manglikLevel"],
   ["religion", "community", "mothertongue", "religiosity", "religiosityDetail", "currentCountry", "currentState", "currentCity", "placeOfBirthCountry", "placeOfBirthState", "placeOfBirthCity", "citizenshipCountry"],
-  ["educations", "achievements", "profession", "employedIn", "employedAs", "salaryAmount", "settleAbroad", "employerSlug", "employerName", "workCountry", "visaStatus"],
+  ["educations", "achievements", "profession", "employedIn", "employedAs", "salaryAmount", "incomeCurrency", "settleAbroad", "employerSlug", "employerName", "workCountry", "visaStatus"],
   ["familyLivingInCountry", "familyLivingInState", "familyLivingInCity", "familyIncome", "familyType", "livesWithFamily", "fatherOccupation", "motherOccupation", "brothers", "brothersMarried", "sisters", "sistersMarried", "familyAbout"],
   ["diet", "smoking", "drinking", "hasChildren", "dailyRoutine", "interestsMusic", "interestsMovies", "interestsBooks", "interestsCuisines", "interestsTravel", "interestsHobbies", "interestsOther"],
   ["partnerAgeMin", "partnerAgeMax", "partnerHeightMin", "partnerHeightMax", "partnerAbout", "partnerMaritalStatuses", "partnerReligions", "partnerCommunities", "partnerMotherTongues", "partnerCountries", "partnerEducations", "partnerProfessions", "partnerDiets", "partnerReligiosities", "partnerSmoking", "partnerDrinking"],
@@ -1520,7 +1524,19 @@ export default function ProfileRegisterPage() {
                     <PickerField label="Profession" icon={<Briefcase />} errorValue={err("profession")} onBlur={touch("profession")} options={professionOptions} value={form.profession} onChange={setProfession} searchable />
                     <PickerField label="Employed In" icon={<Building2 />} errorValue={err("employedIn")} onBlur={touch("employedIn")} options={employedInOptions} value={form.employedIn} onChange={(v) => setField("employedIn", v)} />
                     <PickerField label="Employed As" icon={<UserCog />} errorValue={err("employedAs")} onBlur={touch("employedAs")} options={employedAsChoices} value={form.employedAs} onChange={(v) => setField("employedAs", v)} searchable />
-                    <PickerField label="Annual income" icon={<Wallet />} errorValue={err("salaryAmount")} onBlur={touch("salaryAmount")} options={familyIncomeOptions} value={form.salaryAmount} onChange={(v) => setField("salaryAmount", v)} />
+                    {/* Quoted in the currency of where they live, which step 1
+                        already asked for. The nine values are the same in every
+                        currency, so changing country relabels the list without
+                        invalidating an answer. */}
+                    <IncomePicker
+                      label="Annual income"
+                      country={form.currentCountry}
+                      errorValue={err("salaryAmount")}
+                      onBlur={touch("salaryAmount")}
+                      value={form.salaryAmount}
+                      onChange={(v) => setField("salaryAmount", v)}
+                      onCurrencyChange={(c) => setField("incomeCurrency", c)}
+                    />
 
                     <EmployerPicker
                       slug={form.employerSlug}
@@ -1598,7 +1614,16 @@ export default function ProfileRegisterPage() {
                     <PickerField label="City" icon={<Building2 />} options={citiesForState(form.familyLivingInCountry, form.familyLivingInState)} errorValue={err("familyLivingInCity")} onBlur={touch("familyLivingInCity")} value={form.familyLivingInCity} onChange={(v) => setField("familyLivingInCity", v)} searchable />
                   </div>
                   <div className="mt-4">
-                    <PickerField label="Family income (per annum)" icon={<Wallet />} errorValue={err("familyIncome")} onBlur={touch("familyIncome")} options={familyIncomeOptions} value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} />
+                    {/* Driven by where the FAMILY lives, asked directly above,
+                        rather than by where the member does. */}
+                    <IncomePicker
+                      label="Family income (per annum)"
+                      country={form.familyLivingInCountry}
+                      errorValue={err("familyIncome")}
+                      onBlur={touch("familyIncome")}
+                      value={form.familyIncome}
+                      onChange={(v) => setField("familyIncome", v)}
+                    />
                   </div>
                   <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <ChipGroup label="Family Type" icon={<Users />} options={FAMILY_TYPE_OPTIONS} value={form.familyType} onChange={(v) => {

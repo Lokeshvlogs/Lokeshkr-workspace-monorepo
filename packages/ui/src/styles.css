@@ -1710,6 +1710,14 @@ button.chip-selected:hover {
   color: var(--color-primary, #ec4899);
 }
 
+/* The community pill, capped. "Viswabrahmin" is twice the width of "Hindu" and
+   would push the pair onto a second row on a 222px card. Clipping INSIDE a
+   bubble reads as the bubble being full, which is why the ellipsis is right
+   here and was wrong on a bare icon row; the full name is in the title. */
+.card-pill-shrink {
+  @apply max-w-[9.5rem] truncate;
+}
+
 .card-cta {
   @apply inline-flex w-full items-center justify-center rounded-lg text-sm font-semibold transition;
   height: 40px;
@@ -1730,6 +1738,37 @@ button.chip-selected:hover {
 .card-cta:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--color-focus-ring, color-mix(in srgb, var(--color-primary) 16%, transparent));
+}
+
+.card-cta-icon {
+  @apply mr-1.5 h-4 w-4 shrink-0;
+}
+
+/* Chat carries no colour of its own. On a card it IS .card-cta - outlined,
+   filling on hover like Connect - and on a profile it is the primary button
+   the base class already makes it. The icon and the word are the difference;
+   a second filled treatment beside Save only made the grid noisier. */
+
+/* Their move, waiting on the reader. Outlined rather than filled: the answer
+   belongs in the inbox, where the message they sent with it is readable. */
+.card-cta-respond {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  background-color: var(--color-primary-surface, #fdf2f8);
+  color: var(--color-primary, #ec4899);
+}
+
+/* Pending, declined, withdrawn - settled or waiting, nothing to do either way.
+   Kept visible rather than hidden so the member can see where they stand, and
+   exempt from the hover fill below, which would promise a tap that does
+   nothing. */
+.card-cta-quiet,
+.card:hover .card-cta-quiet,
+.card-cta-quiet:hover {
+  background-color: var(--color-bg, #ffffff);
+  border-color: var(--color-border, #fbcfe8);
+  color: var(--color-placeholder-text, #6b7280);
+  cursor: default;
+  opacity: 0.85;
 }
 
 /* --- Match empty / gated / loading states --- */
@@ -2347,6 +2386,116 @@ button.chip-selected:hover {
 
 .profile-hero-actions {
   @apply flex shrink-0 flex-wrap justify-center gap-2;
+}
+
+/* Block. Quiet by default and red only on approach: it sits next to Connect,
+   and a permanently red button beside an invitation reads as a warning about
+   the person rather than as an action the reader can take. */
+.profile-block-btn {
+  @apply inline-flex items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition;
+  height: 40px;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+.profile-block-btn:hover {
+  border-color: var(--color-error, #ef4444);
+  color: var(--color-error, #ef4444);
+}
+
+.profile-block-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 20%, transparent);
+}
+
+.profile-block-icon {
+  @apply h-4 w-4 shrink-0;
+}
+
+/* --- Confirm dialog --- */
+.confirm-backdrop {
+  @apply fixed inset-0 z-[100] flex items-center justify-center p-4;
+  background-color: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.confirm-panel {
+  @apply w-full max-w-md rounded-2xl p-6;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.28);
+}
+
+.confirm-panel:focus {
+  outline: none;
+}
+
+.confirm-title {
+  @apply text-lg font-bold;
+  color: var(--color-primary-text, #111827);
+  letter-spacing: -0.02em;
+}
+
+.confirm-body {
+  @apply mt-2 flex flex-col gap-2 text-sm;
+  color: var(--color-placeholder-text, #6b7280);
+}
+
+/* The reassuring half - that it is private, and reversible. */
+.confirm-note {
+  @apply text-xs;
+  color: var(--color-placeholder-text, #6b7280);
+  opacity: 0.85;
+}
+
+.confirm-error {
+  @apply mt-3 text-xs;
+  color: var(--color-error, #ef4444);
+}
+
+.confirm-actions {
+  @apply mt-5 flex items-center justify-end gap-2;
+}
+
+.confirm-go {
+  @apply inline-flex items-center justify-center rounded-lg px-4 text-sm font-semibold text-white transition;
+  height: 40px;
+  background-color: var(--color-primary, #ec4899);
+  border: 1px solid var(--color-primary, #ec4899);
+}
+
+/* Red only at the moment of committing, where the colour is the last warning. */
+.confirm-go-danger {
+  background-color: var(--color-error, #ef4444);
+  border-color: var(--color-error, #ef4444);
+}
+
+.confirm-go:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.confirm-go:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 24%, transparent);
+}
+
+/* --- Blocked members, in settings --- */
+.blocked-row {
+  @apply flex items-center justify-between gap-3 rounded-xl px-3 py-2;
+  border: 1px solid var(--color-border, #fbcfe8);
+  background-color: var(--color-bg, #ffffff);
+}
+
+.blocked-name {
+  @apply truncate text-sm font-semibold;
+  color: var(--color-primary-text, #111827);
+}
+
+.blocked-city {
+  @apply truncate text-xs;
+  color: var(--color-placeholder-text, #6b7280);
 }
 
 /* Facts as icon-led pills, in place of a run-on summary line. */

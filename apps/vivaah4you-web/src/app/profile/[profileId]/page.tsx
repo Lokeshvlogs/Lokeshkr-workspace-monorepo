@@ -20,7 +20,9 @@ import { backTarget, DEFAULT_BACK } from '@/lib/navigation'
 import { useAuth } from '@/components/authProvider'
 import type { MyProfile, PublicProfile } from '@/types/profile'
 import InterestButton from '@/components/profile/InterestButton'
+import BlockButton from '@/components/profile/BlockButton'
 import { detailMessage } from '@/lib/errors'
+import { toConnectionStates, type ConnectionState } from '@/lib/interests'
 
 /** The bar at the top of every state of this page, including the error one. */
 function BackBar({ href, label }: { href: string; label: string }) {
@@ -46,6 +48,10 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
   const [me, setMe] = useState<MyProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  /* Where the reader stands with this member. Without it the action button
+     started every page load at "Connect", including on a profile whose
+     interest had already been accepted. */
+  const [connection, setConnection] = useState<ConnectionState | undefined>(undefined)
 
   useEffect(() => {
     let cancelled = false
@@ -87,6 +93,14 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
     }
 
     let cancelled = false
+
+    fetch('/api/interests/states')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setConnection(toConnectionStates(data)[profileId])
+      })
+      .catch(() => {})
+
     fetch('/api/profile/me')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -97,7 +111,7 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
     return () => {
       cancelled = true
     }
-  }, [auth.isAuthenticated])
+  }, [auth.isAuthenticated, profileId])
 
   if (loading) {
     return (
@@ -148,7 +162,15 @@ function PublicProfilePageInner({ profileId }: { profileId: string }) {
              the lower ask is the better of the two: it names what signing in
              gets you instead of only where it leads. */
           actions={
-            auth.isAuthenticated ? <InterestButton profileId={profile.profile_id} /> : undefined
+            auth.isAuthenticated ? (
+              <>
+                <InterestButton profileId={profile.profile_id} connection={connection} />
+                {/* Only here, never on a card: this is the one action on a
+                    profile that cannot be shrugged off, and a grid of 48 would
+                    put it a mis-tap from Save. */}
+                <BlockButton profileId={profile.profile_id} name={firstName} />
+              </>
+            ) : undefined
           }
           managed={managedByLine(profile.managedBy, profile.gender, { owner: false })}
           bio={<ProfileBio bare value={profile.aboutMe ?? ''} heading={`About ${firstName}`} />}

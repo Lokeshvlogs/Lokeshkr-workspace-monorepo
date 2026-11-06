@@ -15,6 +15,7 @@ from django.db.models import BooleanField, Case, Q, Value, When
 from ninja import Router, Schema
 from ninja_jwt.authentication import JWTAuth
 
+from .income import options_for as income_options_for
 from .models import Employer, Institution
 from .visa import options_for as visa_options_for
 
@@ -45,6 +46,11 @@ class CatalogPageOut(Schema):
 
 
 class VisaOptionOut(Schema):
+    value: str
+    label: str
+
+
+class IncomeOptionOut(Schema):
     value: str
     label: str
 
@@ -130,3 +136,14 @@ def employers(
 def visa_statuses(request, country: str = ""):
     """Residency statuses worth distinguishing in the given country."""
     return visa_options_for(country)
+
+
+@router.get("/income-brackets", response=list[IncomeOptionOut], auth=JWTAuth())
+def income_brackets(request, country: str = ""):
+    """Annual-income bands in the currency of the given country.
+
+    The values are the same nine tiers everywhere - see apps.catalog.income.
+    Only the labels change, which is what keeps the search filter working
+    across currencies.
+    """
+    return income_options_for(country)

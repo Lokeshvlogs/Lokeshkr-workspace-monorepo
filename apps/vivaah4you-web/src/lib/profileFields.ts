@@ -8,7 +8,7 @@ import {
   fieldOfStudyOptions,
   professionOptions,
 } from '@/constants/selectOptions/career'
-import { familyIncomeOptions } from '@/constants/selectOptions/people'
+import { incomeOptionsFor, incomeOptionsForCountry } from '@/constants/selectOptions/income'
 import {
   dietOptions,
   drinkingOptions,
@@ -290,7 +290,10 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
      `fieldsBySection` filters them out of this panel so they cannot render
      twice. workCountry and visaStatus went entirely: both are folded into the
      residency tag. */
-  { key: 'salaryAmount', label: 'Annual income', section: 'Education & Career', step: 2, editor: 'select', options: familyIncomeOptions },
+  /* Quoted in the currency the tier was picked in, falling back to the one the
+     member's country implies for a profile written before the column existed.
+     The nine values are identical in every currency - only the labels move. */
+  { key: 'salaryAmount', label: 'Annual income', section: 'Education & Career', step: 2, editor: 'select', optionsFor: (p) => (p.incomeCurrency ? incomeOptionsFor(p.incomeCurrency) : incomeOptionsForCountry(p.currentCountry)) },
 
   /* ---- Family (step 3) ----
      These no longer render as a panel of their own: FAMILY_FACT_KEYS promotes
@@ -305,7 +308,7 @@ export const PROFILE_FIELDS: ProfileFieldDef[] = [
   { key: 'familyLivingInState', label: 'Family state', section: 'Family', step: 3, editor: 'select', searchable: true, ownerOnly: true, optionsFor: (p) => statesForCountry(p.familyLivingInCountry), resets: ['familyLivingInCity'] },
   { key: 'familyLivingInCity', label: 'Family lives in', section: 'Family', step: 3, editor: 'select', searchable: true, optionsFor: (p) => citiesForState(p.familyLivingInCountry, p.familyLivingInState) },
   { key: 'familyType', label: 'Family type', section: 'Family', step: 3, editor: 'chips', options: FAMILY_TYPE_OPTIONS },
-  { key: 'familyIncome', label: 'Family income', section: 'Family', step: 3, editor: 'select', options: familyIncomeOptions },
+  { key: 'familyIncome', label: 'Family income', section: 'Family', step: 3, editor: 'select', optionsFor: (p) => incomeOptionsForCountry(p.familyLivingInCountry) },
   { key: 'livesWithFamily', label: 'Lives with family', section: 'Family', step: 3, editor: 'bool' },
 
   // ---- Lifestyle (step 3) ----

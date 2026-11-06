@@ -64,6 +64,7 @@ CAMEL_TO_MODEL = {
     "employedIn": "employed_in",
     "employedAs": "employed_as",
     "salaryAmount": "annual_income",
+    "incomeCurrency": "income_currency",
     # Step 3 - lifestyle
     "diet": "diet",
     "smoking": "smoking_habits",
@@ -768,6 +769,7 @@ def profile_to_api(profile, request=None, public: bool = False, viewer=None) -> 
         "employedIn": profile.employed_in,
         "employedAs": profile.employed_as,
         "salaryAmount": profile.annual_income,
+        "incomeCurrency": profile.income_currency,
         "diet": profile.diet,
         "smoking": profile.smoking_habits,
         "drinking": profile.drinking_habits,

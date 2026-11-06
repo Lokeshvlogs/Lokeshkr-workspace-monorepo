@@ -51,6 +51,25 @@ def blocked_profile_ids(profile: Profile) -> set[int]:
     return ids
 
 
+def accepted_profile_ids(profile: Profile) -> set[int]:
+    """Everyone this member is already connected to.
+
+    They belong in the interests inbox's accepted tab, not back in the search
+    grid: a match list exists to find people you have not met yet, and a member
+    you are already chatting to takes a card away from one you are not.
+    """
+    pairs = Interest.objects.filter(
+        Q(sender=profile) | Q(receiver=profile), status=Interest.Status.ACCEPTED
+    ).values_list("sender_id", "receiver_id")
+
+    ids: set[int] = set()
+    for sender_id, receiver_id in pairs:
+        ids.add(sender_id)
+        ids.add(receiver_id)
+    ids.discard(profile.pk)
+    return ids
+
+
 def is_accepted_between(a: Profile, b: Profile) -> bool:
     """Whether these two have a mutual, accepted interest.
 
@@ -61,6 +80,47 @@ def is_accepted_between(a: Profile, b: Profile) -> bool:
     return Interest.objects.filter(
         pair_key=interest_pair_key(a.pk, b.pk), status=Interest.Status.ACCEPTED
     ).exists()
+
+
+def states_for(profile: Profile) -> dict[int, dict]:
+    """Every interest touching `profile`, keyed by the OTHER profile's pk.
+
+    One query for a whole page of matches. The alternative - asking
+    `is_accepted_between` per row - is 48 queries to paint 48 buttons, and it
+    could only ever answer "mutual or not": pending, declined and withdrawn all
+    come back False from it, and the card needs to tell those apart.
+
+    A pair can hold more than one row: `uniq_live_interest_per_pair` only covers
+    pending and accepted, so a declined A->B can sit beside a live B->A. The
+    live one is what the buttons should reflect, so it wins.
+    """
+    rows = Interest.objects.filter(
+        Q(sender=profile) | Q(receiver=profile)
+    ).values_list("sender_id", "receiver_id", "status", "id", "created_at")
+
+    states: dict[int, dict] = {}
+    for sender_id, receiver_id, status, interest_id, created_at in rows:
+        outgoing = sender_id == profile.pk
+        other_id = receiver_id if outgoing else sender_id
+        current = states.get(other_id)
+        live = status in Interest.LIVE_STATUSES
+
+        if current is not None:
+            # A live row always wins; between two dead ones, the newer.
+            if not live and (current["live"] or current["created_at"] >= created_at):
+                continue
+            if live and current["live"] and current["created_at"] >= created_at:
+                continue
+
+        states[other_id] = {
+            "id": interest_id,
+            "status": status,
+            "direction": "sent" if outgoing else "received",
+            "live": live,
+            "created_at": created_at,
+        }
+
+    return states
 
 
 def _sent_today(profile: Profile) -> int:
@@ -164,6 +224,95 @@ def open_conversation(interest: Interest):
         # The thread can be opened again on first use; losing the accept
         # because chat had a bad day would be far worse.
         return None
+
+
+@transaction.atomic
+def block(actor: Profile, other: Profile) -> None:
+    """Cut contact with `other`, both ways, and tidy up what is already open.
+
+    Inserting the row is not enough. `Block` has never touched an Interest or a
+    Conversation, so a blocked pair that had already accepted would keep a live
+    interest and an open thread - and until `messaging_hooks._reachable` learned
+    about blocks, keep posting to it.
+
+    Everything here is idempotent: blocking twice is the state the caller asked
+    for, not an error.
+    """
+    if actor.pk == other.pk:
+        raise InterestError(400, "You cannot block yourself.")
+
+    Block.objects.get_or_create(blocker=actor, blocked=other)
+
+    # At most one row, guaranteed by uniq_live_interest_per_pair. Declined
+    # rather than withdrawn whoever sent it: withdrawn means "the sender
+    # changed their mind", which is not what happened.
+    Interest.objects.filter(
+        pair_key=interest_pair_key(actor.pk, other.pk), status__in=Interest.LIVE_STATUSES
+    ).update(status=Interest.Status.DECLINED, responded_at=timezone.now())
+
+    _close_conversation(actor, other)
+
+
+def _close_conversation(a: Profile, b: Profile) -> None:
+    """Shut the pair's thread, if the messaging app is installed and has one."""
+    try:
+        from apps.messaging.models import Conversation, participants_key
+    except ImportError:
+        return
+
+    try:
+        key = participants_key([a.pk, b.pk], "match")
+        Conversation.objects.filter(participants_key=key).update(is_closed=True)
+    except Exception:
+        # Same reasoning as open_conversation: chat having a bad day must not
+        # cost the member the block they just asked for. The gate in
+        # messaging_hooks stops the thread either way.
+        return
+
+
+def unblock(actor: Profile, other: Profile) -> None:
+    """Undo a block. The declined interest and closed thread are NOT revived.
+
+    Deliberately: re-accepting on the other side's behalf would be speaking for
+    them. Unblocking puts the member back in the pool, and a fresh interest is
+    how the pair starts again.
+    """
+    Block.objects.filter(blocker=actor, blocked=other).delete()
+
+
+def blocked_by(profile: Profile):
+    """Everyone this member has blocked, newest first. Their own list only."""
+    return (
+        Block.objects.filter(blocker=profile)
+        .select_related("blocked")
+        .order_by("-created_at")
+    )
+
+
+def conversation_with(me: Profile, other: Profile):
+    """The thread these two share, opening it if the accept never managed to.
+
+    `open_conversation` swallows every exception on purpose, so an accepted pair
+    can legitimately exist with no Conversation row behind it. The Chat button
+    cannot assume one is there, and `get_or_create_conversation` is idempotent
+    through its unique participants_key, so asking again costs nothing.
+    """
+    if not is_accepted_between(me, other):
+        raise InterestError(403, "You can only chat once an interest is mutual.")
+    if is_blocked_between(me, other):
+        raise InterestError(403, "This member is not accepting messages right now.")
+
+    try:
+        from apps.messaging import services as messaging
+    except ImportError:
+        raise InterestError(503, "Chat is not available right now.")
+
+    live = Interest.objects.filter(
+        pair_key=interest_pair_key(me.pk, other.pk), status=Interest.Status.ACCEPTED
+    ).first()
+    return messaging.get_or_create_conversation(
+        [me, other], kind="match", context_ref=str(live.id) if live else ""
+    )
 
 
 def _load(interest_id: int) -> Interest:

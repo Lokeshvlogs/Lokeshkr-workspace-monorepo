@@ -7,6 +7,7 @@ import NameWithBadge from '@/components/profile/NameWithBadge'
 import InterestButton from '@/components/profile/InterestButton'
 import SaveButton from '@/components/profile/SaveButton'
 import { profileHref } from '@/lib/navigation'
+import type { ConnectionState } from '@/lib/interests'
 import { iconFor } from '@/lib/profileIcons'
 
 /* Resolved once, at module level: the same glyphs the profile page puts on
@@ -32,6 +33,10 @@ export type ProfileCardData = {
   salary?: string
   /** Already formatted in prime marks (`5'8"`); rides beside the profession. */
   height?: string
+  /** Faith, already label-resolved. Leads the third fact row. */
+  religion?: string
+  /** Caste/community, already label-resolved. Shares that row with the faith. */
+  community?: string
   /**
    * Whether this member lives abroad. Computed by the API
    * (`apps/profiles/residency.py`) and only read here - the `nri` search filter
@@ -51,6 +56,8 @@ export type ProfileCardData = {
   from?: string
   /** Whether the viewer has already saved this member. Seeded by the grid. */
   isSaved?: boolean
+  /** Where the viewer stands with this member, seeded by the grid. */
+  connection?: ConnectionState
 }
 
 function PinIcon() {
@@ -72,12 +79,15 @@ export default function ProfileCard({
   education,
   salary,
   height,
+  religion,
+  community,
   isNri = false,
   details = [],
   photoCount = 0,
   verificationLevel = 0,
   from,
   isSaved = false,
+  connection,
 }: ProfileCardData) {
   /* A plain link now. Profiles used to open in place in the dashboard, which
      meant intercepting left-clicks and letting modifier-clicks through; with a
@@ -198,8 +208,15 @@ export default function ProfileCard({
           </div>
         )}
 
-        {shown.length > 0 && (
+        {/* Faith and community, as pills. They are passed as named props
+            rather than folded into `details` so the community can be capped -
+            it is the only one long enough to push the pair onto two rows. */}
+        {(religion || community || shown.length > 0) && (
           <ul className="card-pills">
+            {religion && <li className="card-pill">{religion}</li>}
+            {community && (
+              <li className="card-pill card-pill-shrink" title={community}>{community}</li>
+            )}
             {shown.map((detail) => (
               <li key={detail} className="card-pill">{detail}</li>
             ))}
@@ -210,7 +227,7 @@ export default function ProfileCard({
         {profileId ? (
           <div className="card-actions">
             <SaveButton profileId={profileId} initialSaved={isSaved} />
-            <InterestButton profileId={profileId} variant="card" />
+            <InterestButton profileId={profileId} variant="card" connection={connection} />
           </div>
         ) : (
           // Sample cards on the signed-out home page have no profile behind

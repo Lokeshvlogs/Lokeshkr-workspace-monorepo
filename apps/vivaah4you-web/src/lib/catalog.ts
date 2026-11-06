@@ -76,6 +76,24 @@ export async function visaStatusesFor(country: string): Promise<SelectOptionLike
 }
 
 /**
+ * Income brackets in the currency of `country`.
+ *
+ * From the API rather than the bundled mirror in
+ * `constants/selectOptions/income.ts`, so the wizard can never offer a value
+ * the server would reject. Display reads the mirror instead - a grid of cards
+ * cannot afford a round trip per currency symbol.
+ */
+export async function incomeBracketsFor(country: string): Promise<SelectOptionLike[]> {
+  try {
+    const response = await fetch(`/api/catalog/income-brackets?country=${encodeURIComponent(country)}`)
+    if (!response.ok) return []
+    return (await response.json()) as SelectOptionLike[]
+  } catch {
+    return []
+  }
+}
+
+/**
  * Catalog rows as dropdown options.
  *
  * The city is appended as a disambiguator rather than folded into the value:

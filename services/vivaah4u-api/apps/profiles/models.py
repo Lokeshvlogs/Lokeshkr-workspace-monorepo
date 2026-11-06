@@ -220,6 +220,13 @@ class Profile(models.Model):
     employed_in = models.CharField(max_length=150, blank=True)
     employed_as = models.CharField(max_length=150, blank=True)
     annual_income = models.CharField(max_length=100, blank=True)
+    # The currency `annual_income`'s tier was picked in, as an ISO-4217 code.
+    # Stored rather than re-derived from the member's country at render time:
+    # somebody who moves abroad would otherwise have last year's salary
+    # silently relabelled in a currency they never chose. Blank reads as INR -
+    # see apps.catalog.income.DEFAULT_CURRENCY - which is what every row
+    # written before this column existed is.
+    income_currency = models.CharField(max_length=3, blank=True)
     # Tri-state as text: "" unanswered, "yes", "no". A boolean could not tell
     # "no" from "not asked", and this is a question many members leave blank.
     settle_abroad = models.CharField(max_length=10, blank=True)

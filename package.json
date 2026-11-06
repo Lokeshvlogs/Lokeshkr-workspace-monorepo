@@ -12,6 +12,10 @@
     "build:vivaah4you": "nx build vivaah4you-web",
     "lint:vivaah4you": "nx lint vivaah4you-web",
     "type-check:vivaah4you": "nx type-check vivaah4you-web",
+    "dev:lucymixer": "nx dev lucymixer-web",
+    "build:lucymixer": "nx build lucymixer-web",
+    "lint:lucymixer": "nx lint lucymixer-web",
+    "type-check:lucymixer": "nx type-check lucymixer-web",
     "nx": "nx"
   },
   "devDependencies": {

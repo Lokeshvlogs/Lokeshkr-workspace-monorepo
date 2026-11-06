@@ -74,6 +74,8 @@ export interface PublicProfile {
   employedIn: string
   employedAs: string
   salaryAmount: string
+  /** ISO-4217 code the salary tier was quoted in. Blank reads as INR. */
+  incomeCurrency?: string
   diet: string
   smoking: string
   drinking: string

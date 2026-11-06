@@ -90,6 +90,51 @@ def mark_seen(request):
     return {"seen": interests.mark_seen(_me(request))}
 
 
+@router.get("/states", auth=active_auth)
+def interest_states(request):
+    """Where the caller stands with everyone they have an interest with.
+
+    Keyed by the public `profile_id`, so the browser - which never sees numeric
+    pks - can look a card up directly. One query for the whole page; see
+    `interests.states_for` for why asking per row was not an option.
+    """
+    me = _me(request)
+    states = interests.states_for(me)
+    if not states:
+        return {"states": {}}
+
+    public_ids = dict(
+        Profile.objects.filter(pk__in=states).values_list("pk", "profile_id")
+    )
+
+    out = {}
+    for other_pk, state in states.items():
+        public_id = public_ids.get(other_pk)
+        if not public_id:
+            continue
+        out[public_id] = {
+            "id": state["id"],
+            "status": state["status"],
+            "direction": state["direction"],
+        }
+
+    return {"states": out}
+
+
+@router.post("/conversation/{profile_id}", auth=active_auth)
+def interest_conversation(request, profile_id: str):
+    """The chat thread for a mutual pair, opened on demand if need be.
+
+    On the profiles side rather than in `apps.messaging`, which deliberately
+    knows nothing about profile ids or about who may talk to whom - its
+    `POST /conversations` takes numeric pks the browser is never given.
+    """
+    me = _me(request)
+    other = get_object_or_404(Profile, profile_id=profile_id)
+    conversation = _guard(interests.conversation_with, me, other)
+    return {"id": str(conversation.public_id)}
+
+
 @router.post("/send/{profile_id}", auth=active_auth)
 def send_interest(request, profile_id: str, data: Optional[SendIn] = None):
     me = _me(request)

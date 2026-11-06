@@ -53,6 +53,15 @@ def eligible_matches(profile: Profile):
     if blocked:
         qs = qs.exclude(pk__in=blocked)
 
+    # So is connecting. An accepted interest moves a member out of "people to
+    # find" and into "people I know", which is the interests inbox - leaving
+    # them in the grid spends a card on somebody already reachable from there.
+    # Pending interests deliberately stay: those are still being decided, and
+    # the card is where the member sees they are waiting.
+    connected = interests.accepted_profile_ids(profile)
+    if connected:
+        qs = qs.exclude(pk__in=connected)
+
     return qs
 
 
@@ -106,6 +115,15 @@ def public_profile(request, profile_id: str):
         raise HttpError(404, "Profile not found")
 
     viewer = request.auth if getattr(request, "auth", False) else None
+
+    # A block takes a profile out of the match pool, but the pool is not the
+    # only way in - the URL is guessable from an old link or a bookmark. The
+    # same 404 as a hidden profile, so a block stays undetectable by probing.
+    if viewer is not None:
+        me = Profile.objects.filter(user=viewer).first()
+        if me is not None and interests.is_blocked_between(me, profile):
+            raise HttpError(404, "Profile not found")
+
     data = profile_to_api(profile, request, public=True, viewer=viewer)
     if profile.hide_display_picture_from_search:
         data["photo"] = None

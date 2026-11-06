@@ -19,6 +19,7 @@ import {
 import {
   FAMILY_TYPE_LABELS,
   MANGLIK_LABELS,
+  displayLabelFor,
   formatHeight,
   labelFor,
 } from '@/lib/profileDisplay'
@@ -93,7 +94,10 @@ export function displayValue(def: ProfileFieldDef, profile: PublicProfile): stri
     case 'partnerAbout':
       return String((profile as any)[def.key] ?? '')
     default:
-      return labelFor(def.key, (profile as any)[def.key])
+      // displayLabelFor, not labelFor: this is the read-only text, and it is
+      // what puts "p.a." on the two income fields. The open editor seeds
+      // itself from the stored value, so nothing suffixed is ever saved back.
+      return displayLabelFor(def.key, (profile as any)[def.key], profile.incomeCurrency)
   }
 }
 

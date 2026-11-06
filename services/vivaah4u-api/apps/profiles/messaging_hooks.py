@@ -23,13 +23,25 @@ def participant_card(profile: Profile, request=None):
     return cards.person_card(profile, request, viewer=profile)
 
 
+def _reachable(actor: Profile, other: Profile) -> bool:
+    """Mutual interest, and neither side has blocked the other.
+
+    The block half was missing, which is what made this docstring's promise
+    false: `Block` has never touched an Interest row, so a blocked pair with an
+    accepted interest kept the thread open and kept posting to it.
+    """
+    return interests.is_accepted_between(actor, other) and not interests.is_blocked_between(
+        actor, other
+    )
+
+
 def can_start_conversation(actor: Profile, others) -> bool:
     """The gate: a conversation needs a mutually accepted interest.
 
     This is the whole reason the messaging app is generic. Another project
     installs it and gets no such rule.
     """
-    return all(interests.is_accepted_between(actor, other) for other in others)
+    return all(_reachable(actor, other) for other in others)
 
 
 def can_post_message(actor: Profile, conversation) -> bool:
@@ -46,5 +58,5 @@ def can_post_message(actor: Profile, conversation) -> bool:
         .select_related("participant")
     )
     return not conversation.is_closed and all(
-        interests.is_accepted_between(actor, row.participant) for row in others
+        _reachable(actor, row.participant) for row in others
     )

@@ -6,6 +6,7 @@ import { OtpInput, PasswordInput, SelectDropdown, TextField } from '@lokesh-work
 
 import { useAuth } from '@/components/authProvider'
 import { COUNTRY_CODES_OPTIONS } from '@/constants/selectOptions/places'
+import BlockedMembers from '@/components/settings/BlockedMembers'
 
 const CODE_LENGTH = 4
 
@@ -439,6 +440,8 @@ export default function SettingsPage() {
           </div>
         </SettingsSection>
       </div>
+
+      <BlockedMembers />
 
       <section className="settings-section mt-8">
         <div className="settings-row">

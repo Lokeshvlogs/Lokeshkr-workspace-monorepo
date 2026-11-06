@@ -1,0 +1,38 @@
+{
+  "name": "lucymixer-web",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/lucymixer-web/src",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/lucymixer-web dev"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/lucymixer-web build"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/lucymixer-web start"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/lucymixer-web lint"
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "corepack pnpm --dir apps/lucymixer-web type-check"
+      }
+    }
+  }
+}

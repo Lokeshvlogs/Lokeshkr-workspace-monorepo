@@ -11,6 +11,7 @@ import {
 import { ALL_EMPLOYED_AS } from '@/constants/selectOptions/employedAs'
 import { TAG_CATEGORIES } from '@/constants/selectOptions/interests'
 import { familyIncomeOptions } from '@/constants/selectOptions/people'
+import { incomeLabelFor } from '@/constants/selectOptions/income'
 import {
   dietOptions,
   drinkingOptions,
@@ -170,6 +171,32 @@ export function labelFor(field: string, value: unknown): string {
   const map = LABEL_MAPS[field]
   if (map && map[raw]) return map[raw]
   return titleCase(raw)
+}
+
+/** Income buckets that are annual - every display surface should say so. */
+const PER_ANNUM_FIELDS = new Set(['salaryAmount', 'familyIncome'])
+
+/**
+ * `labelFor` for a surface a member READS, rather than one they search on.
+ *
+ * Income is stored as a bucket ("25-50") whose label ("25-50 lacs") carries no
+ * unit of time. The suffix belongs here and not in `labelFor`, which also feeds
+ * the search bar's option lists and its active-filter chips - "25-50 lacs p.a."
+ * in a dropdown is noise, and the chip would stop reading like the option it
+ * came from.
+ */
+export function displayLabelFor(field: string, value: unknown, currency?: string): string {
+  if (!PER_ANNUM_FIELDS.has(field)) return labelFor(field, value)
+
+  // Income is quoted in the currency it was picked in, so the label comes from
+  // that currency's table rather than from LABEL_MAPS - which holds the rupee
+  // wording the search bar still speaks in. Without a currency (an older row,
+  // or a caller with no profile to hand) `incomeLabelFor` falls back to INR.
+  const label = incomeLabelFor(currency, String(value ?? ''))
+
+  // A blank stays blank: an unanswered field prints "Not added" on the owner's
+  // own hero, and a bare " p.a." there would be worse than nothing.
+  return label ? `${label} p.a.` : ''
 }
 
 export function formatHeight(feet?: number | null, inches?: number | null): string {

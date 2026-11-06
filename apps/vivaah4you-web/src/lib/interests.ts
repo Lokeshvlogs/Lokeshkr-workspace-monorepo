@@ -5,6 +5,38 @@ export type InterestTab = (typeof INTEREST_TABS)[number]
 
 export type InterestStatus = 'pending' | 'accepted' | 'declined' | 'withdrawn'
 
+/**
+ * Where the viewer stands with one other member, as `/api/interests/states`
+ * reports it. The direction matters as much as the status: a pending interest
+ * I sent is something to wait on, the same one received is something to answer.
+ */
+export interface ConnectionState {
+  id: number
+  status: InterestStatus
+  direction: 'sent' | 'received'
+}
+
+/** Keyed by the other member's public profile id. */
+export type ConnectionStates = Record<string, ConnectionState>
+
+/** Reads one page of `/api/interests/states`, tolerating a missing body. */
+export function toConnectionStates(data: unknown): ConnectionStates {
+  const raw = (data as { states?: Record<string, unknown> })?.states
+  if (!raw || typeof raw !== 'object') return {}
+
+  const out: ConnectionStates = {}
+  for (const [profileId, value] of Object.entries(raw)) {
+    const row = value as Partial<ConnectionState>
+    if (!row?.status || !row?.direction) continue
+    out[profileId] = {
+      id: Number(row.id ?? 0),
+      status: row.status,
+      direction: row.direction,
+    }
+  }
+  return out
+}
+
 /** The other person in an interest, as a list row. */
 export interface InterestPerson {
   profileId: string
